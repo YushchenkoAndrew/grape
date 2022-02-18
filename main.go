@@ -32,13 +32,11 @@ import (
 // @host mortis-grimreaper.ddns.net:31337
 // @BasePath /api
 func main() {
-	cfg := config.NewConfig([]func() interfaces.Config{
+	config.NewConfig([]func() interfaces.Config{
 		config.NewEnvConfig("./"),
 		config.NewK3sConfig("./k3s.yaml"),
 		config.NewOperationConfig("./", "operations"),
-	})
-
-	cfg.Init()
+	}).Init()
 
 	db.Init([]interfaces.Table{
 		models.NewInfo(),

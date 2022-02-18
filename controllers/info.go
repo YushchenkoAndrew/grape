@@ -63,20 +63,20 @@ func (*infoController) parseBody(body *models.InfoDto, model *models.Info) {
 	// 	model.CreatedAt = *body.CreatedAt
 	// }
 
-	if body.Views != nil {
-		model.Views = *body.Views
+	if body.Views != 0 {
+		model.Views = body.Views
 	}
 
-	if body.Clicks != nil {
-		model.Clicks = *body.Clicks
+	if body.Clicks != 0 {
+		model.Clicks = body.Clicks
 	}
 
-	if body.Media != nil {
-		model.Media = *body.Media
+	if body.Media != 0 {
+		model.Media = body.Media
 	}
 
-	if body.Visitors != nil {
-		model.Visitors = *body.Visitors
+	if body.Visitors != 0 {
+		model.Visitors = body.Visitors
 	}
 }
 

@@ -49,11 +49,11 @@ func (c *Info) Redis(db *gorm.DB, client *redis.Client) error {
 type InfoDto struct {
 	// ID        uint32    `json:"id" xml:"id"`
 	// CreatedAt *time.Time `json:"CreatedAt" xml:"CreatedAt"`
-	Countries string  `json:"countries" xml:"contries"`
-	Views     *uint16 `json:"views,omitempty" xml:"views,omitempty"`
-	Clicks    *uint16 `json:"clicks,omitempty" xml:"clicks,omitempty"`
-	Media     *uint16 `json:"media,omitempty" xml:"media,omitempty"`
-	Visitors  *uint16 `json:"visitors,omitempty" xml:"visitors,omitempty"`
+	Countries string `json:"countries" xml:"contries"`
+	Views     uint16 `json:"views,omitempty" xml:"views,omitempty"`
+	Clicks    uint16 `json:"clicks,omitempty" xml:"clicks,omitempty"`
+	Media     uint16 `json:"media,omitempty" xml:"media,omitempty"`
+	Visitors  uint16 `json:"visitors,omitempty" xml:"visitors,omitempty"`
 }
 
 type StatInfo struct {

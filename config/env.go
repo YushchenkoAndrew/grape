@@ -2,6 +2,7 @@ package config
 
 import (
 	"api/interfaces"
+	"fmt"
 
 	"github.com/spf13/viper"
 )
@@ -75,7 +76,7 @@ func (c *envConfig) Init() {
 
 	viper.AutomaticEnv()
 	if err := viper.ReadInConfig(); err != nil {
-		panic("Failed on reading .env file")
+		panic(fmt.Errorf("Failed on reading .env file %v", err))
 	}
 
 	if err := viper.Unmarshal(&ENV); err != nil {

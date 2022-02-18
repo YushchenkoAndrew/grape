@@ -56,7 +56,7 @@ func getScaledValue(q *resource.Quantity, scale int) (int64, int) {
 // @Success 200 {object} models.Success{int}
 // @failure 422 {object} models.Error
 // @failure 429 {object} models.Error
-// @failure 500 {object} models.Error[]
+// @failure 500 {object} models.Error
 // @Router /k3s/pod/metrics/{id}/{namespace}/ [post]
 func (*metricsController) CreateAll(c *gin.Context) {
 	var id int
@@ -177,7 +177,7 @@ func (*metricsController) CreateAll(c *gin.Context) {
 // @Success 200 {object} models.Success{int}
 // @failure 422 {object} models.Error
 // @failure 429 {object} models.Error
-// @failure 500 {object} models.Error[]
+// @failure 500 {object} models.Error
 // @Router /k3s/pod/metrics/{id}/{namespace}/{name} [post]
 func (*metricsController) CreateOne(c *gin.Context) {
 	var id int
@@ -333,31 +333,7 @@ func (*metricsController) ReadOne(c *gin.Context) {
 	})
 }
 
-// @Tags Metrics
-// @Summary Get Pods Metrics
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param namespace query string false "Namespace name"
-// @Success 200 {object} models.Success{result=[]v1.PodMetrics}
-// @failure 422 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /k3s/pod/metrics [get]
 func (*metricsController) ReadAll(c *gin.Context) {
-	ctx := context.Background()
-	result, err := config.Metrics.MetricsV1beta1().PodMetricses(c.Param("namespace")).List(ctx, metaV1.ListOptions{})
-	if err != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	helper.ResHandler(c, http.StatusOK, &models.Success{
-		Status: "OK",
-		Result: result.Items,
-		Items:  int64(len(result.Items)),
-	})
 }
 
 func (*metricsController) UpdateOne(c *gin.Context) {}
