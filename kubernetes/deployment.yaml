@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: grimreapermortis/api-golang:0.0.1
+          image: grimreapermortis/grape:0.0.2
           imagePullPolicy: Always
           ports:
             - containerPort: 31337
@@ -23,12 +23,18 @@ spec:
             - secretRef:
                 name: api-secrete
           env:
+            - name: BASE_PATH
+              value: /api
+            - name: API_URL
+              value: http://$(API_SERVICE_SERVICE_HOST):$(API_SERVICE_SERVICE_PORT)/api
             - name: REDIS_HOST
               value: $(REDIS_SERVICE_SERVICE_HOST)
             - name: DB_HOST
               value: $(DB_SERVICE_SERVICE_HOST)
             - name: BOT_URL
               value: http://$(BOT_SERVICE_SERVICE_HOST):$(BOT_SERVICE_SERVICE_PORT)/bot
+            - name: FORCE_MIGRATE
+              value: "true"
 
 ---
 apiVersion: apps/v1

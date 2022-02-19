@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine AS builder
+FROM golang:1.17-alpine AS builder
 RUN apk --no-cache add ca-certificates gcc g++ make bash git
 WORKDIR /app
 
@@ -13,7 +13,7 @@ RUN go mod download
 COPY . ./
 
 # Update docs
-RUN go install github.com/swaggo/swag/cmd/swag@latest
+RUN go install github.com/swaggo/swag/cmd/swag@v1.7.8
 RUN swag init -g ./main.go --parseDependency
 
 RUN go build -o ./api ./main.go
@@ -26,6 +26,7 @@ ENV GIN_MODE=release
 
 # Copy config file & complied file
 COPY .env.template .env
+COPY operations.yaml .
 COPY --from=builder /app/api .
 
 EXPOSE 31337
