@@ -35,7 +35,7 @@ spec:
             - name: BOT_URL
               value: http://$(BOT_SERVICE_SERVICE_HOST):$(BOT_SERVICE_SERVICE_PORT)/bot
             - name: FORCE_MIGRATE
-              value: "true"
+              value: "false"
 
 ---
 apiVersion: apps/v1
