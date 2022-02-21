@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	v1 "k8s.io/api/networking/v1"
+	v1beta1 "k8s.io/api/networking/v1beta1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,8 +29,8 @@ func (*ingressController) CreateAll(c *gin.Context) {}
 // @Produce application/xml
 // @Security BearerAuth
 // @Param namespace path string true "Namespace name"
-// @Param model body v1.Ingress true "Ingress config file"
-// @Success 201 {object} models.Success{result=[]v1.Ingress}
+// @Param model body v1beta1.Ingress true "Ingress config file"
+// @Success 201 {object} models.Success{result=[]v1beta1.Ingress}
 // @failure 400 {object} models.Error
 // @failure 422 {object} models.Error
 // @failure 429 {object} models.Error
@@ -42,14 +43,14 @@ func (*ingressController) CreateOne(c *gin.Context) {
 		return
 	}
 
-	var body v1.Ingress
+	var body v1beta1.Ingress
 	if err := c.ShouldBind(&body); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body is not setted")
 		return
 	}
 
 	ctx := context.Background()
-	result, err := config.K3s.NetworkingV1().Ingresses(namespace).Create(ctx, &body, metaV1.CreateOptions{})
+	result, err := config.K3s.NetworkingV1beta1().Ingresses(namespace).Create(ctx, &body, metaV1.CreateOptions{})
 	if err != nil {
 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
@@ -57,7 +58,7 @@ func (*ingressController) CreateOne(c *gin.Context) {
 
 	helper.ResHandler(c, http.StatusCreated, &models.Success{
 		Status: "OK",
-		Result: []v1.Ingress{*result},
+		Result: []v1beta1.Ingress{*result},
 		Items:  1,
 	})
 }
