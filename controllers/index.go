@@ -62,15 +62,23 @@ func (*indexController) TraceIp(c *gin.Context) {
 
 	var block []models.GeoIpBlocks
 	if err := helper.PrecacheResult(fmt.Sprintf("%s:BLOCK", key), db.DB.Where("network >>= ?::inet", ip), &block); err != nil || len(block) == 0 {
-		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-		go logs.DefaultLog("/contlollers/index.go", err.Error())
+		go logs.DefaultLog("/contlollers/index.go", fmt.Sprintf("TraceIP block err: %v", err))
+		helper.ResHandler(c, http.StatusNotFound, &models.Success{
+			Status: "ERR",
+			Result: [1]models.GeoIpLocations{},
+			Items:  1,
+		})
 		return
 	}
 
 	var location []models.GeoIpLocations
 	if err := helper.PrecacheResult(fmt.Sprintf("%s:LOCATION", key), db.DB.Where("geoname_id = ?", block[0].GeonameId), &location); err != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-		go logs.DefaultLog("/contlollers/index.go", err.Error())
+		go logs.DefaultLog("/contlollers/index.go", fmt.Sprintf("TraceIP location err: %v", err))
+		helper.ResHandler(c, http.StatusNotFound, &models.Success{
+			Status: "ERR",
+			Result: [1]models.GeoIpLocations{},
+			Items:  1,
+		})
 		return
 	}
 
