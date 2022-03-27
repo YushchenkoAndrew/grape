@@ -45,8 +45,38 @@ func (c *Link) Redis(db *gorm.DB, client *redis.Client) error {
 	return nil
 }
 
+func (c *Link) ToModel(dto *LinkDto) {
+	c.Name = dto.Name
+	c.Link = dto.Link
+}
+
+func (c *Link) Copy() *Link {
+	return &Link{
+		ID:        c.ID,
+		UpdatedAt: c.UpdatedAt,
+		Name:      c.Name,
+		Link:      c.Link,
+		ProjectID: c.ProjectID,
+	}
+}
+
 type LinkDto struct {
 	// ID        uint32    `json:"id" xml:"id"`
 	Name string `json:"name" xml:"name"`
 	Link string `json:"link" xml:"link"`
+}
+
+func (c *LinkDto) IsOK() bool {
+	return c.Name != "" && c.Link != ""
+}
+
+type LinkQueryDto struct {
+	ID        uint32 `form:"id"`
+	Name      string `form:"name" example:"main"`
+	ProjectID uint32 `form:"project_id" example:"1"`
+
+	Page  int `form:"page" example:"1"`
+	Limit int `form:"limit" example:"10"`
+	// UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at" xml:"updated_at" example:"2021-08-27T16:17:53.119571+03:00"`
+	// Link      string    `form:"link" example:"https://github.com/YushchenkoAndrew/template"`
 }

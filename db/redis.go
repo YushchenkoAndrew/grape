@@ -5,23 +5,20 @@ import (
 	"fmt"
 
 	"api/config"
-	"api/interfaces"
 	"api/logs"
 	"api/models"
 
 	"github.com/go-redis/redis/v8"
 )
 
-var Redis *redis.Client
-
-func ConnectToRedis(tables []interfaces.Table) {
-	Redis = redis.NewClient(&redis.Options{
+func ConnectToRedis() *redis.Client {
+	var client = redis.NewClient(&redis.Options{
 		Addr:     config.ENV.RedisHost + ":" + config.ENV.RedisPort,
 		Password: config.ENV.RedisPass,
 	})
 
 	ctx := context.Background()
-	if _, err := Redis.Ping(ctx).Result(); err != nil {
+	if _, err := client.Ping(ctx).Result(); err != nil {
 		logs.SendLogs(&models.LogMessage{
 			Stat:    "ERR",
 			Name:    "API",
@@ -32,20 +29,16 @@ func ConnectToRedis(tables []interfaces.Table) {
 		panic("Failed on Redis connection")
 	}
 
-	Redis.Set(ctx, "Mutex", 1, 0)
-	for _, table := range tables {
-		if err := table.Redis(DB, Redis); err != nil {
-			panic(err)
-		}
-	}
+	client.Set(ctx, "Mutex", 1, 0)
+	return client
 }
 
-func FlushValue(key string) {
+func FlushValue(client *redis.Client, key string) {
 	ctx := context.Background()
-	iter := Redis.Scan(ctx, 0, fmt.Sprintf("%s:*", key), 0).Iterator()
+	iter := client.Scan(ctx, 0, fmt.Sprintf("%s:*", key), 0).Iterator()
 
 	for iter.Next(ctx) {
-		go Redis.Del(ctx, iter.Val())
+		go client.Del(ctx, iter.Val())
 	}
 
 	if err := iter.Err(); err != nil {

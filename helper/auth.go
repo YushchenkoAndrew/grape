@@ -2,8 +2,6 @@ package helper
 
 import (
 	"api/config"
-	"api/db"
-	"context"
 	"crypto/md5"
 	"encoding/hex"
 )
@@ -37,5 +35,5 @@ func RegenerateToken(token string) {
 	hasher = md5.New()
 	hasher.Write([]byte(result))
 
-	db.Redis.Set(context.Background(), "TOKEN:"+hex.EncodeToString(hasher.Sum(nil)), "OK", 0)
+	// db.Redis.Set(context.Background(), "TOKEN:"+hex.EncodeToString(hasher.Sum(nil)), "OK", 0)
 }

@@ -7,9 +7,6 @@ import (
 	"api/middleware"
 	"api/models"
 	"api/routes"
-	"api/routes/info"
-	"api/routes/k3s"
-	"api/routes/k3s/pods"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,7 +35,7 @@ func main() {
 		config.NewOperationConfig("./", "operations"),
 	}).Init()
 
-	db.Init([]interfaces.Table{
+	db, client := db.Init([]interfaces.Table{
 		models.NewInfo(),
 		models.NewWorld(),
 
@@ -55,29 +52,29 @@ func main() {
 	r := gin.Default()
 	rg := r.Group(config.ENV.BasePath, middleware.Limit())
 	router := routes.NewIndexRouter(rg, &[]interfaces.Router{
-		routes.NewSwaggerRouter(rg),
-		routes.NewWorldRouter(rg),
-		routes.NewProjectRouter(rg),
-		routes.NewFileRouter(rg),
-		routes.NewLinkRouter(rg),
-		routes.NewBotRouter(rg),
+		// routes.NewSwaggerRouter(rg),
+		// routes.NewWorldRouter(rg),
+		// routes.NewProjectRouter(rg),
+		// routes.NewFileRouter(rg),
+		routes.NewLinkRouter(rg, db, client),
+		// routes.NewBotRouter(rg),
 
-		routes.NewInfoRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
-			info.NewSumRouterFactory(),
-			info.NewRangeRouterFactory(),
-		}),
+		// routes.NewInfoRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
+		// 	info.NewSumRouterFactory(),
+		// 	info.NewRangeRouterFactory(),
+		// }),
 
-		routes.NewK3sRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
-			k3s.NewDeploymentRouterFactory(),
-			k3s.NewIngressRouterFactory(),
-			k3s.NewPodsRouterFactory([]func(*gin.RouterGroup) interfaces.Router{
-				pods.NewMetricsRouterFactory(),
-			}),
-			k3s.NewNamespaceRouterFactory(),
-			k3s.NewServiceRouterFactory(),
-		}),
+		// routes.NewK3sRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
+		// 	k3s.NewDeploymentRouterFactory(),
+		// 	k3s.NewIngressRouterFactory(),
+		// 	k3s.NewPodsRouterFactory([]func(*gin.RouterGroup) interfaces.Router{
+		// 		pods.NewMetricsRouterFactory(),
+		// 	}),
+		// 	k3s.NewNamespaceRouterFactory(),
+		// 	k3s.NewServiceRouterFactory(),
+		// }),
 
-		routes.NewSubscribeRouter(rg),
+		// routes.NewSubscribeRouter(rg),
 	})
 
 	router.Init()
