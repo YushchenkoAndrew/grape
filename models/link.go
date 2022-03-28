@@ -2,17 +2,14 @@ package models
 
 import (
 	"api/interfaces"
-	"context"
-	"fmt"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
 type Link struct {
 	ID        uint32    `gorm:"primaryKey" json:"id" xml:"id"`
-	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at" xml:"updated_at" example:"2021-08-27T16:17:53.119571+03:00"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at" xml:"updated_at" example:"2021-08-27T16:17:53.119571+03:00"`
 	Name      string    `gorm:"not null" json:"name" xml:"name" example:"main"`
 	Link      string    `gorm:"not null" json:"link" xml:"link" example:"https://github.com/YushchenkoAndrew/template"`
 	ProjectID uint32    `gorm:"foreignKey:ProjectID;not null" json:"project_id" xml:"project_id" example:"1"`
@@ -27,27 +24,12 @@ func (*Link) TableName() string {
 	return "link"
 }
 
-func (c *Link) Migrate(db *gorm.DB, forced bool) {
+func (c *Link) Migrate(db *gorm.DB, forced bool) error {
 	if forced {
 		db.Migrator().DropTable(c)
 	}
-	db.AutoMigrate(c)
-}
 
-func (c *Link) Redis(db *gorm.DB, client *redis.Client) error {
-	var value int64
-	db.Model(c).Count(&value)
-
-	if err := client.Set(context.Background(), "nLINK", value, 0).Err(); err != nil {
-		return fmt.Errorf("[Redis] Error happed while setting value to Cache: %v", err)
-	}
-
-	return nil
-}
-
-func (c *Link) ToModel(dto *LinkDto) {
-	c.Name = dto.Name
-	c.Link = dto.Link
+	return db.AutoMigrate(c)
 }
 
 func (c *Link) Copy() *Link {
@@ -58,6 +40,30 @@ func (c *Link) Copy() *Link {
 		Link:      c.Link,
 		ProjectID: c.ProjectID,
 	}
+}
+
+func (c *Link) Fill(updated *Link) *Link {
+	if updated.ID != 0 {
+		c.ID = updated.ID
+	}
+
+	if !updated.UpdatedAt.IsZero() {
+		c.UpdatedAt = updated.UpdatedAt
+	}
+
+	if updated.Name != "" {
+		c.Name = updated.Name
+	}
+
+	if updated.Link != "" {
+		c.Link = updated.Link
+	}
+
+	if updated.ProjectID != 0 {
+		c.ProjectID = updated.ProjectID
+	}
+
+	return c
 }
 
 type LinkDto struct {

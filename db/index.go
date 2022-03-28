@@ -9,15 +9,12 @@ import (
 )
 
 func Init(tables []interfaces.Table) (*gorm.DB, *redis.Client) {
-	db, client := ConnectToDB(), ConnectToRedis()
-
+	db := ConnectToDB()
 	for _, table := range tables {
-		table.Migrate(db, config.ENV.ForceMigrate)
-
-		if err := table.Redis(db, client); err != nil {
+		if err := table.Migrate(db, config.ENV.ForceMigrate); err != nil {
 			panic(err)
 		}
 	}
 
-	return db, client
+	return db, ConnectToRedis()
 }

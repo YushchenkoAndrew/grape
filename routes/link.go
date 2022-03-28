@@ -3,7 +3,7 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
 	s "api/service"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +20,7 @@ type linkRouter struct {
 func NewLinkRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) interfaces.Router {
 	return &linkRouter{
 		route: rg.Group(("/link")),
-		auth:  rg.Group("/link", middleware.Auth()),
+		auth:  rg.Group("/link", m.GetMiddleware().Auth()),
 		link:  c.NewLinkController(s.NewLinkService(db, client)),
 	}
 }

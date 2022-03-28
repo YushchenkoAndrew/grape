@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"api/config"
-	"api/db"
 	"api/helper"
 	"api/logs"
 	"api/models"
@@ -21,9 +20,7 @@ import (
 	"github.com/twinj/uuid"
 )
 
-// type Middleware struct{}
-
-func CreateToken(token *models.Auth) (err error) {
+func (*Middleware) CreateToken(token *models.Auth) (err error) {
 	token.AccessUUID = uuid.NewV4().String()
 	token.RefreshUUID = uuid.NewV4().String()
 
@@ -52,7 +49,7 @@ func CreateToken(token *models.Auth) (err error) {
 	return
 }
 
-func Auth() gin.HandlerFunc {
+func (o *Middleware) Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		bearToken := strings.Split(c.Request.Header.Get("Authorization"), " ")
 
@@ -111,7 +108,7 @@ func Auth() gin.HandlerFunc {
 
 		// Final check with cache
 		ctx := context.Background()
-		if cacheUUID, err := db.Redis.Get(ctx, accessUUID).Result(); err != nil || cacheUUID != userUUID {
+		if cacheUUID, err := o.client.Get(ctx, accessUUID).Result(); err != nil || cacheUUID != userUUID {
 			helper.ErrHandler(c, http.StatusUnauthorized, "Invalid token inforamation")
 			return
 		}
@@ -125,7 +122,7 @@ func Auth() gin.HandlerFunc {
 	}
 }
 
-func AuthToken() gin.HandlerFunc {
+func (o *Middleware) AuthToken() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		bearToken := strings.Split(c.Request.Header.Get("Authorization"), " ")
 
@@ -146,7 +143,7 @@ func AuthToken() gin.HandlerFunc {
 		token := hex.EncodeToString(hasher.Sum(nil))
 
 		ctx := context.Background()
-		if token, err := db.Redis.Get(ctx, "TOKEN:"+token).Result(); err != nil || token != "OK" {
+		if token, err := o.client.Get(ctx, "TOKEN:"+token).Result(); err != nil || token != "OK" {
 			helper.ErrHandler(c, http.StatusUnauthorized, err.Error())
 			go logs.SendLogs(&models.LogMessage{
 				Stat:    "ERR",
@@ -164,7 +161,7 @@ func AuthToken() gin.HandlerFunc {
 		// after request
 		if code := c.Writer.Status(); code == http.StatusOK || code == http.StatusCreated {
 			// Manially refresh token after each use
-			db.Redis.Del(ctx, "TOKEN:"+token)
+			o.client.Del(ctx, "TOKEN:"+token)
 			salt := strconv.Itoa(rand.Intn(1000000) + 5000)
 
 			go helper.RegenerateToken(salt + bearToken[1])

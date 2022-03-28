@@ -2,17 +2,14 @@ package models
 
 import (
 	"api/interfaces"
-	"context"
-	"fmt"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
 type Project struct {
 	ID        uint32    `gorm:"primaryKey" json:"id" xml:"id"`
-	CreatedAt time.Time `gorm:"default:CURRENT_DATE" json:"created_at" xml:"created_at" example:"2021-08-06"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at" xml:"created_at" example:"2021-08-06"`
 	Name      string    `gorm:"not null;unique" json:"name" xml:"name" example:"CodeRain"`
 	Title     string    `gorm:"not null" json:"title" xml:"title" example:"Code Rain"`
 	Flag      string    `json:"flag" xml:"flag" example:"js"`
@@ -33,22 +30,12 @@ func (*Project) TableName() string {
 	return "project"
 }
 
-func (c *Project) Migrate(db *gorm.DB, forced bool) {
+func (c *Project) Migrate(db *gorm.DB, forced bool) error {
 	if forced {
 		db.Migrator().DropTable(c)
 	}
-	db.AutoMigrate(c)
-}
 
-func (c *Project) Redis(db *gorm.DB, client *redis.Client) error {
-	var value int64
-	db.Model(c).Count(&value)
-
-	if err := client.Set(context.Background(), "nPROJECT", value, 0).Err(); err != nil {
-		return fmt.Errorf("[Redis] Error happed while setting value to Cache: %v", err)
-	}
-
-	return nil
+	return db.AutoMigrate(c)
 }
 
 type ProjectDto struct {

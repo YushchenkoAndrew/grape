@@ -2,18 +2,14 @@ package controllers
 
 import (
 	"api/config"
-	"api/db"
 	"api/helper"
 	"api/interfaces"
-	"api/logs"
 	m "api/models"
 	"api/service"
-	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type linkController struct {
@@ -196,16 +192,16 @@ func (o *linkController) UpdateOne(c *gin.Context) {
 		return
 	}
 
-	var model = m.Link{Name: body.Name, Link: body.Link, ID: uint32(id)}
-	if err := o.service.Update(&m.LinkQueryDto{ID: uint32(id)}, &model); err != nil {
+	models, err := o.service.Update(&m.LinkQueryDto{ID: uint32(id)}, &m.Link{Name: body.Name, Link: body.Link, ID: uint32(id)})
+	if err != nil {
 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	helper.ResHandler(c, http.StatusCreated, &m.Success{
 		Status: "OK",
-		Result: []m.Link{model},
-		Items:  1,
+		Result: models,
+		Items:  len(models),
 	})
 }
 
@@ -239,12 +235,12 @@ func (o *linkController) UpdateAll(c *gin.Context) {
 		return
 	}
 
-	if err := o.service.Update(&query, &m.Link{Name: body.Name, Link: body.Link}); err != nil {
+	models, err := o.service.Update(&query, &m.Link{Name: body.Name, Link: body.Link})
+	if err != nil {
 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	models, _ := o.service.Read(&query)
 	helper.ResHandler(c, http.StatusCreated, &m.Success{
 		Status: "OK",
 		Result: models,
@@ -266,46 +262,24 @@ func (o *linkController) UpdateAll(c *gin.Context) {
 // @failure 429 {object} m.Error
 // @failure 500 {object} m.Error
 // @Router /link/{id} [delete]
-func (*linkController) DeleteOne(c *gin.Context) {
-	var id int
-	if !helper.GetID(c, &id) {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id params")
+func (o *linkController) DeleteOne(c *gin.Context) {
+	var id = helper.GetID(c)
+
+	if id == 0 {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
 		return
 	}
 
-	result := db.DB.Where("id = ?", id).Delete(&m.Link{})
-	if result.RowsAffected != 1 {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id param")
-		return
-	}
-
-	if result.Error != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
-		go logs.DefaultLog("/controllers/link.go", result.Error)
-		return
-	}
-
-	go db.FlushValue("LINK")
-
-	ctx := context.Background()
-	items, err := db.Redis.Get(ctx, "nLINK").Int64()
+	items, err := o.service.Delete(&m.LinkQueryDto{ID: uint32(id)})
 	if err != nil {
-		items = -1
-		go (&m.Link{}).Redis(db.DB, db.Redis)
-		go logs.DefaultLog("/controllers/link.go", err.Error())
-	}
-
-	if items == 0 {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect request")
+		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	go db.Redis.Decr(ctx, "nLINK")
 	helper.ResHandler(c, http.StatusOK, &m.Success{
-		Status:     "OK",
-		Result:     []string{},
-		Items:      result.RowsAffected,
-		TotalItems: items,
+		Status: "OK",
+		Result: []string{},
+		Items:  items,
 	})
 }
 
@@ -326,41 +300,21 @@ func (*linkController) DeleteOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /link [delete]
 func (o *linkController) DeleteAll(c *gin.Context) {
-	var sKeys string
-	var result *gorm.DB
-
-	if result, sKeys = o.filterQuery(c); sKeys == "" {
-		helper.ErrHandler(c, http.StatusBadRequest, "Query not founded")
+	var query = m.LinkQueryDto{}
+	if err := c.ShouldBindQuery(&query); err != nil {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
 	}
 
-	result = result.Delete(&m.Link{})
-	if result.Error != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
-		go logs.DefaultLog("/controllers/link.go", result.Error)
-		return
-	}
-
-	go db.FlushValue("LINK")
-
-	ctx := context.Background()
-	items, err := db.Redis.Get(ctx, "nLINK").Int64()
+	items, err := o.service.Delete(&query)
 	if err != nil {
-		items = -1
-		go (&m.Link{}).Redis(db.DB, db.Redis)
-		go logs.DefaultLog("/controllers/link.go", err.Error())
-	}
-
-	if items == 0 {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect request")
+		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	go helper.RedisSub(&ctx, "nLiNK", result.RowsAffected)
 	helper.ResHandler(c, http.StatusOK, &m.Success{
-		Status:     "OK",
-		Result:     []string{},
-		Items:      result.RowsAffected,
-		TotalItems: items - result.RowsAffected,
+		Status: "OK",
+		Result: []string{},
+		Items:  items,
 	})
 }

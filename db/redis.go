@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 
 	"api/config"
 	"api/logs"
@@ -33,15 +32,15 @@ func ConnectToRedis() *redis.Client {
 	return client
 }
 
-func FlushValue(client *redis.Client, key string) {
-	ctx := context.Background()
-	iter := client.Scan(ctx, 0, fmt.Sprintf("%s:*", key), 0).Iterator()
+// func FlushValue(client *redis.Client, key string) {
+// 	ctx := context.Background()
+// 	iter := client.Scan(ctx, 0, fmt.Sprintf("%s:*", key), 0).Iterator()
 
-	for iter.Next(ctx) {
-		go client.Del(ctx, iter.Val())
-	}
+// 	for iter.Next(ctx) {
+// 		go client.Del(ctx, iter.Val())
+// 	}
 
-	if err := iter.Err(); err != nil {
-		fmt.Println("[Redis] Error happed while setting interating through keys")
-	}
-}
+// 	if err := iter.Err(); err != nil {
+// 		fmt.Println("[Redis] Error happed while setting interating through keys")
+// 	}
+// }

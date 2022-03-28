@@ -13,35 +13,34 @@ import (
 	"gorm.io/gorm"
 )
 
-type LinkService struct {
+type FileService struct {
 	key string
 
 	db     *gorm.DB
 	client *redis.Client
 }
 
-func NewLinkService(db *gorm.DB, client *redis.Client) *LinkService {
-	return &LinkService{key: "LINK", db: db, client: client}
+func NewFileService(db *gorm.DB, client *redis.Client) *FileService {
+	return &FileService{key: "FILE", db: db, client: client}
 }
 
-func (c *LinkService) isExist(model *m.Link) bool {
-	res := c.db.Where("project_id = ? AND name = ?", model.ProjectID, model.Name).Find(&model)
+func (c *FileService) isExist(model *m.File) bool {
+	res := c.db.Where("project_id = ? AND name = ? AND role = ? AND path = ? AND type = ?", model.ProjectID, model.Name, model.Role, model.Path, model.Type).Find(&model)
 	return !(res.RowsAffected == 0)
 }
 
-func (c *LinkService) precache(model *m.Link) {
+func (c *FileService) precache(model *m.File) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
-	helper.Precache(c.client, c.key, fmt.Sprintf("PROJECT_ID=%dNAME=%s", model.ProjectID, model.Name), model)
 }
 
-func (c *LinkService) recache(model *m.Link, delete bool) {
+func (c *FileService) recache(model *m.File, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PATH=%s*", model.Path), fmt.Sprintf("ROLE=%s*", model.Role), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string) interface{} {
 			if !strings.HasPrefix(str, "[") {
-				var data m.Link
+				var data m.File
 				json.Unmarshal([]byte(str), &data)
 				if !delete {
 					return *model
@@ -50,8 +49,8 @@ func (c *LinkService) recache(model *m.Link, delete bool) {
 				return nil
 			}
 
-			var data []m.Link
-			var result []m.Link
+			var data []m.File
+			var result []m.File
 
 			json.Unmarshal([]byte(str), &data)
 			for _, item := range data {
@@ -72,7 +71,7 @@ func (c *LinkService) recache(model *m.Link, delete bool) {
 	}
 }
 
-func (c *LinkService) query(dto *m.LinkQueryDto, client *gorm.DB) (*gorm.DB, string) {
+func (c *FileService) query(dto *m.FileQueryDto, client *gorm.DB) (*gorm.DB, string) {
 	var suffix = ""
 
 	if dto.ID > 0 {
@@ -90,6 +89,16 @@ func (c *LinkService) query(dto *m.LinkQueryDto, client *gorm.DB) (*gorm.DB, str
 		client = client.Where("name = ?", dto.Name)
 	}
 
+	if len(dto.Role) > 0 {
+		suffix += fmt.Sprintf("ROLE=%s", dto.Role)
+		client = client.Where("role = ?", dto.Role)
+	}
+
+	if len(dto.Path) > 0 {
+		suffix += fmt.Sprintf("PATH=%s", dto.Path)
+		client = client.Where("path = ?", dto.Path)
+	}
+
 	if dto.Page >= 0 {
 		suffix += fmt.Sprintf("PAGE=%d", dto.Page)
 		client = client.Offset(dto.Page * config.ENV.Items)
@@ -103,7 +112,7 @@ func (c *LinkService) query(dto *m.LinkQueryDto, client *gorm.DB) (*gorm.DB, str
 	return client, suffix
 }
 
-func (c *LinkService) Create(model *m.Link) error {
+func (c *FileService) Create(model *m.File) error {
 	// Check if such project_id exists
 	if err, rows := helper.Getcache(c.db.Where("id = ?", model.ProjectID), c.client, "PROJECT", fmt.Sprintf("ID=%d", model.ProjectID), &[]m.Project{}); err != nil || rows == 0 {
 		return fmt.Errorf("Requested project_id=%d do not exist", model.ProjectID)
@@ -113,7 +122,7 @@ func (c *LinkService) Create(model *m.Link) error {
 	var existed = model.Copy()
 
 	if c.isExist(existed) {
-		if res = c.db.Model(&m.Link{}).Where("id = ?", existed.ID).Updates(model); res.Error == nil {
+		if res = c.db.Model(&m.File{}).Where("id = ?", existed.ID).Updates(model); res.Error == nil {
 			c.recache(existed.Fill(model), false)
 		}
 	} else if res = c.db.Create(model); res.Error == nil {
@@ -128,26 +137,26 @@ func (c *LinkService) Create(model *m.Link) error {
 	return nil
 }
 
-func (c *LinkService) Read(query *m.LinkQueryDto) ([]m.Link, error) {
-	var model []m.Link
+func (c *FileService) Read(query *m.FileQueryDto) ([]m.File, error) {
+	var model []m.File
 	client, suffix := c.query(query, c.db)
 
 	err, _ := helper.Getcache(client.Order("updated_at DESC"), c.client, c.key, suffix, &model)
 	return model, err
 }
 
-func (c *LinkService) Update(query *m.LinkQueryDto, model *m.Link) ([]m.Link, error) {
+func (c *FileService) Update(query *m.FileQueryDto, model *m.File) ([]m.File, error) {
 	var res *gorm.DB
 	client, suffix := c.query(query, c.db)
 
-	var models = []m.Link{}
+	var models = []m.File{}
 	if err, rows := helper.Getcache(client, c.client, c.key, suffix, &models); err != nil || rows == 0 {
 		return nil, fmt.Errorf("Requested id=%d do not exist", model.ID)
 	}
 
-	client, _ = c.query(query, c.db.Model(&m.Link{}))
+	client, _ = c.query(query, c.db.Model(&m.File{}))
 	if res = client.Updates(model); res.Error != nil || res.RowsAffected == 0 {
-		go logs.DefaultLog("/controllers/link.go", res.Error)
+		go logs.DefaultLog("/controllers/file.go", res.Error)
 		return nil, fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}
 
@@ -158,8 +167,8 @@ func (c *LinkService) Update(query *m.LinkQueryDto, model *m.Link) ([]m.Link, er
 	return c.Read(query)
 }
 
-func (c *LinkService) Delete(query *m.LinkQueryDto) (int, error) {
-	var models []m.Link
+func (c *FileService) Delete(query *m.FileQueryDto) (int, error) {
+	var models []m.File
 	client, suffix := c.query(query, c.db)
 
 	if err, _ := helper.Getcache(client, c.client, c.key, suffix, &models); err != nil {
@@ -170,5 +179,5 @@ func (c *LinkService) Delete(query *m.LinkQueryDto) (int, error) {
 		c.recache(&model, true)
 	}
 
-	return len(models), client.Delete(&m.Link{}).Error
+	return len(models), client.Delete(&m.File{}).Error
 }

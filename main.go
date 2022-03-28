@@ -4,7 +4,7 @@ import (
 	"api/config"
 	"api/db"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
 	"api/models"
 	"api/routes"
 
@@ -50,12 +50,12 @@ func main() {
 	})
 
 	r := gin.Default()
-	rg := r.Group(config.ENV.BasePath, middleware.Limit())
+	rg := r.Group(config.ENV.BasePath, m.NewMiddleware(client).Limit())
 	router := routes.NewIndexRouter(rg, &[]interfaces.Router{
-		// routes.NewSwaggerRouter(rg),
+		routes.NewSwaggerRouter(rg),
 		// routes.NewWorldRouter(rg),
 		// routes.NewProjectRouter(rg),
-		// routes.NewFileRouter(rg),
+		routes.NewFileRouter(rg, db, client),
 		routes.NewLinkRouter(rg, db, client),
 		// routes.NewBotRouter(rg),
 

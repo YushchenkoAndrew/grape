@@ -2,11 +2,10 @@ package helper
 
 import (
 	"api/config"
-	"crypto/md5"
+	"strings"
 
 	// "api/db"
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -16,24 +15,22 @@ import (
 )
 
 func Precache(client *redis.Client, prefix, suffix string, model interface{}) {
-	hasher := md5.New()
-	hasher.Write([]byte(suffix))
-	var key = fmt.Sprintf("%s:%s", prefix, hex.EncodeToString(hasher.Sum(nil)))
+	if model == nil {
+		client.Del(context.Background(), fmt.Sprintf("%s:%s", prefix, suffix))
+		return
+	}
 
 	// Encode json to strO
 	if str, err := json.Marshal(model); err == nil {
-		go client.Set(context.Background(), key, str, time.Duration(config.ENV.LiveTime)*time.Second)
+		client.Set(context.Background(), fmt.Sprintf("%s:%s", prefix, suffix), str, time.Duration(config.ENV.LiveTime)*time.Second)
 	}
 }
 
 func Getcache(db *gorm.DB, client *redis.Client, prefix, suffix string, model interface{}) (error, int64) {
-	hasher := md5.New()
-	hasher.Write([]byte(suffix))
-	var key = fmt.Sprintf("%s:%s", prefix, hex.EncodeToString(hasher.Sum(nil)))
-
 	ctx := context.Background()
 
 	// Check if cache have requested data
+	var key = fmt.Sprintf("%s:%s", prefix, suffix)
 	if data, err := client.Get(ctx, key).Result(); err == nil {
 		json.Unmarshal([]byte(data), model)
 		go client.Expire(ctx, key, time.Duration(config.ENV.LiveTime)*time.Second)
@@ -70,9 +67,33 @@ func Getcache(db *gorm.DB, client *redis.Client, prefix, suffix string, model in
 // 	return nil
 // }
 
-func Delcache(client *redis.Client, prefix, suffix string, model interface{}) {
-	hasher := md5.New()
-	hasher.Write([]byte(suffix))
+func Recache(client *redis.Client, prefix, suffix string, revalue func(string) interface{}) error {
+	ctx := context.Background()
+	iter := client.Scan(ctx, 0, fmt.Sprintf("%s:%s", prefix, suffix), 0).Iterator()
 
-	go client.Del(context.Background(), fmt.Sprintf("%s:%s", prefix, hex.EncodeToString(hasher.Sum(nil))))
+	for iter.Next(ctx) {
+		data, _ := client.Get(ctx, iter.Val()).Result()
+		Precache(client, prefix, strings.TrimLeft(iter.Val(), prefix+":"), revalue(data))
+	}
+
+	if err := iter.Err(); err != nil {
+		return fmt.Errorf("Error happed while setting interating through keys: %v", err)
+	}
+
+	return nil
+}
+
+func Delcache(client *redis.Client, prefix, suffix string) error {
+	ctx := context.Background()
+	iter := client.Scan(ctx, 0, fmt.Sprintf("%s:%s", prefix, suffix), 0).Iterator()
+
+	for iter.Next(ctx) {
+		go client.Del(ctx, iter.Val())
+	}
+
+	if err := iter.Err(); err != nil {
+		return fmt.Errorf("Error happed while setting interating through keys: %v", err)
+	}
+
+	return nil
 }
