@@ -123,12 +123,17 @@ func TestFileUpdate(t *testing.T) {
 		{
 			name:  "Update file record by ID",
 			query: m.FileQueryDto{ID: FILE_ID},
-			model: m.File{Name: "test.txt", Type: "text/plain", Role: "src", Path: ""},
+			model: m.File{Name: "test.txt", Type: "text/plain", Role: "src", Path: "/test"},
 		},
 		{
 			name:  "Update multiple files record by query",
 			query: m.FileQueryDto{Role: "src", ProjectID: 1},
-			model: m.File{Name: "index.json", Type: "application/json"},
+			model: m.File{Name: "index.json", Type: "application/js"},
+		},
+		{
+			name:  "Update multiple files record by query",
+			query: m.FileQueryDto{ProjectID: 1},
+			model: m.File{Type: "application/json"},
 		},
 		{
 			name:  "Update not existed record",
@@ -147,8 +152,11 @@ func TestFileUpdate(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tc.model.Name, models[0].Name)
 			require.Equal(t, tc.model.Type, models[0].Type)
+
+			if tc.model.Name != "" {
+				require.Equal(t, tc.model.Name, models[0].Name)
+			}
 
 			if tc.model.Role != "" {
 				require.Equal(t, tc.model.Role, models[0].Role)
@@ -161,125 +169,124 @@ func TestFileUpdate(t *testing.T) {
 	}
 }
 
-// func TestCheckCache(t *testing.T) {
-// 	var tests = []struct {
-// 		name     string
-// 		query    m.LinkQueryDto
-// 		expected []m.Link
-// 	}{
-// 		{
-// 			name:     "Check if cached Link record by ID was updated",
-// 			query:    m.LinkQueryDto{ID: ID},
-// 			expected: []m.Link{{Name: "main", Link: "test", ProjectID: 1}},
-// 		},
-// 		{
-// 			name:     "Check if cached Link record by name & project_id was updated",
-// 			query:    m.LinkQueryDto{Name: "main", ProjectID: 1},
-// 			expected: []m.Link{{Name: "main", Link: "test", ProjectID: 1}},
-// 		},
-// 		{
-// 			name:     "Check if cached Link record with pagination & project_id was updated",
-// 			query:    m.LinkQueryDto{ProjectID: 1, Page: 0},
-// 			expected: []m.Link{{Name: "main", Link: "test2", ProjectID: 1}, {Name: "main2", Link: "test", ProjectID: 1}},
-// 		},
-// 		{
-// 			name:     "Check if cached Link record by project_id was updated",
-// 			query:    m.LinkQueryDto{ProjectID: 1},
-// 			expected: []m.Link{{Name: "main", Link: "test", ProjectID: 1}, {Name: "main2", Link: "test", ProjectID: 1}},
-// 		},
-// 	}
+func TestFileCheckCache(t *testing.T) {
+	var tests = []struct {
+		name     string
+		query    m.FileQueryDto
+		expected []m.File
+	}{
+		{
+			name:     "Check if cached File record by ID was updated",
+			query:    m.FileQueryDto{ID: FILE_ID},
+			expected: []m.File{{Name: "index.json", Type: "application/json", Role: "src", Path: "/test"}},
+		},
+		{
+			name:     "Check if cached File record by role & project_id was updated",
+			query:    m.FileQueryDto{Role: "assets", ProjectID: 1},
+			expected: []m.File{{Name: "test.txt", Type: "application/json", Role: "assets", Path: ""}},
+		},
+		{
+			name:     "Check if cached File record with pagination & project_id was updated",
+			query:    m.FileQueryDto{ProjectID: 1, Page: 0},
+			expected: []m.File{{Name: "index.json", Type: "application/json", Role: "src", Path: "/test"}, {Name: "test.txt", Type: "application/json", Role: "assets", Path: ""}},
+		},
+		{
+			name:     "Check if cached File record by project_id was updated",
+			query:    m.FileQueryDto{ProjectID: 1},
+			expected: []m.File{{Name: "index.json", Type: "application/json", Role: "src", Path: "/test"}, {Name: "test.txt", Type: "application/json", Role: "assets", Path: ""}},
+		},
+	}
 
-// 	for _, tc := range tests {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			models, err := s.Read(&tc.query)
-// 			require.NoError(t, err)
-// 			// require.Equal(t, len(tc.expected), len(models))
-// 			if len(models) != 1 {
-// 				return
-// 			}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			models, err := file.Read(&tc.query)
+			require.NoError(t, err)
+			require.Equal(t, len(tc.expected), len(models))
 
-// 			for _, model := range tc.expected {
-// 				require.Equal(t, model.Name, model.Name)
-// 				require.Equal(t, model.Link, model.Link)
-// 			}
-// 		})
-// 	}
+			for i, expected := range tc.expected {
+				require.Equal(t, expected.Name, models[i].Name)
+				require.Equal(t, expected.Type, models[i].Type)
+				require.Equal(t, expected.Role, models[i].Role)
+				require.Equal(t, expected.Path, models[i].Path)
+			}
+		})
+	}
 
-// }
+}
 
-// func TestDelete(t *testing.T) {
-// 	var tests = []struct {
-// 		name     string
-// 		query    m.LinkQueryDto
-// 		expected int
-// 	}{
-// 		{
-// 			name:     "Delete Link record by ID",
-// 			query:    m.LinkQueryDto{ID: ID},
-// 			expected: 1,
-// 		},
-// 		{
-// 			name:     "Delete Link record by name & project_id",
-// 			query:    m.LinkQueryDto{Name: "main", ProjectID: 1},
-// 			expected: 0,
-// 		},
-// 		{
-// 			name:     "Delete Link record by project_id",
-// 			query:    m.LinkQueryDto{ProjectID: 1},
-// 			expected: 1,
-// 		},
-// 	}
+func TestFileDelete(t *testing.T) {
+	var tests = []struct {
+		name     string
+		query    m.FileQueryDto
+		expected int
+	}{
+		{
+			name:     "Delete File record by ID",
+			query:    m.FileQueryDto{ID: FILE_ID},
+			expected: 1,
+		},
+		{
+			name:     "Delete File record by role & project_id",
+			query:    m.FileQueryDto{Role: "src", ProjectID: 1},
+			expected: 0,
+		},
+		{
+			name:     "Delete File record by project_id",
+			query:    m.FileQueryDto{ProjectID: 1},
+			expected: 1,
+		},
+	}
 
-// 	for _, tc := range tests {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			items, err := s.Delete(&tc.query)
-// 			require.NoError(t, err)
-// 			require.Equal(t, tc.expected, items)
-// 		})
-// 	}
-// }
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			items, err := file.Delete(&tc.query)
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, items)
+		})
+	}
+}
 
-// func TestFinalCacheState(t *testing.T) {
-// 	var tests = []struct {
-// 		name     string
-// 		query    m.LinkQueryDto
-// 		expected int
-// 	}{
-// 		{
-// 			name:     "Check if values was deleted correctly by ID",
-// 			query:    m.LinkQueryDto{ID: ID},
-// 			expected: 0,
-// 		},
-// 		{
-// 			name:     "Check if values was deleted correctly by name & project_id",
-// 			query:    m.LinkQueryDto{Name: "main", ProjectID: 1},
-// 			expected: 0,
-// 		},
-// 		{
-// 			name:     "Check if values was deleted correctly with pagination & query filter",
-// 			query:    m.LinkQueryDto{ProjectID: 1, Page: 0},
-// 			expected: 0,
-// 		},
-// 		{
-// 			name:     "Check if values was deleted correctly with pagination (outside border) & query filter",
-// 			query:    m.LinkQueryDto{Name: "main", ProjectID: 1, Page: 1},
-// 			expected: 0,
-// 		},
-// 		{
-// 			name:     "Check if values was deleted correctly by project_id",
-// 			query:    m.LinkQueryDto{ProjectID: 1},
-// 			expected: 0,
-// 		},
-// 	}
+func TestFinalCacheState(t *testing.T) {
+	var tests = []struct {
+		name     string
+		query    m.FileQueryDto
+		expected int
+	}{
+		{
+			name:     "Check if values was deleted correctly by ID",
+			query:    m.FileQueryDto{ID: FILE_ID},
+			expected: 0,
+		},
+		{
+			name:     "Check if values was deleted correctly by role & project_id",
+			query:    m.FileQueryDto{Role: "src", ProjectID: 1},
+			expected: 0,
+		},
+		{
+			name:     "Check if values was deleted correctly with pagination & query filter",
+			query:    m.FileQueryDto{ProjectID: 1, Page: 0},
+			expected: 0,
+		},
+		{
+			name:     "Check if values was deleted correctly with pagination (outside border) & query filter",
+			query:    m.FileQueryDto{Role: "src", ProjectID: 1, Page: 1},
+			expected: 0,
+		},
+		{
+			name:     "Check if values was deleted correctly by project_id",
+			query:    m.FileQueryDto{ProjectID: 1},
+			expected: 0,
+		},
+	}
 
-// 	for _, tc := range tests {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			models, err := s.Read(&tc.query)
-// 			require.NoError(t, err)
-// 			require.Equal(t, tc.expected, len(models))
-// 		})
-// 	}
-// }
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			models, err := file.Read(&tc.query)
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, len(models))
+		})
+	}
+}
 
 func init() {
 	config.NewConfig([]func() interfaces.Config{
