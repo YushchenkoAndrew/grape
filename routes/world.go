@@ -3,7 +3,7 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,7 +17,7 @@ type worldRouter struct {
 func NewWorldRouter(rg *gin.RouterGroup) interfaces.Router {
 	return &worldRouter{
 		route: rg.Group(("/world")),
-		auth:  rg.Group("/world", middleware.Auth()),
+		auth:  rg.Group("/world", m.GetMiddleware().Auth()),
 		world: c.NewWorldController(),
 	}
 }

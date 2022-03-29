@@ -80,10 +80,10 @@ func (c *File) Fill(updated *File) *File {
 
 type FileDto struct {
 	// ID        uint32    `json:"id" xml:"id"`
-	Name string `json:"name" xml:"name"`
-	Path string `json:"path" xml:"path"`
-	Type string `json:"type" xml:"type"`
-	Role string `json:"role" xml:"role"`
+	Name string `json:"name,omitempty" xml:"name,omitempty"`
+	Path string `json:"path,omitempty" xml:"path,omitempty"`
+	Type string `json:"type,omitempty" xml:"type,omitempty"`
+	Role string `json:"role,omitempty" xml:"role,omitempty"`
 }
 
 func (c *FileDto) IsOK() bool {
@@ -91,12 +91,12 @@ func (c *FileDto) IsOK() bool {
 }
 
 type FileQueryDto struct {
-	ID        uint32 `form:"id"`
-	Name      string `form:"name" example:"main"`
-	Role      string `form:"role" example:"src"`
-	Path      string `form:"path" example:"/test"`
-	ProjectID uint32 `form:"project_id" example:"1"`
+	ID        uint32 `form:"id,omitempty"`
+	Name      string `form:"name,omitempty" example:"main"`
+	Role      string `form:"role,omitempty" example:"src"`
+	Path      string `form:"path,omitempty" example:"/test"`
+	ProjectID uint32 `form:"project_id,omitempty" example:"1"`
 
-	Page  int `form:"page" example:"1"`
-	Limit int `form:"limit" example:"10"`
+	Page  int `form:"page,omitempty" example:"1"`
+	Limit int `form:"limit,omitempty" example:"10"`
 }

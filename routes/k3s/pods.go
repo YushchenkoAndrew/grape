@@ -4,7 +4,7 @@ import (
 	c "api/controllers/k3s"
 	"api/interfaces"
 	"api/interfaces/k3s"
-	"api/middleware"
+	m "api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +25,7 @@ func NewPodsRouterFactory(handlers []func(*gin.RouterGroup) interfaces.Router) f
 		}
 
 		return &podsRouter{
-			auth:      rg.Group("/pods", middleware.Auth()),
+			auth:      rg.Group("/pods", m.GetMiddleware().Auth()),
 			pods:      c.NewPodsController(),
 			subRoutes: subRoutes,
 		}

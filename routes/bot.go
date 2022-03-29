@@ -3,7 +3,7 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +15,7 @@ type botRouter struct {
 
 func NewBotRouter(rg *gin.RouterGroup) interfaces.Router {
 	return &botRouter{
-		auth: rg.Group("/bot", middleware.Auth()),
+		auth: rg.Group("/bot", m.GetMiddleware().Auth()),
 		bot:  c.NewBotController(),
 	}
 }

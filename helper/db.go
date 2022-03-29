@@ -16,13 +16,13 @@ import (
 
 func Precache(client *redis.Client, prefix, suffix string, model interface{}) {
 	if model == nil {
-		client.Del(context.Background(), fmt.Sprintf("%s:%s", prefix, suffix))
+		go client.Del(context.Background(), fmt.Sprintf("%s:%s", prefix, suffix))
 		return
 	}
 
 	// Encode json to strO
 	if str, err := json.Marshal(model); err == nil {
-		client.Set(context.Background(), fmt.Sprintf("%s:%s", prefix, suffix), str, time.Duration(config.ENV.LiveTime)*time.Second)
+		go client.Set(context.Background(), fmt.Sprintf("%s:%s", prefix, suffix), str, time.Duration(config.ENV.LiveTime)*time.Second)
 	}
 }
 
@@ -73,7 +73,7 @@ func Recache(client *redis.Client, prefix, suffix string, revalue func(string) i
 
 	for iter.Next(ctx) {
 		data, _ := client.Get(ctx, iter.Val()).Result()
-		Precache(client, prefix, strings.TrimLeft(iter.Val(), prefix+":"), revalue(data))
+		go Precache(client, prefix, strings.TrimLeft(iter.Val(), prefix+":"), revalue(data))
 	}
 
 	if err := iter.Err(); err != nil {

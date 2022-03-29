@@ -3,7 +3,7 @@ package k3s
 import (
 	c "api/controllers/k3s"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,7 +16,7 @@ type serviceRouter struct {
 func NewServiceRouterFactory() func(*gin.RouterGroup) interfaces.Router {
 	return func(rg *gin.RouterGroup) interfaces.Router {
 		return &serviceRouter{
-			auth:    rg.Group("/service", middleware.Auth()),
+			auth:    rg.Group("/service", m.GetMiddleware().Auth()),
 			service: c.NewServiceController(),
 		}
 	}

@@ -195,8 +195,8 @@ func (o *fileController) UpdateOne(c *gin.Context) {
 	var body m.FileDto
 	var id = helper.GetID(c)
 
-	if err := c.ShouldBind(&body); err != nil || !body.IsOK() || id == 0 {
-		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t, id: %t }", body.IsOK(), id != 0))
+	if err := c.ShouldBind(&body); err != nil || id == 0 {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
 		return
 	}
 
@@ -239,7 +239,7 @@ func (o *fileController) UpdateAll(c *gin.Context) {
 	}
 
 	var body m.FileDto
-	if err := c.ShouldBind(&body); err != nil || !body.IsOK() {
+	if err := c.ShouldBind(&body); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
 	}

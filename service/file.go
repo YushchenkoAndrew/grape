@@ -151,7 +151,7 @@ func (c *FileService) Update(query *m.FileQueryDto, model *m.File) ([]m.File, er
 
 	var models = []m.File{}
 	if err, rows := helper.Getcache(client, c.client, c.key, suffix, &models); err != nil || rows == 0 {
-		return nil, fmt.Errorf("Requested id=%d do not exist", model.ID)
+		return nil, fmt.Errorf("Requested model do not exist")
 	}
 
 	client, _ = c.query(query, c.db.Model(&m.File{}))

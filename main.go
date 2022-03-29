@@ -54,7 +54,7 @@ func main() {
 	router := routes.NewIndexRouter(rg, &[]interfaces.Router{
 		routes.NewSwaggerRouter(rg),
 		// routes.NewWorldRouter(rg),
-		// routes.NewProjectRouter(rg),
+		routes.NewProjectRouter(rg, db, client),
 		routes.NewFileRouter(rg, db, client),
 		routes.NewLinkRouter(rg, db, client),
 		// routes.NewBotRouter(rg),

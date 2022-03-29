@@ -3,7 +3,7 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,7 +24,7 @@ func NewInfoRouter(rg *gin.RouterGroup, handlers []func(*gin.RouterGroup) interf
 
 	return &infoRouter{
 		route:     route,
-		auth:      rg.Group("/info", middleware.Auth()),
+		auth:      rg.Group("/info", m.GetMiddleware().Auth()),
 		info:      c.NewInfoController(),
 		subRoutes: subRoutes,
 	}

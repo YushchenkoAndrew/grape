@@ -3,7 +3,7 @@ package k3s
 import (
 	c "api/controllers/k3s"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,7 +16,7 @@ type namespaceRouter struct {
 func NewNamespaceRouterFactory() func(*gin.RouterGroup) interfaces.Router {
 	return func(rg *gin.RouterGroup) interfaces.Router {
 		return &namespaceRouter{
-			auth:      rg.Group("/namespace", middleware.Auth()),
+			auth:      rg.Group("/namespace", m.GetMiddleware().Auth()),
 			namespace: c.NewNamespaceController(),
 		}
 	}

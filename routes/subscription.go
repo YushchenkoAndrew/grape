@@ -3,7 +3,7 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +15,7 @@ type subscriptionRouter struct {
 
 func NewSubscribeRouter(rg *gin.RouterGroup) interfaces.Router {
 	return &subscriptionRouter{
-		auth:         rg.Group("/subscription", middleware.Auth()),
+		auth:         rg.Group("/subscription", m.GetMiddleware().Auth()),
 		subscription: c.NewSubscriptionController(),
 	}
 }

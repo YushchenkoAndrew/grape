@@ -3,7 +3,7 @@ package pods
 import (
 	c "api/controllers/k3s/pods"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,8 +17,8 @@ type metricsRouter struct {
 func NewMetricsRouterFactory() func(*gin.RouterGroup) interfaces.Router {
 	return func(rg *gin.RouterGroup) interfaces.Router {
 		return &metricsRouter{
-			auth:      rg.Group("/metrics", middleware.Auth()),
-			authToken: rg.Group("/metrics", middleware.AuthToken()),
+			auth:      rg.Group("/metrics", m.GetMiddleware().Auth()),
+			authToken: rg.Group("/metrics", m.GetMiddleware().AuthToken()),
 			metrics:   c.NewMetricsController(),
 		}
 	}

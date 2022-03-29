@@ -3,7 +3,7 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,7 +22,7 @@ func NewK3sRouter(rg *gin.RouterGroup, handlers []func(*gin.RouterGroup) interfa
 	}
 
 	return &k3sRouter{
-		auth:      rg.Group("/k3s", middleware.Auth()),
+		auth:      rg.Group("/k3s", m.GetMiddleware().Auth()),
 		k3s:       c.NewK3sController(),
 		subRoutes: subRoutes,
 	}

@@ -4,6 +4,8 @@ import (
 	"api/config"
 	"crypto/md5"
 	"encoding/hex"
+	"math/rand"
+	"strconv"
 )
 
 func ValidateStr(str1 string, str2 string) (equal bool) {
@@ -36,4 +38,11 @@ func RegenerateToken(token string) {
 	hasher.Write([]byte(result))
 
 	// db.Redis.Set(context.Background(), "TOKEN:"+hex.EncodeToString(hasher.Sum(nil)), "OK", 0)
+}
+
+func BotToken() (string, string) {
+	hasher := md5.New()
+	salt := strconv.Itoa(rand.Intn(1000000) + 5000)
+	hasher.Write([]byte(salt + config.ENV.BotKey))
+	return salt, hex.EncodeToString(hasher.Sum(nil))
 }

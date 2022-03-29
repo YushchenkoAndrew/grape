@@ -68,8 +68,8 @@ func (c *Link) Fill(updated *Link) *Link {
 
 type LinkDto struct {
 	// ID        uint32    `json:"id" xml:"id"`
-	Name string `json:"name" xml:"name"`
-	Link string `json:"link" xml:"link"`
+	Name string `json:"name,omitempty" xml:"name,omitempty"`
+	Link string `json:"link,omitempty" xml:"link,omitempty"`
 }
 
 func (c *LinkDto) IsOK() bool {
@@ -77,12 +77,12 @@ func (c *LinkDto) IsOK() bool {
 }
 
 type LinkQueryDto struct {
-	ID        uint32 `form:"id"`
-	Name      string `form:"name" example:"main"`
-	ProjectID uint32 `form:"project_id" example:"1"`
+	ID        uint32 `form:"id,omitempty"`
+	Name      string `form:"name,omitempty" example:"main"`
+	ProjectID uint32 `form:"project_id,omitempty" example:"1"`
 
-	Page  int `form:"page" example:"1"`
-	Limit int `form:"limit" example:"10"`
+	Page  int `form:"page,omitempty" example:"1"`
+	Limit int `form:"limit,omitempty" example:"10"`
 	// UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at" xml:"updated_at" example:"2021-08-27T16:17:53.119571+03:00"`
 	// Link      string    `form:"link" example:"https://github.com/YushchenkoAndrew/template"`
 }
