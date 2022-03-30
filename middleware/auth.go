@@ -6,48 +6,13 @@ import (
 	"api/logs"
 	"api/models"
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
-	"math/rand"
 	"net/http"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/twinj/uuid"
 )
-
-func (*Middleware) CreateToken(token *models.Auth) (err error) {
-	token.AccessUUID = uuid.NewV4().String()
-	token.RefreshUUID = uuid.NewV4().String()
-
-	token.AccessExpire = time.Now().Add(time.Minute * 15).Unix()
-	token.RefreshExpire = time.Now().Add(time.Hour * 24 * 7).Unix()
-
-	access := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.MapClaims{
-		"authorized":  true,
-		"access_uuid": token.AccessUUID,
-		"user_id":     config.ENV.ID,
-		"expire":      token.AccessExpire,
-	})
-
-	token.AccessToken, err = access.SignedString([]byte(config.ENV.AccessSecret))
-	if err != nil {
-		return
-	}
-
-	refresh := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"refresh_uuid": token.RefreshUUID,
-		"user_id":      config.ENV.ID,
-		"expire":       token.RefreshExpire,
-	})
-
-	token.RefreshToken, err = refresh.SignedString([]byte(config.ENV.RefreshSecret))
-	return
-}
 
 func (o *Middleware) Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -122,7 +87,7 @@ func (o *Middleware) Auth() gin.HandlerFunc {
 	}
 }
 
-func (o *Middleware) AuthToken() gin.HandlerFunc {
+func (o *Middleware) AuthToken(key string, model interface{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		bearToken := strings.Split(c.Request.Header.Get("Authorization"), " ")
 
@@ -137,13 +102,7 @@ func (o *Middleware) AuthToken() gin.HandlerFunc {
 			return
 		}
 
-		// NOTE: Simple way for solving redis injection vulnerabilities
-		hasher := md5.New()
-		hasher.Write([]byte(bearToken[1]))
-		token := hex.EncodeToString(hasher.Sum(nil))
-
-		ctx := context.Background()
-		if token, err := o.client.Get(ctx, "TOKEN:"+token).Result(); err != nil || token != "OK" {
+		if err, items := helper.Getcache(o.db.Where("MD5(CONCAT(SPLIT_PART(name, '$', 1), ?, ?)) = SPLIT_PART(name, '$', 2)", config.ENV.Pepper, bearToken[1]), o.client, key, fmt.Sprintf("TOKEN=%s", bearToken[1]), model); err != nil || items == 0 {
 			helper.ErrHandler(c, http.StatusUnauthorized, err.Error())
 			go logs.SendLogs(&models.LogMessage{
 				Stat:    "ERR",
@@ -159,13 +118,6 @@ func (o *Middleware) AuthToken() gin.HandlerFunc {
 		c.Next()
 
 		// after request
-		if code := c.Writer.Status(); code == http.StatusOK || code == http.StatusCreated {
-			// Manially refresh token after each use
-			o.client.Del(ctx, "TOKEN:"+token)
-			salt := strconv.Itoa(rand.Intn(1000000) + 5000)
 
-			go helper.RegenerateToken(salt + bearToken[1])
-			helper.ResHandler(c, http.StatusOK, salt)
-		}
 	}
 }

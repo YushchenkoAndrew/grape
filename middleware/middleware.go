@@ -1,15 +1,19 @@
 package middleware
 
-import "github.com/go-redis/redis/v8"
+import (
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
+)
 
 type Middleware struct {
+	db     *gorm.DB
 	client *redis.Client
 }
 
 var middleware Middleware
 
-func NewMiddleware(client *redis.Client) *Middleware {
-	middleware = Middleware{client: client}
+func NewMiddleware(db *gorm.DB, client *redis.Client) *Middleware {
+	middleware = Middleware{db: db, client: client}
 	return &middleware
 }
 

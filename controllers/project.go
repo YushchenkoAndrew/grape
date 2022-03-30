@@ -201,6 +201,10 @@ func (o *projectController) CreateAll(c *gin.Context) {
 
 	var models = []m.Project{}
 	for _, project := range body {
+		if !project.IsOK() {
+			continue
+		}
+
 		var model = m.Project{Name: project.Name, Title: project.Title, Flag: project.Flag, Desc: project.Desc, Note: project.Note}
 		if err := o.service.Project.Create(&model); err != nil {
 			helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
@@ -210,31 +214,27 @@ func (o *projectController) CreateAll(c *gin.Context) {
 		// Parse Link body. if some field is missing then just skip that
 		for _, item := range project.Links {
 			if !item.IsOK() {
-				continue
-			}
+				var link = m.Link{ProjectID: model.ID, Name: item.Name, Link: item.Link}
+				if err := o.service.Link.Create(&link); err != nil {
+					helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+					return
+				}
 
-			var link = m.Link{ProjectID: model.ID, Name: item.Name, Link: item.Link}
-			if err := o.service.Link.Create(&link); err != nil {
-				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-				return
+				model.Links = append(model.Links, link)
 			}
-
-			model.Links = append(model.Links, link)
 		}
 
 		// Parse File body. if some field is missing then just skip that
 		for _, item := range project.Files {
-			if !item.IsOK() {
-				continue
-			}
+			if item.IsOK() {
+				var file = m.File{ProjectID: model.ID, Name: item.Name, Path: item.Path, Type: item.Type, Role: item.Role}
+				if err := o.service.File.Create(&file); err != nil {
+					helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+					return
+				}
 
-			var file = m.File{ProjectID: model.ID, Name: item.Name, Path: item.Path, Type: item.Type, Role: item.Role}
-			if err := o.service.File.Create(&file); err != nil {
-				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-				return
+				model.Files = append(model.Files, file)
 			}
-
-			model.Files = append(model.Files, file)
 		}
 
 		models = append(models, model)
@@ -271,7 +271,7 @@ func (o *projectController) ReadOne(c *gin.Context) {
 		return
 	}
 
-	for i, _ := range models {
+	for i := 0; i < len(models); i++ {
 		models[i].Links, _ = o.service.Link.Read(&m.LinkQueryDto{ProjectID: models[i].ID})
 		models[i].Files, _ = o.service.File.Read(&m.FileQueryDto{ProjectID: models[i].ID})
 	}
@@ -323,7 +323,7 @@ func (o *projectController) ReadAll(c *gin.Context) {
 		return
 	}
 
-	for i, _ := range models {
+	for i := 0; i < len(models); i++ {
 		query.Link.ProjectID = models[i].ID
 		query.File.ProjectID = models[i].ID
 

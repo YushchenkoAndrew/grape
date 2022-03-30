@@ -5,49 +5,55 @@ import (
 	"api/helper"
 	"api/logs"
 	m "api/models"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math/rand"
-	"strconv"
 	"strings"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
+type FullSubscriptionService struct {
+	Cron         *CronService
+	Subscription *SubscriptionService
+}
+
+func NewFullSubscriptionService(db *gorm.DB, client *redis.Client) *FullSubscriptionService {
+	return &FullSubscriptionService{Cron: NewCronService(), Subscription: NewSubscriptionService(db, client)}
+}
+
 type SubscriptionService struct {
 	key string
 
 	db     *gorm.DB
 	client *redis.Client
-
-	cron *CronService
 }
 
 func NewSubscriptionService(db *gorm.DB, client *redis.Client) *SubscriptionService {
 	return &SubscriptionService{key: "SUBSCRIPTION", db: db, client: client}
 }
 
-func (c *SubscriptionService) isExist(model *m.Link) bool {
-	err, rows := helper.Getcache(c.db.Where("project_id = ? AND name = ?", model.ProjectID, model.Name), c.client, c.key, fmt.Sprintf("PROJECT_ID=%dNAME=%s", model.ProjectID, model.Name), model)
+func (c *SubscriptionService) isExist(model *m.Subscription) bool {
+	err, rows := helper.Getcache(c.db.Where("cron_id = ?", model.CronID), c.client, c.key, fmt.Sprintf("CRON_ID=%s", model.CronID), model)
 	return err != nil || rows != 0
 }
 
-func (c *SubscriptionService) precache(model *m.Link) {
+func (c *SubscriptionService) precache(model *m.Subscription) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
-	helper.Precache(c.client, c.key, fmt.Sprintf("PROJECT_ID=%dNAME=%s", model.ProjectID, model.Name), model)
+	helper.Precache(c.client, c.key, fmt.Sprintf("TOKEN=%s", model.Token), model)
+	helper.Precache(c.client, c.key, fmt.Sprintf("CRON_ID=%s", model.CronID), model)
 }
 
-func (c *SubscriptionService) recache(model *m.Link, delete bool) {
+func (c *SubscriptionService) recache(model *m.Subscription, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
+	helper.Delcache(c.client, c.key, fmt.Sprintf("TOKEN=%s*", model.Token))
+	helper.Delcache(c.client, c.key, fmt.Sprintf("CRON_ID=%s*", model.CronID))
 
 	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string) interface{} {
 			if !strings.HasPrefix(str, "[") {
-				var data m.Link
+				var data m.Subscription
 				json.Unmarshal([]byte(str), &data)
 				if !delete {
 					return *model
@@ -56,12 +62,12 @@ func (c *SubscriptionService) recache(model *m.Link, delete bool) {
 				return nil
 			}
 
-			var data []m.Link
-			var result []m.Link
+			var data []m.Subscription
+			var result []m.Subscription
 
 			json.Unmarshal([]byte(str), &data)
 			for _, item := range data {
-				if item.ID != model.ID {
+				if item.CronID != model.CronID {
 					result = append(result, item)
 				} else if !delete {
 					result = append(result, *model)
@@ -78,7 +84,7 @@ func (c *SubscriptionService) recache(model *m.Link, delete bool) {
 	}
 }
 
-func (c *SubscriptionService) query(dto *m.LinkQueryDto, client *gorm.DB) (*gorm.DB, string) {
+func (c *SubscriptionService) query(dto *m.SubscribeQueryDto, client *gorm.DB) (*gorm.DB, string) {
 	var suffix = ""
 
 	if dto.ID > 0 {
@@ -96,6 +102,11 @@ func (c *SubscriptionService) query(dto *m.LinkQueryDto, client *gorm.DB) (*gorm
 		client = client.Where("name = ?", dto.Name)
 	}
 
+	if len(dto.CronID) > 0 {
+		suffix += fmt.Sprintf("CRON_ID=%s", dto.CronID)
+		client = client.Where("cron_id = ?", dto.CronID)
+	}
+
 	if dto.Page >= 0 {
 		suffix += fmt.Sprintf("PAGE=%d", dto.Page)
 		client = client.Offset(dto.Page * config.ENV.Items)
@@ -110,85 +121,77 @@ func (c *SubscriptionService) query(dto *m.LinkQueryDto, client *gorm.DB) (*gorm
 }
 
 func (c *SubscriptionService) Create(model *m.Subscription) error {
-	handler, ok := config.GetOperation(model.Name)
-	if !ok {
-		return fmt.Errorf("Operation '%s' not founded", model.Name)
-	}
-
-	var path string
-
-	// FIXME:
-	// if path, err := helper.FormPathFromHandler(c, handler); err != nil {
-	// 	// helper.ErrHandler(c, http.StatusNotFound, err.Error())
-	// 	return err
-	// }
-
-	hasher := md5.New()
-	hasher.Write([]byte(strconv.Itoa(rand.Intn(1000000) + 5000)))
-	token := hex.EncodeToString(hasher.Sum(nil))
-
-	cron, err := c.cron.Create(&m.CronCreateDto{CronTime: model.CronTime, URL: config.ENV.URL + path, Method: handler.Method, Token: token})
-	if err != nil {
-		return err
-	}
-	// token := hex.EncodeToString(hasher.Sum(nil))
-
 	// Check if such project_id exists
-	// if err, rows := helper.Getcache(c.db.Where("id = ?", model.ProjectID), c.client, "PROJECT", fmt.Sprintf("ID=%d", model.ProjectID), &[]m.Project{}); err != nil || rows == 0 {
-	// 	return fmt.Errorf("Requested project_id=%d do not exist", model.ProjectID)
-	// }
+	if err, rows := helper.Getcache(c.db.Where("id = ?", model.ProjectID), c.client, "PROJECT", fmt.Sprintf("ID=%d", model.ProjectID), &[]m.Project{}); err != nil || rows == 0 {
+		return fmt.Errorf("Requested project_id=%d do not exist", model.ProjectID)
+	}
 
-	// var res *gorm.DB
-	// var existed = model.Copy()
+	var res *gorm.DB
+	var existed = model.Copy()
 
-	// if c.isExist(existed) {
-	// 	if res = c.db.Model(&m.Link{}).Where("id = ?", existed.ID).Updates(model); res.Error == nil {
-	// 		c.recache(existed.Fill(model), false)
-	// 	}
-	// } else if res = c.db.Create(model); res.Error == nil {
-	// 	c.precache(model)
-	// }
+	if c.isExist(existed) {
+		if res = c.db.Model(&m.Subscription{}).Where("id = ?", existed.ID).Updates(model); res.Error == nil {
+			c.recache(existed.Fill(model), false)
+		}
+	} else if res = c.db.Create(model); res.Error == nil {
+		c.precache(model)
+	}
 
-	// if res.Error != nil || res.RowsAffected == 0 {
-	// 	go logs.DefaultLog("/controllers/link.go", res.Error)
-	// 	return fmt.Errorf("Something unexpected happend: %v", res.Error)
-	// }
+	if res.Error != nil || res.RowsAffected == 0 {
+		go logs.DefaultLog("/controllers/subscription.go", res.Error)
+		return fmt.Errorf("Something unexpected happend: %v", res.Error)
+	}
 
 	return nil
 }
 
-func (c *SubscriptionService) Read(query *m.LinkQueryDto) ([]m.Link, error) {
-	var model []m.Link
+func (c *SubscriptionService) Read(query *m.SubscribeQueryDto) ([]m.Subscription, error) {
+	var model []m.Subscription
 	client, suffix := c.query(query, c.db)
 
-	err, _ := helper.Getcache(client.Order("updated_at DESC"), c.client, c.key, suffix, &model)
+	err, _ := helper.Getcache(client.Order("created_at DESC"), c.client, c.key, suffix, &model)
 	return model, err
 }
 
-func (c *SubscriptionService) Update(query *m.LinkQueryDto, model *m.Link) ([]m.Link, error) {
+func (c *SubscriptionService) Update(query *m.SubscribeQueryDto, model *m.Subscription) ([]m.Subscription, error) {
 	var res *gorm.DB
 	client, suffix := c.query(query, c.db)
 
-	var models = []m.Link{}
+	var models = []m.Subscription{}
 	if err, rows := helper.Getcache(client, c.client, c.key, suffix, &models); err != nil || rows == 0 {
 		return nil, fmt.Errorf("Requested model do not exist")
 	}
 
-	client, _ = c.query(query, c.db.Model(&m.Link{}))
+	existed := model.Copy()
+	for _, item := range models {
+		if model.CronID != "" && c.isExist(existed) && existed.ID != item.ID {
+			return nil, fmt.Errorf("Requested project with name=%s has already existed", model.Name)
+		}
+	}
+
+	client, _ = c.query(query, c.db.Model(&m.Subscription{}))
 	if res = client.Updates(model); res.Error != nil || res.RowsAffected == 0 {
-		go logs.DefaultLog("/controllers/link.go", res.Error)
+		go logs.DefaultLog("/controllers/subscription.go", res.Error)
 		return nil, fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}
 
-	for _, existed := range models {
-		c.recache(existed.Fill(model), false)
+	for _, item := range models {
+		c.recache(&item, existed.CronID != "" && existed.ID == 0)
+		c.recache(item.Fill(model), false)
+	}
+
+	// Check if Name is not empty, if so that for some safety magers
+	// lets replace this unique index with ID
+	if query.CronID != "" {
+		query.ID = models[0].ID
+		query.CronID = ""
 	}
 
 	return c.Read(query)
 }
 
-func (c *SubscriptionService) Delete(query *m.LinkQueryDto) (int, error) {
-	var models []m.Link
+func (c *SubscriptionService) Delete(query *m.SubscribeQueryDto) (int, error) {
+	var models []m.Subscription
 	client, suffix := c.query(query, c.db)
 
 	if err, _ := helper.Getcache(client, c.client, c.key, suffix, &models); err != nil {
@@ -199,5 +202,5 @@ func (c *SubscriptionService) Delete(query *m.LinkQueryDto) (int, error) {
 		c.recache(&model, true)
 	}
 
-	return len(models), client.Delete(&m.Link{}).Error
+	return len(models), client.Delete(&m.Subscription{}).Error
 }

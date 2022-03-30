@@ -3,25 +3,52 @@ package service
 import (
 	"api/config"
 	"api/helper"
-	"api/logs"
 	m "api/models"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/go-redis/redis/v8"
-	"gorm.io/gorm"
+	"strings"
 )
 
 type CronService struct {
 }
 
-func NewCronService(db *gorm.DB, client *redis.Client) *CronService {
+func NewCronService() *CronService {
 	return &CronService{}
 }
 
-func (c *CronService) Create(dto *m.CronCreateDto) (*m.CronEntity, error) {
+func (*CronService) query(dto *m.CronQueryDto) string {
+	var result []string
+
+	if len(dto.ID) > 0 {
+		result = append(result, fmt.Sprintf("id=%s", dto.ID))
+	}
+
+	if len(dto.CronTime) > 0 {
+		result = append(result, fmt.Sprintf("cron_time=%s", dto.CronTime))
+	}
+
+	if len(dto.URL) > 0 {
+		result = append(result, fmt.Sprintf("url=%s", dto.URL))
+	}
+
+	if len(dto.Method) > 0 {
+		result = append(result, fmt.Sprintf("method=%s", dto.Method))
+	}
+
+	if !dto.CreatedFrom.IsZero() {
+		result = append(result, fmt.Sprintf("created_from=%s", dto.CreatedFrom))
+	}
+
+	if !dto.CreatedTo.IsZero() {
+		result = append(result, fmt.Sprintf("created_to=%s", dto.CreatedTo))
+	}
+
+	return strings.Join(result, "&")
+}
+
+func (c *CronService) Create(dto *m.CronDto) (*m.CronEntity, error) {
 	var body, err = json.Marshal(dto)
 	if err != nil {
 		return nil, err
@@ -58,47 +85,36 @@ func (c *CronService) Create(dto *m.CronCreateDto) (*m.CronEntity, error) {
 	return &model, nil
 }
 
-func (c *CronService) Read(query *m.FileQueryDto) ([]m.File, error) {
-	var model []m.File
-	client, suffix := c.query(query, c.db)
-
-	err, _ := helper.Getcache(client.Order("updated_at DESC"), c.client, c.key, suffix, &model)
-	return model, err
+func (c *CronService) Read(query *m.CronQueryDto) ([]m.CronEntity, error) {
+	return nil, fmt.Errorf("Not implimented")
 }
 
-func (c *CronService) Update(query *m.FileQueryDto, model *m.File) ([]m.File, error) {
-	var res *gorm.DB
-	client, suffix := c.query(query, c.db)
-
-	var models = []m.File{}
-	if err, rows := helper.Getcache(client, c.client, c.key, suffix, &models); err != nil || rows == 0 {
-		return nil, fmt.Errorf("Requested model do not exist")
-	}
-
-	client, _ = c.query(query, c.db.Model(&m.File{}))
-	if res = client.Updates(model); res.Error != nil || res.RowsAffected == 0 {
-		go logs.DefaultLog("/controllers/file.go", res.Error)
-		return nil, fmt.Errorf("Something unexpected happend: %v", res.Error)
-	}
-
-	for _, existed := range models {
-		c.recache(existed.Fill(model), false)
-	}
-
-	return c.Read(query)
+func (c *CronService) Update(query *m.CronQueryDto, model *m.CronDto) ([]m.CronEntity, error) {
+	return nil, fmt.Errorf("Not implimented")
 }
 
-func (c *CronService) Delete(query *m.FileQueryDto) (int, error) {
-	var models []m.File
-	client, suffix := c.query(query, c.db)
-
-	if err, _ := helper.Getcache(client, c.client, c.key, suffix, &models); err != nil {
+func (c *CronService) Delete(query *m.CronQueryDto) (int, error) {
+	var salt, token = helper.BotToken()
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/cron/subscribe?key=%s%s", config.ENV.BotUrl, token, c.query(query)), nil)
+	if err != nil {
 		return 0, err
 	}
 
-	for _, model := range models {
-		c.recache(&model, true)
+	req.Header.Set("X-Custom-Header", salt)
+	req.Header.Set("Content-Type", "application/json")
+
+	var res *http.Response
+
+	client := &http.Client{}
+	if res, err = client.Do(req); err != nil {
+		return 0, err
 	}
 
-	return len(models), client.Delete(&m.File{}).Error
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("Bot request error")
+	}
+
+	return -1, nil
 }

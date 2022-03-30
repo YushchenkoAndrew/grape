@@ -26,7 +26,7 @@ import (
 // @in header
 // @name Authorization
 
-// @host mortis-grimreaper.ddns.net:31337
+// @host mortis-grimreaper.ddns.net
 // @BasePath /api
 func main() {
 	config.NewConfig([]func() interfaces.Config{
@@ -50,7 +50,7 @@ func main() {
 	})
 
 	r := gin.Default()
-	rg := r.Group(config.ENV.BasePath, m.NewMiddleware(client).Limit())
+	rg := r.Group(config.ENV.BasePath, m.NewMiddleware(db, client).Limit())
 	router := routes.NewIndexRouter(rg, &[]interfaces.Router{
 		routes.NewSwaggerRouter(rg),
 		// routes.NewWorldRouter(rg),
@@ -74,8 +74,8 @@ func main() {
 		// 	k3s.NewServiceRouterFactory(),
 		// }),
 
-		// routes.NewSubscribeRouter(rg),
-	})
+		routes.NewSubscribeRouter(rg, db, client),
+	}, db, client)
 
 	router.Init()
 	r.Run(config.ENV.Host + ":" + config.ENV.Port)

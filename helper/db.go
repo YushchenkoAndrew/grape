@@ -73,7 +73,7 @@ func Recache(client *redis.Client, prefix, suffix string, revalue func(string) i
 
 	for iter.Next(ctx) {
 		data, _ := client.Get(ctx, iter.Val()).Result()
-		go Precache(client, prefix, strings.TrimLeft(iter.Val(), prefix+":"), revalue(data))
+		go Precache(client, prefix, strings.Replace(iter.Val(), prefix+":", "", 1), revalue(data))
 	}
 
 	if err := iter.Err(); err != nil {

@@ -25,9 +25,9 @@ type operation struct {
 
 var operations = make(map[string]Handler)
 
-func GetOperation(key string) (*Handler, bool) {
-	value, ok := operations[key]
-	return &value, ok
+func GetOperation(key string, value *Handler) (ok bool) {
+	*value, ok = operations[key]
+	return ok
 }
 
 type operationConfig struct {

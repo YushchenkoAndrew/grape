@@ -89,13 +89,15 @@ func (o *fileController) CreateAll(c *gin.Context) {
 
 	var models = []m.File{}
 	for _, item := range body {
-		var model = m.File{ProjectID: uint32(id), Name: item.Name, Path: item.Path, Type: item.Type, Role: item.Role}
-		if err := o.service.Create(&model); err != nil {
-			helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-			return
-		}
+		if item.IsOK() {
+			var model = m.File{ProjectID: uint32(id), Name: item.Name, Path: item.Path, Type: item.Type, Role: item.Role}
+			if err := o.service.Create(&model); err != nil {
+				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+				return
+			}
 
-		models = append(models, model)
+			models = append(models, model)
+		}
 	}
 
 	helper.ResHandler(c, http.StatusCreated, &m.Success{

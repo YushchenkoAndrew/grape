@@ -87,7 +87,7 @@ type FileDto struct {
 }
 
 func (c *FileDto) IsOK() bool {
-	return c.Name == "" || c.Type == ""
+	return c.Name != "" || c.Type != ""
 }
 
 type FileQueryDto struct {

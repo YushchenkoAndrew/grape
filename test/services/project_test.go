@@ -16,7 +16,7 @@ var (
 	project service.ProjectService
 
 	createdTo   = time.Now().Add(time.Hour)
-	createdFrom = time.Now()
+	createdFrom = time.Now().Add(-1 * time.Hour)
 )
 
 func TestProjectCreate(t *testing.T) {

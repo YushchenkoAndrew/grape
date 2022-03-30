@@ -169,9 +169,9 @@ func (c *ProjectService) Update(query *m.ProjectQueryDto, model *m.Project) ([]m
 		return nil, fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}
 
-	for _, existed := range models {
-		c.recache(&existed, true)
-		c.recache(existed.Fill(model), false)
+	for _, item := range models {
+		c.recache(&item, (existed.Name != "" && existed.ID == 0) || existed.Flag != model.Flag)
+		c.recache(item.Fill(model), false)
 	}
 
 	// Check if Name is not empty, if so that for some safety magers
