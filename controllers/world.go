@@ -1,22 +1,11 @@
 package controllers
 
 import (
-	"api/config"
-	"api/db"
 	"api/helper"
 	"api/interfaces"
-	"api/logs"
-	"api/models"
-	"context"
-	"crypto/md5"
-	"encoding/hex"
-	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type worldController struct{}
@@ -25,42 +14,42 @@ func NewWorldController() interfaces.Default {
 	return &worldController{}
 }
 
-func (*worldController) filterQuery(c *gin.Context) (*gorm.DB, string) {
-	var keys = []string{}
-	client := db.DB
-	if id, err := strconv.Atoi(c.DefaultQuery("id", "-1")); err == nil && id > 0 {
-		keys = append(keys, fmt.Sprintf("ID=%d", id))
-		client = client.Where("id = ?", id)
-	}
+// func (*worldController) filterQuery(c *gin.Context) (*gorm.DB, string) {
+// 	var keys = []string{}
+// 	client := db.DB
+// 	if id, err := strconv.Atoi(c.DefaultQuery("id", "-1")); err == nil && id > 0 {
+// 		keys = append(keys, fmt.Sprintf("ID=%d", id))
+// 		client = client.Where("id = ?", id)
+// 	}
 
-	if updatedAll := c.DefaultQuery("updated_at", ""); updatedAll != "" {
-		keys = append(keys, fmt.Sprintf("UPDATED_AT=%s", updatedAll))
-		client = client.Where("updated_at = ?", updatedAll)
-	}
+// 	if updatedAll := c.DefaultQuery("updated_at", ""); updatedAll != "" {
+// 		keys = append(keys, fmt.Sprintf("UPDATED_AT=%s", updatedAll))
+// 		client = client.Where("updated_at = ?", updatedAll)
+// 	}
 
-	if country := c.DefaultQuery("country", ""); country != "" {
-		keys = append(keys, fmt.Sprintf("COUNTRY=%s", country))
-		client = client.Where("country = ?", country)
-	}
+// 	if country := c.DefaultQuery("country", ""); country != "" {
+// 		keys = append(keys, fmt.Sprintf("COUNTRY=%s", country))
+// 		client = client.Where("country = ?", country)
+// 	}
 
-	if len(keys) == 0 {
-		return client, ""
-	}
+// 	if len(keys) == 0 {
+// 		return client, ""
+// 	}
 
-	hasher := md5.New()
-	hasher.Write([]byte(strings.Join(keys, ":")))
-	return client, hex.EncodeToString(hasher.Sum(nil))
-}
+// 	hasher := md5.New()
+// 	hasher.Write([]byte(strings.Join(keys, ":")))
+// 	return client, hex.EncodeToString(hasher.Sum(nil))
+// }
 
-func (*worldController) parseBody(body *models.WorldDto, model *models.World) {
-	if body.Country != "" {
-		model.Country = body.Country
-	}
+// func (*worldController) parseBody(body *models.WorldDto, model *models.World) {
+// 	if body.Country != "" {
+// 		model.Country = body.Country
+// 	}
 
-	if body.Visitors != nil {
-		model.Visitors = *body.Visitors
-	}
-}
+// 	if body.Visitors != nil {
+// 		model.Visitors = *body.Visitors
+// 	}
+// }
 
 // @Tags World
 // @Summary Create/Update World Data by Country
@@ -77,49 +66,51 @@ func (*worldController) parseBody(body *models.WorldDto, model *models.World) {
 // @failure 500 {object} models.Error
 // @Router /world [post]
 func (o *worldController) CreateOne(c *gin.Context) {
-	var model = make([]models.World, 1)
-	var body models.WorldDto
-	if err := c.ShouldBind(&body); err != nil || body.Country == "" {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body params or id parm")
-		return
-	}
+	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
 
-	var result *gorm.DB
-	if result = db.DB.Where("country = ?", body.Country).Find(&model); result.RowsAffected == 0 {
-		model = make([]models.World, 1)
-	}
+	// var model = make([]models.World, 1)
+	// var body models.WorldDto
+	// if err := c.ShouldBind(&body); err != nil || body.Country == "" {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body params or id parm")
+	// 	return
+	// }
 
-	ctx := context.Background()
+	// var result *gorm.DB
+	// if result = db.DB.Where("country = ?", body.Country).Find(&model); result.RowsAffected == 0 {
+	// 	model = make([]models.World, 1)
+	// }
 
-	o.parseBody(&body, &model[0])
-	if result.RowsAffected == 0 {
-		result = db.DB.Create(&model)
-		db.Redis.Incr(ctx, "nWORLD")
-	} else {
-		result = db.DB.Where("country = ?", body.Country).Updates(&model[0])
-	}
+	// ctx := context.Background()
 
-	if result.Error != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
-		go logs.DefaultLog("/controllers/world.go", result.Error)
-		return
-	}
+	// o.parseBody(&body, &model[0])
+	// if result.RowsAffected == 0 {
+	// 	result = db.DB.Create(&model)
+	// 	db.Redis.Incr(ctx, "nWORLD")
+	// } else {
+	// 	result = db.DB.Where("country = ?", body.Country).Updates(&model[0])
+	// }
 
-	items, err := db.Redis.Get(ctx, "nWorld").Int64()
-	if err != nil {
-		items = -1
-		go (&models.World{}).Redis(db.DB, db.Redis)
-		go logs.DefaultLog("/controllers/world.go", err.Error())
-	}
+	// if result.Error != nil {
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
+	// 	go logs.DefaultLog("/controllers/world.go", result.Error)
+	// 	return
+	// }
 
-	go db.FlushValue("WORLD")
+	// items, err := db.Redis.Get(ctx, "nWorld").Int64()
+	// if err != nil {
+	// 	items = -1
+	// 	go (&models.World{}).Redis(db.DB, db.Redis)
+	// 	go logs.DefaultLog("/controllers/world.go", err.Error())
+	// }
 
-	helper.ResHandler(c, http.StatusCreated, &models.Success{
-		Status:     "OK",
-		Result:     model,
-		Items:      result.RowsAffected,
-		TotalItems: items,
-	})
+	// go db.FlushValue("WORLD")
+
+	// helper.ResHandler(c, http.StatusCreated, &models.Success{
+	// 	Status:     "OK",
+	// 	Result:     model,
+	// 	Items:      result.RowsAffected,
+	// 	TotalItems: items,
+	// })
 }
 
 // @Tags World
@@ -137,75 +128,77 @@ func (o *worldController) CreateOne(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /world/list [post]
 func (o *worldController) CreateAll(c *gin.Context) {
-	var body []models.WorldDto
-	if err := c.ShouldBind(&body); err != nil || len(body) == 0 {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body params")
-		return
-	}
+	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
 
-	var model []models.World
-	var countries = []string{}
-	for i := 0; i < len(body); i++ {
-		if body[i].Country == "" {
-			helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body params")
-			return
-		}
-		countries = append(countries, body[i].Country)
-	}
+	// var body []models.WorldDto
+	// if err := c.ShouldBind(&body); err != nil || len(body) == 0 {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body params")
+	// 	return
+	// }
 
-	var result *gorm.DB
-	result = db.DB.Where("country IN ?", countries).Find(&model)
-	var modelToCreate = make([]models.World, len(body)-int(result.RowsAffected))
+	// var model []models.World
+	// var countries = []string{}
+	// for i := 0; i < len(body); i++ {
+	// 	if body[i].Country == "" {
+	// 		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body params")
+	// 		return
+	// 	}
+	// 	countries = append(countries, body[i].Country)
+	// }
 
-	// Init hash for simplify intersection detection
-	var hash = map[string]bool{}
-	for i := 0; i < int(result.RowsAffected); i++ {
-		hash[model[i].Country] = true
-	}
+	// var result *gorm.DB
+	// result = db.DB.Where("country IN ?", countries).Find(&model)
+	// var modelToCreate = make([]models.World, len(body)-int(result.RowsAffected))
 
-	var j = 0
-	for i := 0; i < len(body); i++ {
-		var m models.World
-		o.parseBody(&body[i], &m)
+	// // Init hash for simplify intersection detection
+	// var hash = map[string]bool{}
+	// for i := 0; i < int(result.RowsAffected); i++ {
+	// 	hash[model[i].Country] = true
+	// }
 
-		if _, ok := hash[body[i].Country]; !ok {
-			modelToCreate[j] = m
-			j++
-		} else if body[i].Visitors == nil || *body[i].Visitors != m.Visitors { // Check if data is changed
-			if result = db.DB.Where("country = ?", body[i].Country).Updates(&m); result.Error != nil {
-				helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong2")
-				go logs.DefaultLog("/controllers/world.go", result.Error)
-				return
-			}
-		}
-	}
+	// var j = 0
+	// for i := 0; i < len(body); i++ {
+	// 	var m models.World
+	// 	o.parseBody(&body[i], &m)
 
-	if len(modelToCreate) != 0 {
-		if result = db.DB.Create(&modelToCreate); result.Error != nil {
-			helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
-			go logs.DefaultLog("/controllers/world.go", result.Error)
-			return
-		}
-	}
+	// 	if _, ok := hash[body[i].Country]; !ok {
+	// 		modelToCreate[j] = m
+	// 		j++
+	// 	} else if body[i].Visitors == nil || *body[i].Visitors != m.Visitors { // Check if data is changed
+	// 		if result = db.DB.Where("country = ?", body[i].Country).Updates(&m); result.Error != nil {
+	// 			helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong2")
+	// 			go logs.DefaultLog("/controllers/world.go", result.Error)
+	// 			return
+	// 		}
+	// 	}
+	// }
 
-	go db.FlushValue("WORLD")
+	// if len(modelToCreate) != 0 {
+	// 	if result = db.DB.Create(&modelToCreate); result.Error != nil {
+	// 		helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
+	// 		go logs.DefaultLog("/controllers/world.go", result.Error)
+	// 		return
+	// 	}
+	// }
 
-	ctx := context.Background()
-	items, err := db.Redis.Get(ctx, "nWORLD").Int64()
-	if err != nil {
-		items = -1
-		go (&models.World{}).Redis(db.DB, db.Redis)
-		go logs.DefaultLog("/controllers/world.go", err.Error())
-	}
+	// go db.FlushValue("WORLD")
 
-	// Make an update without stoping the response handler
-	go helper.RedisAdd(&ctx, "nWORLD", int64(len(body)))
-	helper.ResHandler(c, http.StatusCreated, &models.Success{
-		Status:     "OK",
-		Result:     model,
-		Items:      result.RowsAffected,
-		TotalItems: items + result.RowsAffected,
-	})
+	// ctx := context.Background()
+	// items, err := db.Redis.Get(ctx, "nWORLD").Int64()
+	// if err != nil {
+	// 	items = -1
+	// 	go (&models.World{}).Redis(db.DB, db.Redis)
+	// 	go logs.DefaultLog("/controllers/world.go", err.Error())
+	// }
+
+	// // Make an update without stoping the response handler
+	// go helper.RedisAdd(&ctx, "nWORLD", int64(len(body)))
+	// helper.ResHandler(c, http.StatusCreated, &models.Success{
+	// 	Status:     "OK",
+	// 	Result:     model,
+	// 	Items:      result.RowsAffected,
+	// 	TotalItems: items + result.RowsAffected,
+	// })
 }
 
 // @Tags World
@@ -220,36 +213,38 @@ func (o *worldController) CreateAll(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /world/{id} [get]
 func (*worldController) ReadOne(c *gin.Context) {
-	var id int
-	var model []models.World
+	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
 
-	if !helper.GetID(c, &id) {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id value")
-		return
-	}
+	// var id int
+	// var model []models.World
 
-	hasher := md5.New()
-	hasher.Write([]byte(fmt.Sprintf("ID=%d", id)))
-	if err := helper.PrecacheResult(fmt.Sprintf("WORLD:%s", hex.EncodeToString(hasher.Sum(nil))), db.DB.Where("id = ?", id), &model); err != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-		go logs.DefaultLog("/controllers/world.go", err.Error())
-		return
-	}
+	// if !helper.GetID(c, &id) {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id value")
+	// 	return
+	// }
 
-	var items int64
-	var err error
-	if items, err = db.Redis.Get(context.Background(), "nWORLD").Int64(); err != nil {
-		items = -1
-		go (&models.World{}).Redis(db.DB, db.Redis)
-		go logs.DefaultLog("/controllers/world.go", err.Error())
-	}
+	// hasher := md5.New()
+	// hasher.Write([]byte(fmt.Sprintf("ID=%d", id)))
+	// if err := helper.PrecacheResult(fmt.Sprintf("WORLD:%s", hex.EncodeToString(hasher.Sum(nil))), db.DB.Where("id = ?", id), &model); err != nil {
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+	// 	go logs.DefaultLog("/controllers/world.go", err.Error())
+	// 	return
+	// }
 
-	helper.ResHandler(c, http.StatusOK, &models.Success{
-		Status:     "OK",
-		Result:     model,
-		Items:      1,
-		TotalItems: items,
-	})
+	// var items int64
+	// var err error
+	// if items, err = db.Redis.Get(context.Background(), "nWORLD").Int64(); err != nil {
+	// 	items = -1
+	// 	go (&models.World{}).Redis(db.DB, db.Redis)
+	// 	go logs.DefaultLog("/controllers/world.go", err.Error())
+	// }
+
+	// helper.ResHandler(c, http.StatusOK, &models.Success{
+	// 	Status:     "OK",
+	// 	Result:     model,
+	// 	Items:      1,
+	// 	TotalItems: items,
+	// })
 }
 
 // @Tags World
@@ -268,35 +263,37 @@ func (*worldController) ReadOne(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /world [get]
 func (o *worldController) ReadAll(c *gin.Context) {
-	var model []models.World
-	page, limit := helper.Pagination(c)
+	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
 
-	// NOTE: Maybe add this feature at some point
-	// orderBy := c.DefaultQuery("orderBy", "")
-	// desc := c.DefaultQuery("desc", "") != ""
+	// var model []models.World
+	// page, limit := helper.Pagination(c)
 
-	client, suffix := o.filterQuery(c)
-	if err := helper.PrecacheResult(fmt.Sprintf("WORLD:%s", suffix), client.Offset(page*config.ENV.Items).Limit(limit), &model); err != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-		go logs.DefaultLog("/controllers/world.go", err.Error())
-		return
-	}
+	// // NOTE: Maybe add this feature at some point
+	// // orderBy := c.DefaultQuery("orderBy", "")
+	// // desc := c.DefaultQuery("desc", "") != ""
 
-	items, err := db.Redis.Get(context.Background(), "nWORLD").Int64()
-	if err != nil {
-		items = -1
-		go (&models.World{}).Redis(db.DB, db.Redis)
-		go logs.DefaultLog("/controllers/world.go", err.Error())
-	}
+	// client, suffix := o.filterQuery(c)
+	// if err := helper.PrecacheResult(fmt.Sprintf("WORLD:%s", suffix), client.Offset(page*config.ENV.Items).Limit(limit), &model); err != nil {
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+	// 	go logs.DefaultLog("/controllers/world.go", err.Error())
+	// 	return
+	// }
 
-	helper.ResHandler(c, http.StatusOK, &models.Success{
-		Status:     "OK",
-		Result:     model,
-		Page:       page,
-		Limit:      limit,
-		Items:      int64(len(model)),
-		TotalItems: items,
-	})
+	// items, err := db.Redis.Get(context.Background(), "nWORLD").Int64()
+	// if err != nil {
+	// 	items = -1
+	// 	go (&models.World{}).Redis(db.DB, db.Redis)
+	// 	go logs.DefaultLog("/controllers/world.go", err.Error())
+	// }
+
+	// helper.ResHandler(c, http.StatusOK, &models.Success{
+	// 	Status:     "OK",
+	// 	Result:     model,
+	// 	Page:       page,
+	// 	Limit:      limit,
+	// 	Items:      int64(len(model)),
+	// 	TotalItems: items,
+	// })
 }
 
 // @Tags World
@@ -315,43 +312,45 @@ func (o *worldController) ReadAll(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /world/{id} [put]
 func (o *worldController) UpdateOne(c *gin.Context) {
-	var id int
-	var body models.WorldDto
-	if err := c.ShouldBind(&body); err != nil || !helper.GetID(c, &id) {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body params")
-		return
-	}
+	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
 
-	var model models.World
-	o.parseBody(&body, &model)
-	result := db.DB.Where("id = ?", id).Updates(&model)
-	if result.RowsAffected != 1 {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id param")
-		return
-	}
+	// var id int
+	// var body models.WorldDto
+	// if err := c.ShouldBind(&body); err != nil || !helper.GetID(c, &id) {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body params")
+	// 	return
+	// }
 
-	if result.Error != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
-		go logs.DefaultLog("/controllers/world.go", result.Error)
-		return
-	}
+	// var model models.World
+	// o.parseBody(&body, &model)
+	// result := db.DB.Where("id = ?", id).Updates(&model)
+	// if result.RowsAffected != 1 {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id param")
+	// 	return
+	// }
 
-	go db.FlushValue("WORLD")
+	// if result.Error != nil {
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
+	// 	go logs.DefaultLog("/controllers/world.go", result.Error)
+	// 	return
+	// }
 
-	ctx := context.Background()
-	items, err := db.Redis.Get(ctx, "nWORLD").Int64()
-	if err != nil {
-		items = -1
-		go (&models.World{}).Redis(db.DB, db.Redis)
-		go logs.DefaultLog("/controllers/world.go", err.Error())
-	}
+	// go db.FlushValue("WORLD")
 
-	helper.ResHandler(c, http.StatusOK, &models.Success{
-		Status:     "OK",
-		Result:     []models.World{model},
-		Items:      result.RowsAffected,
-		TotalItems: items,
-	})
+	// ctx := context.Background()
+	// items, err := db.Redis.Get(ctx, "nWORLD").Int64()
+	// if err != nil {
+	// 	items = -1
+	// 	go (&models.World{}).Redis(db.DB, db.Redis)
+	// 	go logs.DefaultLog("/controllers/world.go", err.Error())
+	// }
+
+	// helper.ResHandler(c, http.StatusOK, &models.Success{
+	// 	Status:     "OK",
+	// 	Result:     []models.World{model},
+	// 	Items:      result.RowsAffected,
+	// 	TotalItems: items,
+	// })
 }
 
 // @Tags World
@@ -372,46 +371,48 @@ func (o *worldController) UpdateOne(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /world [put]
 func (o *worldController) UpdateAll(c *gin.Context) {
-	var body models.WorldDto
-	if err := c.ShouldBind(&body); err != nil {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body params")
-		return
-	}
+	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
 
-	var sKeys string
-	var result *gorm.DB
-	var model models.World
+	// var body models.WorldDto
+	// if err := c.ShouldBind(&body); err != nil {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body params")
+	// 	return
+	// }
 
-	o.parseBody(&body, &model)
-	if result, sKeys = o.filterQuery(c); sKeys == "" {
-		helper.ErrHandler(c, http.StatusBadRequest, "Query not founded")
-		return
-	}
+	// var sKeys string
+	// var result *gorm.DB
+	// var model models.World
 
-	result = result.Updates(&model)
-	if result.Error != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
-		go logs.DefaultLog("/controllers/world.go", result.Error)
-		return
-	}
+	// o.parseBody(&body, &model)
+	// if result, sKeys = o.filterQuery(c); sKeys == "" {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Query not founded")
+	// 	return
+	// }
 
-	go db.FlushValue("WORLD")
+	// result = result.Updates(&model)
+	// if result.Error != nil {
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
+	// 	go logs.DefaultLog("/controllers/world.go", result.Error)
+	// 	return
+	// }
 
-	var items int64
-	ctx := context.Background()
-	items, err := db.Redis.Get(ctx, "nWORLD").Int64()
-	if err != nil {
-		items = -1
-		go (&models.World{}).Redis(db.DB, db.Redis)
-		go logs.DefaultLog("/controllers/world.go", err.Error())
-	}
+	// go db.FlushValue("WORLD")
 
-	helper.ResHandler(c, http.StatusOK, &models.Success{
-		Status:     "OK",
-		Result:     []models.World{model},
-		Items:      result.RowsAffected,
-		TotalItems: items,
-	})
+	// var items int64
+	// ctx := context.Background()
+	// items, err := db.Redis.Get(ctx, "nWORLD").Int64()
+	// if err != nil {
+	// 	items = -1
+	// 	go (&models.World{}).Redis(db.DB, db.Redis)
+	// 	go logs.DefaultLog("/controllers/world.go", err.Error())
+	// }
+
+	// helper.ResHandler(c, http.StatusOK, &models.Success{
+	// 	Status:     "OK",
+	// 	Result:     []models.World{model},
+	// 	Items:      result.RowsAffected,
+	// 	TotalItems: items,
+	// })
 }
 
 // @Tags World
@@ -429,46 +430,48 @@ func (o *worldController) UpdateAll(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /world/{id} [delete]
 func (*worldController) DeleteOne(c *gin.Context) {
-	var id int
-	if !helper.GetID(c, &id) {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id params")
-		return
-	}
+	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
 
-	result := db.DB.Where("id = ?", id).Delete(&models.World{})
-	if result.RowsAffected != 1 {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id param")
-		return
-	}
+	// var id int
+	// if !helper.GetID(c, &id) {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id params")
+	// 	return
+	// }
 
-	if result.Error != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
-		go logs.DefaultLog("/controllers/world.go", result.Error)
-		return
-	}
+	// result := db.DB.Where("id = ?", id).Delete(&models.World{})
+	// if result.RowsAffected != 1 {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id param")
+	// 	return
+	// }
 
-	go db.FlushValue("WORLD")
+	// if result.Error != nil {
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
+	// 	go logs.DefaultLog("/controllers/world.go", result.Error)
+	// 	return
+	// }
 
-	ctx := context.Background()
-	items, err := db.Redis.Get(ctx, "nWORLD").Int64()
-	if err != nil {
-		items = -1
-		go (&models.World{}).Redis(db.DB, db.Redis)
-		go logs.DefaultLog("/controllers/world.go", err.Error())
-	}
+	// go db.FlushValue("WORLD")
 
-	if items == 0 {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect request")
-		return
-	}
+	// ctx := context.Background()
+	// items, err := db.Redis.Get(ctx, "nWORLD").Int64()
+	// if err != nil {
+	// 	items = -1
+	// 	go (&models.World{}).Redis(db.DB, db.Redis)
+	// 	go logs.DefaultLog("/controllers/world.go", err.Error())
+	// }
 
-	go db.Redis.Decr(ctx, "nWORLD")
-	helper.ResHandler(c, http.StatusOK, &models.Success{
-		Status:     "OK",
-		Result:     []string{},
-		Items:      result.RowsAffected,
-		TotalItems: items,
-	})
+	// if items == 0 {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect request")
+	// 	return
+	// }
+
+	// go db.Redis.Decr(ctx, "nWORLD")
+	// helper.ResHandler(c, http.StatusOK, &models.Success{
+	// 	Status:     "OK",
+	// 	Result:     []string{},
+	// 	Items:      result.RowsAffected,
+	// 	TotalItems: items,
+	// })
 }
 
 // @Tags World
@@ -488,41 +491,43 @@ func (*worldController) DeleteOne(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /world [delete]
 func (o *worldController) DeleteAll(c *gin.Context) {
-	var sKeys string
-	var result *gorm.DB
+	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
 
-	if result, sKeys = o.filterQuery(c); sKeys == "" {
-		helper.ErrHandler(c, http.StatusBadRequest, "Query not founded")
-		return
-	}
+	// var sKeys string
+	// var result *gorm.DB
 
-	result = result.Delete(&models.World{})
-	if result.Error != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
-		go logs.DefaultLog("/controllers/world.go", result.Error)
-		return
-	}
+	// if result, sKeys = o.filterQuery(c); sKeys == "" {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Query not founded")
+	// 	return
+	// }
 
-	go db.FlushValue("WORLD")
+	// result = result.Delete(&models.World{})
+	// if result.Error != nil {
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
+	// 	go logs.DefaultLog("/controllers/world.go", result.Error)
+	// 	return
+	// }
 
-	ctx := context.Background()
-	items, err := db.Redis.Get(ctx, "nWORLD").Int64()
-	if err != nil {
-		items = -1
-		go (&models.World{}).Redis(db.DB, db.Redis)
-		go logs.DefaultLog("/controllers/world.go", err.Error())
-	}
+	// go db.FlushValue("WORLD")
 
-	if items == 0 {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect request")
-		return
-	}
+	// ctx := context.Background()
+	// items, err := db.Redis.Get(ctx, "nWORLD").Int64()
+	// if err != nil {
+	// 	items = -1
+	// 	go (&models.World{}).Redis(db.DB, db.Redis)
+	// 	go logs.DefaultLog("/controllers/world.go", err.Error())
+	// }
 
-	go helper.RedisSub(&ctx, "nWORLD", result.RowsAffected)
-	helper.ResHandler(c, http.StatusOK, &models.Success{
-		Status:     "OK",
-		Result:     []string{},
-		Items:      result.RowsAffected,
-		TotalItems: items - result.RowsAffected,
-	})
+	// if items == 0 {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect request")
+	// 	return
+	// }
+
+	// go helper.RedisSub(&ctx, "nWORLD", result.RowsAffected)
+	// helper.ResHandler(c, http.StatusOK, &models.Success{
+	// 	Status:     "OK",
+	// 	Result:     []string{},
+	// 	Items:      result.RowsAffected,
+	// 	TotalItems: items - result.RowsAffected,
+	// })
 }
