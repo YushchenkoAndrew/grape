@@ -53,12 +53,12 @@ func main() {
 	rg := r.Group(config.ENV.BasePath, m.NewMiddleware(db, client).Limit())
 	router := routes.NewIndexRouter(rg, &[]interfaces.Router{
 		routes.NewSwaggerRouter(rg),
-		// routes.NewWorldRouter(rg),
 		routes.NewProjectRouter(rg, db, client),
 		routes.NewFileRouter(rg, db, client),
 		routes.NewLinkRouter(rg, db, client),
-		// routes.NewBotRouter(rg),
+		routes.NewBotRouter(rg, db, client),
 
+		// routes.NewWorldRouter(rg),
 		// routes.NewInfoRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
 		// 	info.NewSumRouterFactory(),
 		// 	info.NewRangeRouterFactory(),

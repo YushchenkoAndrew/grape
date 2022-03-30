@@ -1,21 +1,21 @@
 package controllers
 
 import (
-	"api/db"
 	"api/helper"
 	"api/interfaces"
-	"api/models"
-	"context"
+	m "api/models"
+	"api/service"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-type botController struct{}
+type botController struct {
+	service *service.BotService
+}
 
-func NewBotController() interfaces.Bot {
-	return &botController{}
+func NewBotController(s *service.BotService) interfaces.Bot {
+	return &botController{service: s}
 }
 
 // @Tags Bot
@@ -24,37 +24,27 @@ func NewBotController() interfaces.Bot {
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
-// @Param model body models.BotRedis true "Redis Command"
-// @Success 200 {object} models.DefultRes
-// @failure 400 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
+// @Param model body m.BotRedis true "Redis Command"
+// @Success 200 {object} m.DefultRes
+// @failure 400 {object} m.Error
+// @failure 429 {object} m.Error
+// @failure 500 {object} m.Error
 // @Router /bot/redis [post]
-func (*botController) Redis(c *gin.Context) {
-	var body models.BotRedis
+func (o *botController) Redis(c *gin.Context) {
+	var body m.BotRedisDto
+
 	if err := c.ShouldBind(&body); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body")
 		return
 	}
 
-	words := strings.Split(body.Command, " ")
-	var command = make([]interface{}, len(words))
-	for i := 0; i < len(words); i++ {
-		command[i] = words[i]
-	}
-
-	ctx := context.Background()
-	res, err := db.Redis.Do(ctx, command...).StringSlice()
-
+	res, err := o.service.RunRedis(&body)
 	if err != nil {
-		c.JSON(http.StatusOK, models.DefultRes{
-			Status:  "ERR",
-			Message: err.Error(),
-		})
+		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, models.DefultRes{
+	c.JSON(http.StatusOK, m.DefultRes{
 		Status:  "OK",
 		Message: "Success",
 		Result:  res,

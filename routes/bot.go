@@ -4,8 +4,11 @@ import (
 	c "api/controllers"
 	"api/interfaces"
 	m "api/middleware"
+	s "api/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
 )
 
 type botRouter struct {
@@ -13,10 +16,10 @@ type botRouter struct {
 	bot  interfaces.Bot
 }
 
-func NewBotRouter(rg *gin.RouterGroup) interfaces.Router {
+func NewBotRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) interfaces.Router {
 	return &botRouter{
 		auth: rg.Group("/bot", m.GetMiddleware().Auth()),
-		bot:  c.NewBotController(),
+		bot:  c.NewBotController(s.NewBotService(db, client)),
 	}
 }
 

@@ -4,7 +4,8 @@ dev:
 	go run main.go
 
 test:
-	go test ./... -coverprofile=testprofile.out
+	go test ./...
 
 cover:
+	go test ./... -coverprofile=testprofile.out
 	go tool cover -html=testprofile.out
