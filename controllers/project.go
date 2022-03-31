@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"api/config"
 	"api/helper"
 	"api/interfaces"
 	m "api/models"
@@ -19,100 +18,6 @@ type projectController struct {
 func NewProjectController(s *service.FullProjectService) interfaces.Default {
 	return &projectController{service: s}
 }
-
-// func (*projectController) filterQuery(c *gin.Context) (*gorm.DB, string) {
-// 	var keys = []string{}
-// 	client := db.DB
-
-// 	if id, err := strconv.Atoi(c.DefaultQuery("id", "-1")); err == nil && id > 0 {
-// 		keys = append(keys, fmt.Sprintf("ID=%d", id))
-// 		client = client.Where("id = ?", id)
-// 	}
-
-// 	if name := c.DefaultQuery("name", ""); name != "" {
-// 		keys = append(keys, fmt.Sprintf("NAME=%s", name))
-// 		client = client.Where("name = ?", name)
-// 	}
-
-// 	if title := c.DefaultQuery("title", ""); title != "" {
-// 		keys = append(keys, fmt.Sprintf("TITLE=%s", title))
-// 		client = client.Where("title = ?", title)
-// 	}
-
-// 	start := c.DefaultQuery("start", "")
-// 	end := c.DefaultQuery("end", "")
-
-// 	switch helper.GetStat(start == "", end == "") {
-// 	case 0:
-// 		keys = append(keys, fmt.Sprintf("CREATED_AT<=%s:CREATED_AT>=%s", end, start))
-// 		client = client.Where("created_at <= ? AND created_at >= ?", end, start)
-
-// 	case 1:
-// 		keys = append(keys, fmt.Sprintf("CREATED_AT>=%s", start))
-// 		client = client.Where("created_at >= ?", start)
-
-// 	case 2:
-// 		keys = append(keys, fmt.Sprintf("CREATED_AT<=%s", end))
-// 		client = client.Where("created_at <= ?", end)
-
-// 	}
-
-// 	if len(keys) == 0 {
-// 		return client, ""
-// 	}
-
-// 	hasher := md5.New()
-// 	hasher.Write([]byte(strings.Join(keys, ":")))
-// 	return client, hex.EncodeToString(hasher.Sum(nil))
-// }
-
-// func (*projectController) filterFileQuery(c *gin.Context) ([]interface{}, string) {
-// 	var keys = []string{}
-
-// 	var args = []interface{}{}
-// 	var conditions = []string{}
-
-// 	if typeName := c.DefaultQuery("type", ""); typeName != "" {
-// 		keys = append(keys, fmt.Sprintf("TYPE=%s", typeName))
-// 		args = append(args, typeName)
-// 		conditions = append(conditions, "type = ?")
-// 	}
-
-// 	if role := c.DefaultQuery("role", ""); role != "" {
-// 		keys = append(keys, fmt.Sprintf("ROLE=%s", role))
-// 		args = append(args, role)
-// 		conditions = append(conditions, "role = ?")
-// 	}
-
-// 	if len(conditions) == 0 {
-// 		return []interface{}{}, ""
-// 	}
-
-// 	hasher := md5.New()
-// 	hasher.Write([]byte(strings.Join(keys, ":")))
-// 	return append([]interface{}{strings.Join(conditions, " AND ")}, args...), hex.EncodeToString(hasher.Sum(nil))
-// }
-
-// func (*projectController) filterLinkQuery(c *gin.Context) ([]interface{}, string) {
-// 	var keys = []string{}
-
-// 	var args = []interface{}{}
-// 	var conditions = []string{}
-
-// 	if name := c.DefaultQuery("link_name", ""); name != "" {
-// 		keys = append(keys, fmt.Sprintf("NAME=%s", name))
-// 		args = append(args, name)
-// 		conditions = append(conditions, "name = ?")
-// 	}
-
-// 	if len(conditions) == 0 {
-// 		return []interface{}{}, ""
-// 	}
-
-// 	hasher := md5.New()
-// 	hasher.Write([]byte(strings.Join(keys, ":")))
-// 	return append([]interface{}{strings.Join(conditions, " AND ")}, args...), hex.EncodeToString(hasher.Sum(nil))
-// }
 
 // @Tags Project
 // @Summary Create file by project id
@@ -170,6 +75,9 @@ func (o *projectController) CreateOne(c *gin.Context) {
 
 		models.Files = append(models.Files, model)
 	}
+
+	// TODO:
+	// Parse Subscription body. if some field is missing then just skip that
 
 	helper.ResHandler(c, http.StatusCreated, &m.Success{
 		Status: "OK",
@@ -237,6 +145,9 @@ func (o *projectController) CreateAll(c *gin.Context) {
 			}
 		}
 
+		// TODO:
+		// Parse Subscription body. if some field is missing then just skip that
+
 		models = append(models, model)
 	}
 
@@ -274,6 +185,7 @@ func (o *projectController) ReadOne(c *gin.Context) {
 	for i := 0; i < len(models); i++ {
 		models[i].Links, _ = o.service.Link.Read(&m.LinkQueryDto{ProjectID: models[i].ID})
 		models[i].Files, _ = o.service.File.Read(&m.FileQueryDto{ProjectID: models[i].ID})
+		models[i].Subscription, _ = o.service.Subscription.Read(&m.SubscribeQueryDto{ProjectID: models[i].ID})
 	}
 
 	helper.ResHandler(c, http.StatusOK, &m.Success{
@@ -311,7 +223,7 @@ func (o *projectController) ReadOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /project [get]
 func (o *projectController) ReadAll(c *gin.Context) {
-	var query = m.ProjectQueryDto{Page: 0, Limit: config.ENV.Limit}
+	var query = m.ProjectQueryDto{Page: -1}
 	if err := c.ShouldBindQuery(&query); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
@@ -329,6 +241,7 @@ func (o *projectController) ReadAll(c *gin.Context) {
 
 		models[i].Links, _ = o.service.Link.Read(&query.Link)
 		models[i].Files, _ = o.service.File.Read(&query.File)
+		models[i].Subscription, _ = o.service.Subscription.Read(&m.SubscribeQueryDto{ProjectID: models[i].ID})
 	}
 
 	helper.ResHandler(c, http.StatusOK, &m.Success{
@@ -398,7 +311,7 @@ func (o *projectController) UpdateOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /project [put]
 func (o *projectController) UpdateAll(c *gin.Context) {
-	var query = m.ProjectQueryDto{}
+	var query = m.ProjectQueryDto{Page: -1}
 	if err := c.ShouldBindQuery(&query); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
@@ -455,6 +368,8 @@ func (o *projectController) DeleteOne(c *gin.Context) {
 	for _, item := range models {
 		o.service.Link.Delete(&m.LinkQueryDto{ProjectID: item.ID})
 		o.service.File.Delete(&m.FileQueryDto{ProjectID: item.ID})
+
+		// TODO: Add Subscription
 	}
 
 	items, err := o.service.Project.Delete(&query)
@@ -492,7 +407,7 @@ func (o *projectController) DeleteOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /project [delete]
 func (o *projectController) DeleteAll(c *gin.Context) {
-	var query = m.ProjectQueryDto{}
+	var query = m.ProjectQueryDto{Page: -1}
 	if err := c.ShouldBindQuery(&query); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
@@ -505,8 +420,10 @@ func (o *projectController) DeleteAll(c *gin.Context) {
 	}
 
 	for _, item := range models {
-		o.service.Link.Delete(&m.LinkQueryDto{ProjectID: item.ID})
-		o.service.File.Delete(&m.FileQueryDto{ProjectID: item.ID})
+		o.service.Link.Delete(&m.LinkQueryDto{ProjectID: item.ID, Page: -1})
+		o.service.File.Delete(&m.FileQueryDto{ProjectID: item.ID, Page: -1})
+
+		// TODO: Add Subscription
 	}
 
 	items, err := o.service.Project.Delete(&query)

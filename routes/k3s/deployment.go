@@ -4,6 +4,7 @@ import (
 	c "api/controllers/k3s"
 	"api/interfaces"
 	m "api/middleware"
+	s "api/service/k3s"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,7 +18,7 @@ func NewDeploymentRouterFactory() func(*gin.RouterGroup) interfaces.Router {
 	return func(rg *gin.RouterGroup) interfaces.Router {
 		return &deploymentRouter{
 			auth:       rg.Group("/deployment", m.GetMiddleware().Auth()),
-			deployment: c.NewDeploymentController(),
+			deployment: c.NewDeploymentController(s.NewDeploymentService()),
 		}
 	}
 }

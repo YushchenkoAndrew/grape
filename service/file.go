@@ -7,6 +7,7 @@ import (
 	m "api/models"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/go-redis/redis/v8"
@@ -26,11 +27,101 @@ func NewFileService(db *gorm.DB, client *redis.Client) *FileService {
 
 func (c *FileService) isExist(model *m.File) bool {
 	res := c.db.Where("project_id = ? AND name = ? AND role = ? AND path = ? AND type = ?", model.ProjectID, model.Name, model.Role, model.Path, model.Type).Find(&model)
-	return !(res.RowsAffected == 0)
+	return res.Error != nil || res.RowsAffected != 0
 }
 
 func (c *FileService) precache(model *m.File) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
+
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PATH=%s*", model.Path), fmt.Sprintf("ROLE=%s*", model.Role), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	for _, key := range keys {
+		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
+			var data []m.File
+			if !strings.HasPrefix(str, "[") {
+				data = make([]m.File, 1)
+				json.Unmarshal([]byte(str), &data[0])
+			} else {
+				json.Unmarshal([]byte(str), &data)
+			}
+
+			for _, item := range strings.Split(k, "#") {
+				var res = strings.Split(item, "=")
+
+				switch res[0] {
+				case "ID":
+					if id, _ := strconv.Atoi(res[1]); model.ID != uint32(id) {
+						return data
+					}
+
+				case "NAME":
+					if model.Name != res[1] {
+						return data
+					}
+
+				case "ROLE":
+					if model.Role != res[1] {
+						return data
+					}
+
+				case "PATH":
+					if model.Path != res[1] {
+						return data
+					}
+
+				case "PROJECT_ID":
+					if id, _ := strconv.Atoi(res[1]); model.ProjectID != uint32(id) {
+						return data
+					}
+
+				case "LIMIT":
+					if limit, _ := strconv.Atoi(res[1]); limit <= len(data) {
+						return data
+					}
+				}
+			}
+
+			return append(data, *model)
+		})
+	}
+}
+
+func (c *FileService) deepcache(models []m.File, key string) interface{} {
+	var suffix []string
+	for _, item := range strings.Split(key, "#") {
+		var res = strings.Split(item, "=")
+
+		switch res[0] {
+		case "LIMIT":
+			if limit, _ := strconv.Atoi(res[1]); limit != len(models)+1 {
+				if len(models) != 0 {
+					return models
+				}
+				return nil
+			}
+
+		case "PAGE":
+			page, _ := strconv.Atoi(res[1])
+			suffix = append(suffix, fmt.Sprintf("PAGE=%d", page+1))
+			continue
+		}
+
+		suffix = append(suffix, item)
+	}
+
+	var items []m.File
+	if err := helper.Popcache(c.client, c.key, strings.Join(suffix, "#"), &items); err == nil {
+		if len(items) < 1 {
+			return nil
+		}
+
+		go c.deepcache(items[1:], strings.Join(suffix, "#"))
+		return append(models, items[0])
+	}
+
+	if len(models) != 0 {
+		return models
+	}
+	return nil
 }
 
 func (c *FileService) recache(model *m.File, delete bool) {
@@ -38,7 +129,7 @@ func (c *FileService) recache(model *m.File, delete bool) {
 
 	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PATH=%s*", model.Path), fmt.Sprintf("ROLE=%s*", model.Role), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
-		helper.Recache(c.client, c.key, key, func(str string) interface{} {
+		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
 				var data m.File
 				json.Unmarshal([]byte(str), &data)
@@ -61,55 +152,59 @@ func (c *FileService) recache(model *m.File, delete bool) {
 				}
 			}
 
-			if len(result) > 0 {
-				return result
+			// Check if size of an array was changed
+			if delete {
+				return c.deepcache(result, suffix)
 			}
 
-			return nil
-
+			return result
 		})
 	}
 }
 
 func (c *FileService) query(dto *m.FileQueryDto, client *gorm.DB) (*gorm.DB, string) {
-	var suffix = ""
+	var suffix []string
 
 	if dto.ID > 0 {
-		suffix += fmt.Sprintf("ID=%d", dto.ID)
+		suffix = append(suffix, fmt.Sprintf("ID=%d", dto.ID))
 		client = client.Where("id = ?", dto.ID)
 	}
 
 	if dto.ProjectID > 0 {
-		suffix += fmt.Sprintf("PROJECT_ID=%d", dto.ProjectID)
+		suffix = append(suffix, fmt.Sprintf("PROJECT_ID=%d", dto.ProjectID))
 		client = client.Where("project_id = ?", dto.ProjectID)
 	}
 
 	if len(dto.Name) > 0 {
-		suffix += fmt.Sprintf("NAME=%s", dto.Name)
+		suffix = append(suffix, fmt.Sprintf("NAME=%s", dto.Name))
 		client = client.Where("name = ?", dto.Name)
 	}
 
 	if len(dto.Role) > 0 {
-		suffix += fmt.Sprintf("ROLE=%s", dto.Role)
+		suffix = append(suffix, fmt.Sprintf("ROLE=%s", dto.Role))
 		client = client.Where("role = ?", dto.Role)
 	}
 
 	if len(dto.Path) > 0 {
-		suffix += fmt.Sprintf("PATH=%s", dto.Path)
+		suffix = append(suffix, fmt.Sprintf("PATH=%s", dto.Path))
 		client = client.Where("path = ?", dto.Path)
 	}
 
 	if dto.Page >= 0 {
-		suffix += fmt.Sprintf("PAGE=%d", dto.Page)
-		client = client.Offset(dto.Page * config.ENV.Items)
+		var limit = config.ENV.Items
+		if dto.Limit > 0 {
+			limit = dto.Limit
+		}
+
+		suffix = append(suffix, fmt.Sprintf("PAGE=%d", dto.Page))
+		client = client.Offset(dto.Page * limit)
+
+		suffix = append(suffix, fmt.Sprintf("LIMIT=%d", limit))
+		client = client.Limit(limit)
+
 	}
 
-	if dto.Limit > 0 {
-		suffix += fmt.Sprintf("LIMIT=%d", dto.Page)
-		client = client.Limit(dto.Limit)
-	}
-
-	return client, suffix
+	return client, strings.Join(suffix, "#")
 }
 
 func (c *FileService) Create(model *m.File) error {

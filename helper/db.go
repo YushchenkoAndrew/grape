@@ -2,6 +2,7 @@ package helper
 
 import (
 	"api/config"
+	"reflect"
 	"strings"
 
 	// "api/db"
@@ -45,35 +46,39 @@ func Getcache(db *gorm.DB, client *redis.Client, prefix, suffix string, model in
 	return nil, -1
 }
 
-// func GetcacheAll(db *gorm.DB, client *redis.Client, prefix, suffix string, model interface{}) error {
-// 	hasher := md5.New()
-// 	hasher.Write([]byte(suffix))
-// 	var key = fmt.Sprintf("%s:%s", prefix, hex.EncodeToString(hasher.Sum(nil)))
+func Popcache(client *redis.Client, prefix, suffix string, models interface{}) error {
+	ctx := context.Background()
 
-// 	ctx := context.Background()
+	data, err := client.Get(ctx, fmt.Sprintf("%s:%s", prefix, suffix)).Result()
+	if err != nil {
+		return err
+	}
 
-// 	// Check if cache have requested data
-// 	if data, err := client.Get(ctx, key).Result(); err == nil {
-// 		json.Unmarshal([]byte(data), model)
-// 		go client.Expire(ctx, key, time.Duration(config.ENV.LiveTime)*time.Second)
-// 	} else {
-// 		if result := db.Find(model); result.Error != nil {
-// 			return fmt.Errorf("Server side error: Something went wrong - %v", result.Error)
-// 		}
+	json.Unmarshal([]byte(data), &models)
+	if reflect.ValueOf(models).Elem().Kind() != reflect.Slice {
+		return fmt.Errorf("Slice was expected")
+	}
 
-// 		Precache(client, prefix, suffix, model)
-// 	}
+	items := reflect.ValueOf(models).Elem()
+	if items.Len() > 1 {
+		go Precache(client, prefix, suffix, items.Slice(1, items.Len()))
+	} else {
+		go Precache(client, prefix, suffix, nil)
+	}
 
-// 	return nil
-// }
+	return nil
 
-func Recache(client *redis.Client, prefix, suffix string, revalue func(string) interface{}) error {
+}
+
+func Recache(client *redis.Client, prefix, suffix string, revalue func(string, string) interface{}) error {
 	ctx := context.Background()
 	iter := client.Scan(ctx, 0, fmt.Sprintf("%s:%s", prefix, suffix), 0).Iterator()
 
 	for iter.Next(ctx) {
+		var key = strings.Replace(iter.Val(), prefix+":", "", 1)
+
 		data, _ := client.Get(ctx, iter.Val()).Result()
-		go Precache(client, prefix, strings.Replace(iter.Val(), prefix+":", "", 1), revalue(data))
+		go Precache(client, prefix, key, revalue(data, key))
 	}
 
 	if err := iter.Err(); err != nil {

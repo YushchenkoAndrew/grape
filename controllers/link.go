@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"api/config"
 	"api/helper"
 	"api/interfaces"
 	m "api/models"
@@ -149,7 +148,7 @@ func (o *linkController) ReadOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /link [get]
 func (o *linkController) ReadAll(c *gin.Context) {
-	var query = m.LinkQueryDto{Page: 0, Limit: config.ENV.Limit}
+	var query = m.LinkQueryDto{Page: -1}
 	if err := c.ShouldBindQuery(&query); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
@@ -225,7 +224,7 @@ func (o *linkController) UpdateOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /link [put]
 func (o *linkController) UpdateAll(c *gin.Context) {
-	var query = m.LinkQueryDto{}
+	var query = m.LinkQueryDto{Page: -1}
 	if err := c.ShouldBindQuery(&query); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
@@ -302,7 +301,7 @@ func (o *linkController) DeleteOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /link [delete]
 func (o *linkController) DeleteAll(c *gin.Context) {
-	var query = m.LinkQueryDto{}
+	var query = m.LinkQueryDto{Page: -1}
 	if err := c.ShouldBindQuery(&query); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return

@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"api/config"
 	"api/helper"
 	"api/interfaces"
 	m "api/models"
@@ -157,7 +156,7 @@ func (o *fileController) ReadOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /file [get]
 func (o *fileController) ReadAll(c *gin.Context) {
-	var query = m.FileQueryDto{Page: 0, Limit: config.ENV.Limit}
+	var query = m.FileQueryDto{Page: -1}
 	if err := c.ShouldBindQuery(&query); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
@@ -234,7 +233,7 @@ func (o *fileController) UpdateOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /file [put]
 func (o *fileController) UpdateAll(c *gin.Context) {
-	var query = m.FileQueryDto{}
+	var query = m.FileQueryDto{Page: -1}
 	if err := c.ShouldBindQuery(&query); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
@@ -312,7 +311,7 @@ func (o *fileController) DeleteOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /file [delete]
 func (o *fileController) DeleteAll(c *gin.Context) {
-	var query = m.FileQueryDto{}
+	var query = m.FileQueryDto{Page: -1}
 	if err := c.ShouldBindQuery(&query); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return

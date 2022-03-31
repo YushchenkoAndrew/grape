@@ -7,20 +7,28 @@ import (
 	m "api/models"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
 type FullProjectService struct {
-	Link    *LinkService
-	File    *FileService
-	Project *ProjectService
+	Link         *LinkService
+	File         *FileService
+	Project      *ProjectService
+	Subscription *SubscriptionService
 }
 
 func NewFullProjectService(db *gorm.DB, client *redis.Client) *FullProjectService {
-	return &FullProjectService{Link: NewLinkService(db, client), File: NewFileService(db, client), Project: NewProjectService(db, client)}
+	return &FullProjectService{
+		Link:         NewLinkService(db, client),
+		File:         NewFileService(db, client),
+		Project:      NewProjectService(db, client),
+		Subscription: NewSubscriptionService(db, client),
+	}
 }
 
 type ProjectService struct {
@@ -42,6 +50,94 @@ func (c *ProjectService) isExist(model *m.Project) bool {
 func (c *ProjectService) precache(model *m.Project) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("NAME=%s", model.Name), model)
+
+	var keys = []string{fmt.Sprintf("FLAG=%s*", model.Flag), "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
+	for _, key := range keys {
+		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
+			if !strings.HasPrefix(str, "[") {
+				return *model
+			}
+
+			var data []m.Project
+			json.Unmarshal([]byte(str), &data)
+			for _, item := range strings.Split(k, "#") {
+				var res = strings.Split(item, "=")
+
+				switch res[0] {
+				case "ID":
+					if id, _ := strconv.Atoi(res[1]); model.ID != uint32(id) {
+						return data
+					}
+
+				case "NAME":
+					if model.Name != res[1] {
+						return data
+					}
+
+				case "FLAG":
+					if model.Flag != res[1] {
+						return data
+					}
+
+				case "CREATED_FROM":
+					if created_from, _ := time.Parse("2006-01-02", res[1]); created_from.Year() < model.CreatedAt.Year() || created_from.YearDay() < model.CreatedAt.YearDay() {
+						return data
+					}
+
+				case "CREATED_TO":
+					if created_to, _ := time.Parse("2006-01-02", res[1]); created_to.Year() > model.CreatedAt.Year() || created_to.YearDay() > model.CreatedAt.YearDay() {
+						return data
+					}
+
+				case "LIMIT":
+					if limit, _ := strconv.Atoi(res[1]); limit <= len(data) {
+						return data
+					}
+				}
+			}
+
+			return append(data, *model)
+		})
+	}
+}
+
+func (c *ProjectService) deepcache(models []m.Project, key string) interface{} {
+	var suffix []string
+	for _, item := range strings.Split(key, "#") {
+		var res = strings.Split(item, "=")
+
+		switch res[0] {
+		case "LIMIT":
+			if limit, _ := strconv.Atoi(res[1]); limit != len(models)+1 {
+				if len(models) != 0 {
+					return models
+				}
+				return nil
+			}
+
+		case "PAGE":
+			page, _ := strconv.Atoi(res[1])
+			suffix = append(suffix, fmt.Sprintf("PAGE=%d", page+1))
+			continue
+		}
+
+		suffix = append(suffix, item)
+	}
+
+	var items []m.Project
+	if err := helper.Popcache(c.client, c.key, strings.Join(suffix, "#"), &items); err == nil {
+		if len(items) < 1 {
+			return nil
+		}
+
+		go c.deepcache(items[1:], strings.Join(suffix, "#"))
+		return append(models, items[0])
+	}
+
+	if len(models) != 0 {
+		return models
+	}
+	return nil
 }
 
 func (c *ProjectService) recache(model *m.Project, delete bool) {
@@ -50,7 +146,7 @@ func (c *ProjectService) recache(model *m.Project, delete bool) {
 
 	var keys = []string{fmt.Sprintf("FLAG=%s*", model.Flag), "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
-		helper.Recache(c.client, c.key, key, func(str string) interface{} {
+		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
 				var data m.Project
 				json.Unmarshal([]byte(str), &data)
@@ -73,55 +169,59 @@ func (c *ProjectService) recache(model *m.Project, delete bool) {
 				}
 			}
 
-			if len(result) > 0 {
-				return result
+			// Check if size of an array was changed
+			if delete {
+				return c.deepcache(result, suffix)
 			}
 
-			return nil
-
+			return result
 		})
 	}
 }
 
 func (c *ProjectService) query(dto *m.ProjectQueryDto, client *gorm.DB) (*gorm.DB, string) {
-	var suffix = ""
+	var suffix []string
 
 	if dto.ID > 0 {
-		suffix += fmt.Sprintf("ID=%d", dto.ID)
+		suffix = append(suffix, fmt.Sprintf("ID=%d", dto.ID))
 		client = client.Where("id = ?", dto.ID)
 	}
 
 	if len(dto.Name) > 0 {
-		suffix += fmt.Sprintf("NAME=%s", dto.Name)
+		suffix = append(suffix, fmt.Sprintf("NAME=%s", dto.Name))
 		client = client.Where("name = ?", dto.Name)
 	}
 
 	if len(dto.Flag) > 0 {
-		suffix += fmt.Sprintf("FLAG=%s", dto.Flag)
+		suffix = append(suffix, fmt.Sprintf("FLAG=%s", dto.Flag))
 		client = client.Where("flag = ?", dto.Flag)
 	}
 
 	if !dto.CreatedFrom.IsZero() {
-		suffix += fmt.Sprintf("CREATED_FROM=%s", dto.CreatedFrom.Format("2006-01-02"))
+		suffix = append(suffix, fmt.Sprintf("CREATED_FROM=%s", dto.CreatedFrom.Format("2006-01-02")))
 		client = client.Where("created_at >= ?", dto.CreatedFrom)
 	}
 
 	if !dto.CreatedTo.IsZero() {
-		suffix += fmt.Sprintf("CREATED_TO=%s", dto.CreatedTo.Format("2006-01-02"))
+		suffix = append(suffix, fmt.Sprintf("CREATED_TO=%s", dto.CreatedTo.Format("2006-01-02")))
 		client = client.Where("created_at <= ?", dto.CreatedTo)
 	}
 
 	if dto.Page >= 0 {
-		suffix += fmt.Sprintf("PAGE=%d", dto.Page)
-		client = client.Offset(dto.Page * config.ENV.Items)
+		var limit = config.ENV.Items
+		if dto.Limit > 0 {
+			limit = dto.Limit
+		}
+
+		suffix = append(suffix, fmt.Sprintf("PAGE=%d", dto.Page))
+		client = client.Offset(dto.Page * limit)
+
+		suffix = append(suffix, fmt.Sprintf("LIMIT=%d", limit))
+		client = client.Limit(limit)
+
 	}
 
-	if dto.Limit > 0 {
-		suffix += fmt.Sprintf("LIMIT=%d", dto.Page)
-		client = client.Limit(dto.Limit)
-	}
-
-	return client, suffix
+	return client, strings.Join(suffix, "#")
 }
 
 func (c *ProjectService) Create(model *m.Project) error {

@@ -7,6 +7,7 @@ import (
 	m "api/models"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/go-redis/redis/v8"
@@ -42,6 +43,91 @@ func (c *SubscriptionService) precache(model *m.Subscription) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("TOKEN=%s", model.Token), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("CRON_ID=%s", model.CronID), model)
+
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	for _, key := range keys {
+		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
+			var data []m.Subscription
+			if !strings.HasPrefix(str, "[") {
+				data = make([]m.Subscription, 1)
+				json.Unmarshal([]byte(str), &data[0])
+			} else {
+				json.Unmarshal([]byte(str), &data)
+			}
+
+			for _, item := range strings.Split(k, "#") {
+				var res = strings.Split(item, "=")
+
+				switch res[0] {
+				case "ID":
+					if id, _ := strconv.Atoi(res[1]); model.ID != uint32(id) {
+						return data
+					}
+
+				case "NAME":
+					if model.Name != res[1] {
+						return data
+					}
+
+				case "CRON_ID":
+					if model.CronID != res[1] {
+						return data
+					}
+
+				case "PROJECT_ID":
+					if id, _ := strconv.Atoi(res[1]); model.ProjectID != uint32(id) {
+						return data
+					}
+
+				case "LIMIT":
+					if limit, _ := strconv.Atoi(res[1]); limit <= len(data) {
+						return data
+					}
+				}
+			}
+
+			return append(data, *model)
+		})
+	}
+}
+
+func (c *SubscriptionService) deepcache(models []m.Subscription, key string) interface{} {
+	var suffix []string
+	for _, item := range strings.Split(key, "#") {
+		var res = strings.Split(item, "=")
+
+		switch res[0] {
+		case "LIMIT":
+			if limit, _ := strconv.Atoi(res[1]); limit != len(models)+1 {
+				if len(models) != 0 {
+					return models
+				}
+				return nil
+			}
+
+		case "PAGE":
+			page, _ := strconv.Atoi(res[1])
+			suffix = append(suffix, fmt.Sprintf("PAGE=%d", page+1))
+			continue
+		}
+
+		suffix = append(suffix, item)
+	}
+
+	var items []m.Subscription
+	if err := helper.Popcache(c.client, c.key, strings.Join(suffix, "#"), &items); err == nil {
+		if len(items) < 1 {
+			return nil
+		}
+
+		go c.deepcache(items[1:], strings.Join(suffix, "#"))
+		return append(models, items[0])
+	}
+
+	if len(models) != 0 {
+		return models
+	}
+	return nil
 }
 
 func (c *SubscriptionService) recache(model *m.Subscription, delete bool) {
@@ -51,7 +137,7 @@ func (c *SubscriptionService) recache(model *m.Subscription, delete bool) {
 
 	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
-		helper.Recache(c.client, c.key, key, func(str string) interface{} {
+		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
 				var data m.Subscription
 				json.Unmarshal([]byte(str), &data)
@@ -74,50 +160,53 @@ func (c *SubscriptionService) recache(model *m.Subscription, delete bool) {
 				}
 			}
 
-			if len(result) > 0 {
-				return result
+			// Check if size of an array was changed
+			if delete {
+				return c.deepcache(result, suffix)
 			}
 
-			return nil
-
+			return result
 		})
 	}
 }
 
 func (c *SubscriptionService) query(dto *m.SubscribeQueryDto, client *gorm.DB) (*gorm.DB, string) {
-	var suffix = ""
+	var suffix []string
 
 	if dto.ID > 0 {
-		suffix += fmt.Sprintf("ID=%d", dto.ID)
+		suffix = append(suffix, fmt.Sprintf("ID=%d", dto.ID))
 		client = client.Where("id = ?", dto.ID)
 	}
 
 	if dto.ProjectID > 0 {
-		suffix += fmt.Sprintf("PROJECT_ID=%d", dto.ProjectID)
+		suffix = append(suffix, fmt.Sprintf("PROJECT_ID=%d", dto.ProjectID))
 		client = client.Where("project_id = ?", dto.ProjectID)
 	}
 
 	if len(dto.Name) > 0 {
-		suffix += fmt.Sprintf("NAME=%s", dto.Name)
+		suffix = append(suffix, fmt.Sprintf("NAME=%s", dto.Name))
 		client = client.Where("name = ?", dto.Name)
 	}
 
 	if len(dto.CronID) > 0 {
-		suffix += fmt.Sprintf("CRON_ID=%s", dto.CronID)
+		suffix = append(suffix, fmt.Sprintf("CRON_ID=%s", dto.CronID))
 		client = client.Where("cron_id = ?", dto.CronID)
 	}
 
 	if dto.Page >= 0 {
-		suffix += fmt.Sprintf("PAGE=%d", dto.Page)
-		client = client.Offset(dto.Page * config.ENV.Items)
+		var limit = config.ENV.Items
+		if dto.Limit > 0 {
+			limit = dto.Limit
+		}
+
+		suffix = append(suffix, fmt.Sprintf("PAGE=%d", dto.Page))
+		client = client.Offset(dto.Page * limit)
+
+		suffix = append(suffix, fmt.Sprintf("LIMIT=%d", limit))
+		client = client.Limit(limit)
 	}
 
-	if dto.Limit > 0 {
-		suffix += fmt.Sprintf("LIMIT=%d", dto.Page)
-		client = client.Limit(dto.Limit)
-	}
-
-	return client, suffix
+	return client, strings.Join(suffix, "#")
 }
 
 func (c *SubscriptionService) Create(model *m.Subscription) error {

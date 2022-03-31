@@ -182,7 +182,7 @@ func (o *subscriptionController) ReadOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /subscription/{id} [get]
 func (o *subscriptionController) ReadAll(c *gin.Context) {
-	var query = m.SubscribeQueryDto{Page: 0, Limit: config.ENV.Limit}
+	var query = m.SubscribeQueryDto{Page: -1}
 	if err := c.ShouldBindQuery(&query); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return

@@ -115,6 +115,155 @@ func TestProjectRead(t *testing.T) {
 	}
 }
 
+func TestProjectUpdateStat(t *testing.T) {
+	var tests = []struct {
+		name  string
+		model m.Project
+		err   bool
+	}{
+		{
+			name:  "Create new project record",
+			model: m.Project{Name: "_test5", Title: "yes", Flag: "aa", Desc: "yes", Note: "yes"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var model = tc.model.Copy()
+			err := project.Create(model)
+			if tc.err {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotEqual(t, 0, model.ID)
+			require.Equal(t, tc.model.Name, model.Name)
+			require.Equal(t, tc.model.Title, model.Title)
+			require.Equal(t, tc.model.Flag, model.Flag)
+			require.Equal(t, tc.model.Desc, model.Desc)
+			require.Equal(t, tc.model.Note, model.Note)
+		})
+	}
+}
+
+func TestProjectCheckStat(t *testing.T) {
+	var tests = []struct {
+		name     string
+		query    m.ProjectQueryDto
+		expected []m.Project
+	}{
+		{
+			name:     "Read project record by Name",
+			query:    m.ProjectQueryDto{Name: "_test"},
+			expected: []m.Project{{Name: "_test", Title: "yes", Flag: "aa", Desc: "yes", Note: "yes"}},
+		},
+		{
+			name:     "Read project record by Name 2",
+			query:    m.ProjectQueryDto{Name: "_test2"},
+			expected: []m.Project{{Name: "_test2", Title: "yes", Flag: "js", Desc: "yes", Note: "yes"}},
+		},
+		{
+			name:     "Read project record by role & project_id",
+			query:    m.ProjectQueryDto{Flag: "aa", CreatedTo: createdTo, CreatedFrom: createdFrom},
+			expected: []m.Project{{Name: "_test", Title: "yes", Flag: "aa", Desc: "yes", Note: "yes"}, {Name: "_test5", Title: "yes", Flag: "aa", Desc: "yes", Note: "yes"}},
+		},
+		{
+			name:     "Read project with pagination & query filter",
+			query:    m.ProjectQueryDto{Flag: "aa", Page: 0},
+			expected: []m.Project{{Name: "_test", Title: "yes", Flag: "aa", Desc: "yes", Note: "yes"}, {Name: "_test5", Title: "yes", Flag: "aa", Desc: "yes", Note: "yes"}},
+		},
+		{
+			name:     "Read file with pagination (outside borders) & query filter",
+			query:    m.ProjectQueryDto{Flag: "aa", Page: 1},
+			expected: []m.Project{},
+		},
+		{
+			name:     "Read project with pagination & limit",
+			query:    m.ProjectQueryDto{Flag: "aa", Page: 0, Limit: 1},
+			expected: []m.Project{{Name: "_test5", Title: "yes", Flag: "aa", Desc: "yes", Note: "yes"}},
+		},
+		{
+			name:     "Read project with pagination & limit",
+			query:    m.ProjectQueryDto{Flag: "aa", Page: 1, Limit: 1},
+			expected: []m.Project{{Name: "_test", Title: "yes", Flag: "aa", Desc: "yes", Note: "yes"}},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			models, err := project.Read(&tc.query)
+			require.NoError(t, err)
+			require.Equal(t, len(tc.expected), len(models))
+
+			for i, expected := range tc.expected {
+				require.Equal(t, expected.Name, models[i].Name)
+				require.Equal(t, expected.Title, models[i].Title)
+				require.Equal(t, expected.Flag, models[i].Flag)
+				require.Equal(t, expected.Desc, models[i].Desc)
+				require.Equal(t, expected.Note, models[i].Note)
+			}
+		})
+	}
+}
+
+func TestProjectDeleteStat(t *testing.T) {
+	var tests = []struct {
+		name     string
+		query    m.ProjectQueryDto
+		expected int
+	}{
+		{
+			name:     "Delete Project record by Name",
+			query:    m.ProjectQueryDto{Name: "_test5"},
+			expected: 1,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			items, err := project.Delete(&tc.query)
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, items)
+		})
+	}
+}
+
+func TestProjectCheckDeleteStat(t *testing.T) {
+	var tests = []struct {
+		name     string
+		query    m.ProjectQueryDto
+		expected []m.Project
+	}{
+		{
+			name:     "Read project with pagination & limit",
+			query:    m.ProjectQueryDto{Flag: "aa", Page: 0, Limit: 1},
+			expected: []m.Project{{Name: "_test", Title: "yes", Flag: "aa", Desc: "yes", Note: "yes"}},
+		},
+		{
+			name:     "Read project with pagination & limit",
+			query:    m.ProjectQueryDto{Flag: "aa", Page: 1, Limit: 1},
+			expected: []m.Project{},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			models, err := project.Read(&tc.query)
+			require.NoError(t, err)
+			require.Equal(t, len(tc.expected), len(models))
+
+			for i, expected := range tc.expected {
+				require.Equal(t, expected.Name, models[i].Name)
+				require.Equal(t, expected.Title, models[i].Title)
+				require.Equal(t, expected.Flag, models[i].Flag)
+				require.Equal(t, expected.Desc, models[i].Desc)
+				require.Equal(t, expected.Note, models[i].Note)
+			}
+		})
+	}
+}
+
 func TestProjectUpdate(t *testing.T) {
 	var tests = []struct {
 		name  string

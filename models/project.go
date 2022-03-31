@@ -109,6 +109,7 @@ type ProjectQueryDto struct {
 	Page  int `form:"page,omitempty" example:"1"`
 	Limit int `form:"limit,omitempty" example:"10"`
 
-	Link LinkQueryDto `form:"link,omitempty"`
-	File FileQueryDto `form:"file,omitempty"`
+	Link         LinkQueryDto      `form:"link,omitempty"`
+	File         FileQueryDto      `form:"file,omitempty"`
+	Subscription SubscribeQueryDto `form:"subscription,omitempty"`
 }
