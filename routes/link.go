@@ -3,9 +3,12 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
+	s "api/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
 )
 
 type linkRouter struct {
@@ -14,11 +17,11 @@ type linkRouter struct {
 	link  interfaces.Default
 }
 
-func NewLinkRouter(rg *gin.RouterGroup) interfaces.Router {
+func NewLinkRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) interfaces.Router {
 	return &linkRouter{
 		route: rg.Group(("/link")),
-		auth:  rg.Group("/link", middleware.Auth()),
-		link:  c.NewLinkController(),
+		auth:  rg.Group("/link", m.GetMiddleware().Auth()),
+		link:  c.NewLinkController(s.NewLinkService(db, client)),
 	}
 }
 

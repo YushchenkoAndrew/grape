@@ -31,12 +31,12 @@ func Pagination(c *gin.Context) (page int, limit int) {
 	return
 }
 
-func GetID(c *gin.Context, id *int) bool {
-	var err error
-	if *id, err = strconv.Atoi(c.Param("id")); err != nil || *id <= 0 {
-		return false
+func GetID(c *gin.Context) int {
+	if id, err := strconv.Atoi(c.Param("id")); err == nil && id > 0 {
+		return id
 	}
-	return true
+
+	return 0
 }
 
 var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")

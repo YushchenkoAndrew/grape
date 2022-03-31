@@ -4,7 +4,6 @@ import (
 	"api/config"
 	"api/interfaces"
 
-	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
@@ -26,12 +25,14 @@ func (*GeoIpLocations) TableName() string {
 	return "geo_ip_locations"
 }
 
-func (c *GeoIpLocations) Migrate(db *gorm.DB, forced bool) {
+func (c *GeoIpLocations) Migrate(db *gorm.DB, forced bool) error {
 	if forced {
 		db.Migrator().DropTable(c)
 	}
 
-	db.AutoMigrate(c)
+	if err := db.AutoMigrate(c); err != nil {
+		return err
+	}
 
 	var nSize int64
 	if db.Model(c).Count(&nSize); nSize == 0 {
@@ -39,8 +40,6 @@ func (c *GeoIpLocations) Migrate(db *gorm.DB, forced bool) {
 		// The most quick and easiest way !!!
 		db.Exec("\\copy geo_ip_locations from '" + config.ENV.MigrationPath + "/GeoLite2-Country-Locations-en.csv' delimiter ',' csv header;")
 	}
-}
 
-func (*GeoIpLocations) Redis(*gorm.DB, *redis.Client) error {
 	return nil
 }

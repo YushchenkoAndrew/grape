@@ -4,12 +4,9 @@ import (
 	"api/config"
 	"api/db"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
 	"api/models"
 	"api/routes"
-	"api/routes/info"
-	"api/routes/k3s"
-	"api/routes/k3s/pods"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,7 +26,7 @@ import (
 // @in header
 // @name Authorization
 
-// @host mortis-grimreaper.ddns.net:31337
+// @host mortis-grimreaper.ddns.net
 // @BasePath /api
 func main() {
 	config.NewConfig([]func() interfaces.Config{
@@ -38,7 +35,7 @@ func main() {
 		config.NewOperationConfig("./", "operations"),
 	}).Init()
 
-	db.Init([]interfaces.Table{
+	db, client := db.Init([]interfaces.Table{
 		models.NewInfo(),
 		models.NewWorld(),
 
@@ -53,32 +50,32 @@ func main() {
 	})
 
 	r := gin.Default()
-	rg := r.Group(config.ENV.BasePath, middleware.Limit())
+	rg := r.Group(config.ENV.BasePath, m.NewMiddleware(db, client).Limit())
 	router := routes.NewIndexRouter(rg, &[]interfaces.Router{
 		routes.NewSwaggerRouter(rg),
-		routes.NewWorldRouter(rg),
-		routes.NewProjectRouter(rg),
-		routes.NewFileRouter(rg),
-		routes.NewLinkRouter(rg),
-		routes.NewBotRouter(rg),
+		routes.NewProjectRouter(rg, db, client),
+		routes.NewFileRouter(rg, db, client),
+		routes.NewLinkRouter(rg, db, client),
+		routes.NewBotRouter(rg, db, client),
 
-		routes.NewInfoRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
-			info.NewSumRouterFactory(),
-			info.NewRangeRouterFactory(),
-		}),
+		// routes.NewWorldRouter(rg),
+		// routes.NewInfoRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
+		// 	info.NewSumRouterFactory(),
+		// 	info.NewRangeRouterFactory(),
+		// }),
 
-		routes.NewK3sRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
-			k3s.NewDeploymentRouterFactory(),
-			k3s.NewIngressRouterFactory(),
-			k3s.NewPodsRouterFactory([]func(*gin.RouterGroup) interfaces.Router{
-				pods.NewMetricsRouterFactory(),
-			}),
-			k3s.NewNamespaceRouterFactory(),
-			k3s.NewServiceRouterFactory(),
-		}),
+		// routes.NewK3sRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
+		// 	k3s.NewDeploymentRouterFactory(),
+		// 	k3s.NewIngressRouterFactory(),
+		// 	k3s.NewPodsRouterFactory([]func(*gin.RouterGroup) interfaces.Router{
+		// 		pods.NewMetricsRouterFactory(),
+		// 	}),
+		// 	k3s.NewNamespaceRouterFactory(),
+		// 	k3s.NewServiceRouterFactory(),
+		// }),
 
-		routes.NewSubscribeRouter(rg),
-	})
+		routes.NewSubscribeRouter(rg, db, client),
+	}, db, client)
 
 	router.Init()
 	r.Run(config.ENV.Host + ":" + config.ENV.Port)

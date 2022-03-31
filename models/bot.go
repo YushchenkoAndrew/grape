@@ -9,6 +9,6 @@ type LogMessage struct {
 	Desc    interface{} `json:"desc" xml:"desc"`
 }
 
-type BotRedis struct {
+type BotRedisDto struct {
 	Command string `json:"command" xml:"command" binding:"required"`
 }

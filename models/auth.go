@@ -14,8 +14,17 @@ type LoginDto struct {
 	Pass string `json:"pass" xml:"pass" binding:"required"`
 }
 
+func (c *LoginDto) IsOK() bool {
+	return c.User != "" || c.Pass != ""
+}
+
 type TokenEntity struct {
 	Status       string `json:"status" xml:"status" example:"OK"`
+	AccessToken  string `json:"access_token" xml:"access_token"`
+	RefreshToken string `json:"refresh_token" xml:"refresh_token"`
+}
+
+type TokenDto struct {
 	AccessToken  string `json:"access_token" xml:"access_token"`
 	RefreshToken string `json:"refresh_token" xml:"refresh_token" binding:"required"`
 }

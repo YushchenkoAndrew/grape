@@ -3,9 +3,12 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
+	s "api/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
 )
 
 type projectRouter struct {
@@ -14,11 +17,11 @@ type projectRouter struct {
 	project interfaces.Default
 }
 
-func NewProjectRouter(rg *gin.RouterGroup) interfaces.Router {
+func NewProjectRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) interfaces.Router {
 	return &projectRouter{
 		route:   rg.Group(("/project")),
-		auth:    rg.Group("/project", middleware.Auth()),
-		project: c.NewProjectController(),
+		auth:    rg.Group("/project", m.GetMiddleware().Auth()),
+		project: c.NewProjectController(s.NewFullProjectService(db, client)),
 	}
 }
 

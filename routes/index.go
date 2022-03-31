@@ -3,8 +3,11 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
+	s "api/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
 )
 
 type indexRouter struct {
@@ -13,8 +16,12 @@ type indexRouter struct {
 	subRoutes *[]interfaces.Router
 }
 
-func NewIndexRouter(route *gin.RouterGroup, subRoutes *[]interfaces.Router) interfaces.Router {
-	return &indexRouter{route: route, index: c.NewIndexController(), subRoutes: subRoutes}
+func NewIndexRouter(route *gin.RouterGroup, subRoutes *[]interfaces.Router, db *gorm.DB, client *redis.Client) interfaces.Router {
+	return &indexRouter{
+		route:     route,
+		index:     c.NewIndexController(s.NewIndexService(db, client)),
+		subRoutes: subRoutes,
+	}
 }
 
 func (c *indexRouter) Init() {

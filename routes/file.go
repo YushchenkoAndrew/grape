@@ -3,9 +3,12 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
-	"api/middleware"
+	m "api/middleware"
+	s "api/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
 )
 
 type fileRouter struct {
@@ -14,11 +17,11 @@ type fileRouter struct {
 	file  interfaces.Default
 }
 
-func NewFileRouter(rg *gin.RouterGroup) interfaces.Router {
+func NewFileRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) interfaces.Router {
 	return &fileRouter{
 		route: rg.Group("/file"),
-		auth:  rg.Group("/file", middleware.Auth()),
-		file:  c.NewFileController(),
+		auth:  rg.Group("/file", m.GetMiddleware().Auth()),
+		file:  c.NewFileController(s.NewFileService(db, client)),
 	}
 }
 

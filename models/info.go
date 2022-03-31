@@ -2,17 +2,14 @@ package models
 
 import (
 	"api/interfaces"
-	"context"
-	"fmt"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
 type Info struct {
 	ID        uint32    `gorm:"primaryKey" json:"id" xml:"id"`
-	CreatedAt time.Time `gorm:"default:CURRENT_DATE;unique" json:"created_at" xml:"created_at" example:"2021-08-06"`
+	CreatedAt time.Time `gorm:"autoCreateTime;unique" json:"created_at" xml:"created_at" example:"2021-08-06"`
 	Countries string    `json:"countries" xml:"contries" example:"UK,US"`
 	Views     uint16    `gorm:"default:0" json:"views" xml:"views" example:"1"`
 	Clicks    uint16    `gorm:"default:0" json:"clicks" xml:"clicks" example:"2"`
@@ -28,22 +25,12 @@ func (*Info) TableName() string {
 	return "info"
 }
 
-func (c *Info) Migrate(db *gorm.DB, forced bool) {
+func (c *Info) Migrate(db *gorm.DB, forced bool) error {
 	if forced {
 		db.Migrator().DropTable(c)
 	}
-	db.AutoMigrate(c)
-}
 
-func (c *Info) Redis(db *gorm.DB, client *redis.Client) error {
-	var value int64
-	db.Model(c).Count(&value)
-
-	if err := client.Set(context.Background(), "nINFO", value, 0).Err(); err != nil {
-		return fmt.Errorf("[Redis] Error happed while setting value to Cache: %v", err)
-	}
-
-	return nil
+	return db.AutoMigrate(c)
 }
 
 type InfoDto struct {

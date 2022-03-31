@@ -43,6 +43,7 @@ func (*ingressController) CreateOne(c *gin.Context) {
 		return
 	}
 
+	// TODO: Separate this to a different file
 	var body v1beta1.Ingress
 	if err := c.ShouldBind(&body); err != nil {
 		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body is not setted")
@@ -130,7 +131,7 @@ func (*ingressController) ReadAll(c *gin.Context) {
 	helper.ResHandler(c, http.StatusOK, &models.Success{
 		Status: "OK",
 		Result: result.Items,
-		Items:  int64(len(result.Items)),
+		Items:  len(result.Items),
 	})
 }
 

@@ -2,7 +2,6 @@ package db
 
 import (
 	"api/config"
-	"api/interfaces"
 	"api/logs"
 	"api/models"
 
@@ -10,12 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// FIXME: Should fix this one day
-var DB *gorm.DB
-
-func ConnectToDB(tables []interfaces.Table) {
-	var err error
-	DB, err = gorm.Open(postgres.Open(
+func ConnectToDB() *gorm.DB {
+	var db, err = gorm.Open(postgres.Open(
 		"host="+config.ENV.DBHost+
 			" user="+config.ENV.DBUser+
 			" password="+config.ENV.DBPass+
@@ -33,7 +28,5 @@ func ConnectToDB(tables []interfaces.Table) {
 		panic("Failed on db connection")
 	}
 
-	for _, table := range tables {
-		table.Migrate(DB, config.ENV.ForceMigrate)
-	}
+	return db
 }

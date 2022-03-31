@@ -129,7 +129,7 @@ func (*serviceController) ReadAll(c *gin.Context) {
 	helper.ResHandler(c, http.StatusOK, &models.Success{
 		Status: "OK",
 		Result: result.Items,
-		Items:  int64(len(result.Items)),
+		Items:  len(result.Items),
 	})
 }
 
