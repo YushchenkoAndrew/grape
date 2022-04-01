@@ -236,12 +236,9 @@ func (o *projectController) ReadAll(c *gin.Context) {
 	}
 
 	for i := 0; i < len(models); i++ {
-		query.Link.ProjectID = models[i].ID
-		query.File.ProjectID = models[i].ID
-
-		models[i].Links, _ = o.service.Link.Read(&query.Link)
-		models[i].Files, _ = o.service.File.Read(&query.File)
-		models[i].Subscription, _ = o.service.Subscription.Read(&m.SubscribeQueryDto{ProjectID: models[i].ID})
+		models[i].Links, _ = o.service.Link.Read(&m.LinkQueryDto{ID: query.Link.ID, Name: query.Link.Name, ProjectID: models[i].ID, Page: query.Link.Page, Limit: query.Link.Limit})
+		models[i].Files, _ = o.service.File.Read(&m.FileQueryDto{ID: query.File.ID, Name: query.File.Name, Role: query.File.Role, Path: query.File.Path, ProjectID: models[i].ID, Page: query.File.Page, Limit: query.File.Limit})
+		models[i].Subscription, _ = o.service.Subscription.Read(&m.SubscribeQueryDto{ID: query.Subscription.ID, Name: query.Subscription.Name, CronID: query.Subscription.CronID, ProjectID: models[i].ID, Page: query.Subscription.Page, Limit: query.Subscription.Limit})
 	}
 
 	helper.ResHandler(c, http.StatusOK, &m.Success{

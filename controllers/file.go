@@ -16,7 +16,7 @@ type fileController struct {
 }
 
 func NewFileController(s *service.FileService) interfaces.Default {
-	return &fileController{}
+	return &fileController{service: s}
 }
 
 // func (*fileController) isExist(id int, body *m.FileDto) bool {

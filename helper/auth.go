@@ -58,8 +58,6 @@ func CheckToken(dto *models.TokenDto) (*models.Auth, error) {
 		return nil, err
 	}
 
-	// var userUUID string
-	// var refreshUUID string
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
 		return nil, fmt.Errorf("Unauthorized token")

@@ -33,6 +33,13 @@ func Getcache(db *gorm.DB, client *redis.Client, prefix, suffix string, model in
 	// Check if cache have requested data
 	var key = fmt.Sprintf("%s:%s", prefix, suffix)
 	if data, err := client.Get(ctx, key).Result(); err == nil {
+		if !strings.HasPrefix(data, "[") && reflect.ValueOf(model).Elem().Kind() == reflect.Slice {
+			data = fmt.Sprintf("[%s]", data)
+		} else if strings.HasPrefix(data, "[") && reflect.ValueOf(model).Elem().Kind() != reflect.Slice {
+			// NOTE: Not the BEST solution
+			data = strings.Trim(data, "[]")
+		}
+
 		json.Unmarshal([]byte(data), model)
 		go client.Expire(ctx, key, time.Duration(config.ENV.LiveTime)*time.Second)
 	} else {

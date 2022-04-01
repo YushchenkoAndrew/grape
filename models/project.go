@@ -109,7 +109,30 @@ type ProjectQueryDto struct {
 	Page  int `form:"page,omitempty" example:"1"`
 	Limit int `form:"limit,omitempty" example:"10"`
 
-	Link         LinkQueryDto      `form:"link,omitempty"`
-	File         FileQueryDto      `form:"file,omitempty"`
-	Subscription SubscribeQueryDto `form:"subscription,omitempty"`
+	Link struct {
+		ID   uint32 `form:"link[id],omitempty"`
+		Name string `form:"link[name],omitempty" example:"main"`
+
+		Page  int `form:"link[page],omitempty" example:"1"`
+		Limit int `form:"link[limit],omitempty" example:"10"`
+	}
+
+	File struct {
+		ID   uint32 `form:"file[id],omitempty"`
+		Name string `form:"file[name],omitempty" example:"main"`
+		Role string `form:"file[role],omitempty" example:"src"`
+		Path string `form:"file[path],omitempty" example:"/test"`
+
+		Page  int `form:"file[page],omitempty" example:"1"`
+		Limit int `form:"file[limit],omitempty" example:"10"`
+	}
+
+	Subscription struct {
+		ID     uint32 `form:"subscription[id],omitempty"`
+		Name   string `form:"subscription[name],omitempty" example:"main"`
+		CronID string `form:"subscription[cron_id],omitempty" example:"main"`
+
+		Page  int `form:"subscription[page],omitempty" example:"1"`
+		Limit int `form:"subscription[limit],omitempty" example:"10"`
+	}
 }
