@@ -25,7 +25,7 @@ jobs:
       REDIS_PASS: ""
 
       # Pagination setting
-      LIVE_TIME: 120
+      LIVE_TIME: 12000
       ITEMS: 20
       LIMIT: 20
 
@@ -47,7 +47,7 @@ jobs:
         image: postgres
         env:
           POSTGRES_USER: root
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: postgres:14
           POSTGRES_DB: api_db
         options: >-
           --health-cmd pg_isready

@@ -295,7 +295,11 @@ func init() {
 
 	db, client := db.Init([]interfaces.Table{
 		m.NewFile(),
+		m.NewProject(),
 	})
 
 	file = *service.NewFileService(db, client)
+
+	var project = *service.NewProjectService(db, client)
+	project.Create(&m.Project{ID: 1})
 }
