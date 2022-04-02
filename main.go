@@ -30,7 +30,7 @@ import (
 // @BasePath /api
 func main() {
 	config.NewConfig([]func() interfaces.Config{
-		config.NewEnvConfig("./"),
+		config.NewEnvConfig("./", ""),
 		config.NewK3sConfig("./k3s.yaml"),
 		config.NewOperationConfig("./", "operations"),
 	}).Init()

@@ -224,7 +224,7 @@ func (c *FileService) Create(model *m.File) error {
 		c.precache(model)
 	}
 
-	if res.Error != nil || res.RowsAffected == 0 {
+	if res.Error != nil {
 		go logs.DefaultLog("/controllers/link.go", res.Error)
 		return fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}
@@ -250,7 +250,7 @@ func (c *FileService) Update(query *m.FileQueryDto, model *m.File) ([]m.File, er
 	}
 
 	client, _ = c.query(query, c.db.Model(&m.File{}))
-	if res = client.Updates(model); res.Error != nil || res.RowsAffected == 0 {
+	if res = client.Updates(model); res.Error != nil {
 		go logs.DefaultLog("/controllers/file.go", res.Error)
 		return nil, fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}

@@ -286,7 +286,7 @@ func TestSubscriptionFinalCacheState(t *testing.T) {
 
 func init() {
 	config.NewConfig([]func() interfaces.Config{
-		config.NewEnvConfig("./"),
+		config.NewEnvConfig("./", ""),
 	}).Init()
 
 	db, client := db.Init([]interfaces.Table{

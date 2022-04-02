@@ -230,7 +230,7 @@ func (c *ProjectService) Create(model *m.Project) error {
 		return fmt.Errorf("Requested project with name=%s has already existed", model.Name)
 	}
 
-	if res := c.db.Create(model); res.Error != nil || res.RowsAffected == 0 {
+	if res := c.db.Create(model); res.Error != nil {
 		go logs.DefaultLog("/controllers/link.go", res.Error)
 		return fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}
@@ -264,7 +264,7 @@ func (c *ProjectService) Update(query *m.ProjectQueryDto, model *m.Project) ([]m
 	}
 
 	client, _ = c.query(query, c.db.Model(&m.Project{}))
-	if res = client.Updates(model); res.Error != nil || res.RowsAffected == 0 {
+	if res = client.Updates(model); res.Error != nil {
 		go logs.DefaultLog("/controllers/project.go", res.Error)
 		return nil, fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}

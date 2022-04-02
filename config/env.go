@@ -62,17 +62,23 @@ var ENV EnvType
 
 type envConfig struct {
 	path string
+	name string
 }
 
-func NewEnvConfig(path string) func() interfaces.Config {
+func NewEnvConfig(path, name string) func() interfaces.Config {
 	return func() interfaces.Config {
-		return &envConfig{path: path}
+		return &envConfig{path, name}
 	}
 }
 
 func (c *envConfig) Init() {
 	viper.AddConfigPath(c.path)
-	viper.SetConfigFile(".env")
+	if c.name == "" {
+		viper.SetConfigFile(".env")
+	} else {
+		viper.SetConfigName(c.name)
+		viper.SetConfigType("env")
+	}
 
 	viper.AutomaticEnv()
 	if err := viper.ReadInConfig(); err != nil {

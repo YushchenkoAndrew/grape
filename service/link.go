@@ -205,7 +205,7 @@ func (c *LinkService) Create(model *m.Link) error {
 		c.precache(model)
 	}
 
-	if res.Error != nil || res.RowsAffected == 0 {
+	if res.Error != nil {
 		go logs.DefaultLog("/controllers/link.go", res.Error)
 		return fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}
@@ -231,7 +231,7 @@ func (c *LinkService) Update(query *m.LinkQueryDto, model *m.Link) ([]m.Link, er
 	}
 
 	client, _ = c.query(query, c.db.Model(&m.Link{}))
-	if res = client.Updates(model); res.Error != nil || res.RowsAffected == 0 {
+	if res = client.Updates(model); res.Error != nil {
 		go logs.DefaultLog("/controllers/link.go", res.Error)
 		return nil, fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}

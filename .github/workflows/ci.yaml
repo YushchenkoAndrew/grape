@@ -1,0 +1,82 @@
+name: ci-test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      HOST: ""
+      PORT: "31337"
+      BASE_PATH: /api
+
+      DB_NAME: api_db
+      DB_HOST: "127.0.0.1"
+      DB_PORT: "5432"
+      DB_USER: root
+      DB_PASS: postgres
+
+      REDIS_HOST: "127.0.0.1"
+      REDIS_PORT: "6379"
+      REDIS_PASS: ""
+
+      # Pagination setting
+      LIVE_TIME: 120
+      ITEMS: 20
+      LIMIT: 20
+
+      # JWT
+      TOKEN_EXPIRE: 20m
+
+      # Rate info
+      RATE_LIMIT: 200
+      RATE_TIME: 1000
+
+      # Migation Settings
+      FORCE_MIGRATE: false
+      MIGRATION_PATH: ./tmp
+
+      METRICS_COUNT: 5
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: $DB_USER
+          POSTGRES_PASSWORD: $DB_PASS
+          POSTGRES_DB: $DB_NAME
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.17
+
+      - name: Create env from sample
+        run: cp .env.template test/services/.env
+
+      - name: Test
+        run: go test -v ./...

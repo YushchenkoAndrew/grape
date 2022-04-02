@@ -226,7 +226,7 @@ func (c *SubscriptionService) Create(model *m.Subscription) error {
 		c.precache(model)
 	}
 
-	if res.Error != nil || res.RowsAffected == 0 {
+	if res.Error != nil {
 		go logs.DefaultLog("/controllers/subscription.go", res.Error)
 		return fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}
@@ -259,7 +259,7 @@ func (c *SubscriptionService) Update(query *m.SubscribeQueryDto, model *m.Subscr
 	}
 
 	client, _ = c.query(query, c.db.Model(&m.Subscription{}))
-	if res = client.Updates(model); res.Error != nil || res.RowsAffected == 0 {
+	if res = client.Updates(model); res.Error != nil {
 		go logs.DefaultLog("/controllers/subscription.go", res.Error)
 		return nil, fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}
