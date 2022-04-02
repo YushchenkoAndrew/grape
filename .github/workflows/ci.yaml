@@ -15,12 +15,12 @@ jobs:
       BASE_PATH: /api
 
       DB_NAME: api_db
-      DB_HOST: "127.0.0.1"
+      DB_HOST: localhost
       DB_PORT: "5432"
       DB_USER: root
       DB_PASS: postgres
 
-      REDIS_HOST: "127.0.0.1"
+      REDIS_HOST: localhost
       REDIS_PORT: "6379"
       REDIS_PASS: ""
 
