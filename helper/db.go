@@ -41,7 +41,7 @@ func Getcache(db *gorm.DB, client *redis.Client, prefix, suffix string, model in
 		}
 
 		json.Unmarshal([]byte(data), model)
-		client.Expire(ctx, key, time.Duration(config.ENV.LiveTime)*time.Second)
+		go client.Expire(ctx, key, time.Duration(config.ENV.LiveTime)*time.Second)
 	} else {
 		if result := db.Find(model); result.Error != nil || result.RowsAffected == 0 {
 			return result.Error, result.RowsAffected
@@ -68,9 +68,9 @@ func Popcache(client *redis.Client, prefix, suffix string, models interface{}) e
 
 	items := reflect.ValueOf(models).Elem()
 	if items.Len() > 1 {
-		Precache(client, prefix, suffix, items.Slice(1, items.Len()))
+		go Precache(client, prefix, suffix, items.Slice(1, items.Len()))
 	} else {
-		Precache(client, prefix, suffix, nil)
+		go Precache(client, prefix, suffix, nil)
 	}
 
 	return nil
@@ -85,7 +85,7 @@ func Recache(client *redis.Client, prefix, suffix string, revalue func(string, s
 		var key = strings.Replace(iter.Val(), prefix+":", "", 1)
 
 		data, _ := client.Get(ctx, iter.Val()).Result()
-		Precache(client, prefix, key, revalue(data, key))
+		go Precache(client, prefix, key, revalue(data, key))
 	}
 
 	if err := iter.Err(); err != nil {
@@ -100,7 +100,7 @@ func Delcache(client *redis.Client, prefix, suffix string) error {
 	iter := client.Scan(ctx, 0, fmt.Sprintf("%s:%s", prefix, suffix), 0).Iterator()
 
 	for iter.Next(ctx) {
-		client.Del(ctx, iter.Val())
+		go client.Del(ctx, iter.Val())
 	}
 
 	if err := iter.Err(); err != nil {
