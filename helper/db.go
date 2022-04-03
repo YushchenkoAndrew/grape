@@ -17,13 +17,13 @@ import (
 
 func Precache(client *redis.Client, prefix, suffix string, model interface{}) {
 	if model == nil {
-		go client.Del(context.Background(), fmt.Sprintf("%s:%s", prefix, suffix))
+		client.Del(context.Background(), fmt.Sprintf("%s:%s", prefix, suffix))
 		return
 	}
 
 	// Encode json to strO
 	if str, err := json.Marshal(model); err == nil {
-		go client.Set(context.Background(), fmt.Sprintf("%s:%s", prefix, suffix), str, time.Duration(config.ENV.LiveTime)*time.Second)
+		client.Set(context.Background(), fmt.Sprintf("%s:%s", prefix, suffix), str, time.Duration(config.ENV.LiveTime)*time.Second)
 	}
 }
 
@@ -41,7 +41,7 @@ func Getcache(db *gorm.DB, client *redis.Client, prefix, suffix string, model in
 		}
 
 		json.Unmarshal([]byte(data), model)
-		go client.Expire(ctx, key, time.Duration(config.ENV.LiveTime)*time.Second)
+		client.Expire(ctx, key, time.Duration(config.ENV.LiveTime)*time.Second)
 	} else {
 		if result := db.Find(model); result.Error != nil || result.RowsAffected == 0 {
 			return result.Error, result.RowsAffected
@@ -68,9 +68,9 @@ func Popcache(client *redis.Client, prefix, suffix string, models interface{}) e
 
 	items := reflect.ValueOf(models).Elem()
 	if items.Len() > 1 {
-		go Precache(client, prefix, suffix, items.Slice(1, items.Len()))
+		Precache(client, prefix, suffix, items.Slice(1, items.Len()))
 	} else {
-		go Precache(client, prefix, suffix, nil)
+		Precache(client, prefix, suffix, nil)
 	}
 
 	return nil
@@ -85,7 +85,7 @@ func Recache(client *redis.Client, prefix, suffix string, revalue func(string, s
 		var key = strings.Replace(iter.Val(), prefix+":", "", 1)
 
 		data, _ := client.Get(ctx, iter.Val()).Result()
-		go Precache(client, prefix, key, revalue(data, key))
+		Precache(client, prefix, key, revalue(data, key))
 	}
 
 	if err := iter.Err(); err != nil {
@@ -100,7 +100,7 @@ func Delcache(client *redis.Client, prefix, suffix string) error {
 	iter := client.Scan(ctx, 0, fmt.Sprintf("%s:%s", prefix, suffix), 0).Iterator()
 
 	for iter.Next(ctx) {
-		go client.Del(ctx, iter.Val())
+		client.Del(ctx, iter.Val())
 	}
 
 	if err := iter.Err(); err != nil {
