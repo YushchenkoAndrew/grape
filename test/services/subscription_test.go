@@ -291,7 +291,11 @@ func init() {
 
 	db, client := db.Init([]interfaces.Table{
 		m.NewSubscription(),
+		m.NewProject(),
 	})
 
 	subscription = *service.NewSubscriptionService(db, client)
+
+	var project = *service.NewProjectService(db, client)
+	project.Create(&m.Project{ID: 1, Name: "yes", Title: "js", Flag: "js", Desc: "js", Note: "js"})
 }

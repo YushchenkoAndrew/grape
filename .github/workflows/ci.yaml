@@ -37,7 +37,7 @@ jobs:
       RATE_TIME: 1000
 
       # Migation Settings
-      FORCE_MIGRATE: false
+      FORCE_MIGRATE: true
       MIGRATION_PATH: ./tmp
 
       METRICS_COUNT: 5

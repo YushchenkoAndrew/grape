@@ -33,11 +33,11 @@ func TestProjectCreate(t *testing.T) {
 			name:  "Create new file record",
 			model: m.Project{Name: "_test2", Title: "yes", Flag: "js", Desc: "yes", Note: "yes"},
 		},
-		// {
-		// 	name:  "Check what will happend if create already existed project name",
-		// 	model: m.Project{Name: "_test"},
-		// 	err:   true,
-		// },
+		{
+			name:  "Check what will happend if create already existed project name",
+			model: m.Project{Name: "_test"},
+			err:   true,
+		},
 	}
 
 	for _, tc := range tests {
