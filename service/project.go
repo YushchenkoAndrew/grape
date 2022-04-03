@@ -150,11 +150,12 @@ func (c *ProjectService) recache(model *m.Project, delete bool) {
 			if !strings.HasPrefix(str, "[") {
 				var data m.Project
 				json.Unmarshal([]byte(str), &data)
-				if !delete {
-					return *model
+				if delete {
+					// return nil
+					return c.deepcache([]m.Project{*model}, suffix)
 				}
 
-				return nil
+				return *model
 			}
 
 			var data []m.Project
