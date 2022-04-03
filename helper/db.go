@@ -47,7 +47,7 @@ func Getcache(db *gorm.DB, client *redis.Client, prefix, suffix string, model in
 			return result.Error, result.RowsAffected
 		}
 
-		Precache(client, prefix, suffix, model)
+		go Precache(client, prefix, suffix, model)
 	}
 
 	return nil, -1
