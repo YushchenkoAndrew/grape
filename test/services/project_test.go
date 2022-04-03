@@ -1,6 +1,9 @@
 package services_test
 
 import (
+	"api/config"
+	"api/db"
+	"api/interfaces"
 	m "api/models"
 	"api/service"
 	"testing"
@@ -457,4 +460,16 @@ func TestProjectState(t *testing.T) {
 			require.Equal(t, tc.expected, len(models))
 		})
 	}
+}
+
+func init() {
+	config.NewConfig([]func() interfaces.Config{
+		config.NewEnvConfig("./", ""),
+	}).Init()
+
+	db, client := db.Init([]interfaces.Table{
+		m.NewProject(),
+	})
+
+	project = *service.NewProjectService(db, client)
 }
