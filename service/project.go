@@ -149,16 +149,6 @@ func (c *ProjectService) recache(model *m.Project, delete bool) {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
 				str = fmt.Sprintf("[%s]", str)
-				// if delete {
-				// 	return nil
-				// }
-
-				// return *model
-
-				// return c.deepcache([]m.Project{*model}, suffix)
-				// var data m.Project
-				// json.Unmarshal([]byte(str), &data)
-
 			}
 
 			var data []m.Project

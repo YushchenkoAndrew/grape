@@ -139,13 +139,7 @@ func (c *SubscriptionService) recache(model *m.Subscription, delete bool) {
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
-				var data m.Subscription
-				json.Unmarshal([]byte(str), &data)
-				if !delete {
-					return *model
-				}
-
-				return nil
+				str = fmt.Sprintf("[%s]", str)
 			}
 
 			var data []m.Subscription
