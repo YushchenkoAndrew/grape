@@ -148,14 +148,16 @@ func (c *ProjectService) recache(model *m.Project, delete bool) {
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
-				var data m.Project
-				json.Unmarshal([]byte(str), &data)
 				if delete {
-					// return nil
-					return c.deepcache([]m.Project{*model}, suffix)
+					return nil
 				}
 
 				return *model
+
+				// return c.deepcache([]m.Project{*model}, suffix)
+				// var data m.Project
+				// json.Unmarshal([]byte(str), &data)
+
 			}
 
 			var data []m.Project
