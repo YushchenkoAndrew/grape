@@ -41,22 +41,22 @@ func TestProjectCreate(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			var model = tc.model.Copy()
-			err := project.Create(model)
-			if tc.err {
-				require.Error(t, err)
-				return
-			}
+		// t.Run(tc.name, func(t *testing.T) {
+		var model = tc.model.Copy()
+		err := project.Create(model)
+		if tc.err {
+			require.Error(t, err)
+			return
+		}
 
-			require.NoError(t, err)
-			require.NotEqual(t, 0, model.ID)
-			require.Equal(t, tc.model.Name, model.Name)
-			require.Equal(t, tc.model.Title, model.Title)
-			require.Equal(t, tc.model.Flag, model.Flag)
-			require.Equal(t, tc.model.Desc, model.Desc)
-			require.Equal(t, tc.model.Note, model.Note)
-		})
+		require.NoError(t, err)
+		require.NotEqual(t, 0, model.ID)
+		require.Equal(t, tc.model.Name, model.Name)
+		require.Equal(t, tc.model.Title, model.Title)
+		require.Equal(t, tc.model.Flag, model.Flag)
+		require.Equal(t, tc.model.Desc, model.Desc)
+		require.Equal(t, tc.model.Note, model.Note)
+		// })
 	}
 }
 
