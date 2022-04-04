@@ -201,7 +201,7 @@ func (o *fileController) UpdateOne(c *gin.Context) {
 		return
 	}
 
-	models, err := o.service.Update(&m.FileQueryDto{ID: uint32(id)}, &m.File{ProjectID: uint32(id), Name: body.Name, Path: body.Path, Type: body.Type, Role: body.Role})
+	models, err := o.service.Update(&m.FileQueryDto{ID: uint32(id)}, &m.File{Name: body.Name, Path: body.Path, Type: body.Type, Role: body.Role})
 	if err != nil {
 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return

@@ -85,8 +85,6 @@ func (o *linkController) CreateAll(c *gin.Context) {
 		if item.IsOK() {
 			var model = m.Link{ProjectID: uint32(id), Name: item.Name, Link: item.Link}
 			if err := o.service.Create(&model); err != nil {
-
-				panic(err)
 				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 				return
 			}
