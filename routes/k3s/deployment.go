@@ -7,6 +7,7 @@ import (
 	s "api/service/k3s"
 
 	"github.com/gin-gonic/gin"
+	"k8s.io/client-go/kubernetes"
 )
 
 type deploymentRouter struct {
@@ -14,19 +15,25 @@ type deploymentRouter struct {
 	deployment interfaces.Default
 }
 
-func NewDeploymentRouterFactory() func(*gin.RouterGroup) interfaces.Router {
+func NewDeploymentRouterFactory(k3s *kubernetes.Clientset) func(*gin.RouterGroup) interfaces.Router {
 	return func(rg *gin.RouterGroup) interfaces.Router {
 		return &deploymentRouter{
 			auth:       rg.Group("/deployment", m.GetMiddleware().Auth()),
-			deployment: c.NewDeploymentController(s.NewDeploymentService()),
+			deployment: c.NewDeploymentController(s.NewDeploymentService(k3s)),
 		}
 	}
 }
 
 func (c *deploymentRouter) Init() {
 	c.auth.POST("/:namespace", c.deployment.CreateOne)
+	c.auth.POST("/list/:namespace", c.deployment.CreateAll)
 
-	c.auth.GET("", c.deployment.ReadAll)
+	c.auth.GET("/:namespace/:label", c.deployment.ReadOne)
 	c.auth.GET("/:namespace", c.deployment.ReadAll)
-	c.auth.GET("/:namespace/:name", c.deployment.ReadOne)
+
+	c.auth.PUT("/:namespace", c.deployment.UpdateOne)
+	c.auth.PUT("/list/:namespace", c.deployment.UpdateAll)
+
+	c.auth.DELETE("/:namespace/:name", c.deployment.DeleteAll)
+	c.auth.DELETE("/:namespace", c.deployment.DeleteOne)
 }

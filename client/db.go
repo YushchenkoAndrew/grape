@@ -1,4 +1,4 @@
-package db
+package client
 
 import (
 	"api/config"
@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func ConnectToDB() *gorm.DB {
+func connDB() *gorm.DB {
 	var db, err = gorm.Open(postgres.Open(
 		"host="+config.ENV.DBHost+
 			" user="+config.ENV.DBUser+

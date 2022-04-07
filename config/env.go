@@ -25,6 +25,9 @@ type EnvType struct {
 	RedisPort string `mapstructure:"REDIS_PORT"`
 	RedisPass string `mapstructure:"REDIS_PASS"`
 
+	// K3s
+	K3sPath string `mapstructure:"K3S_PATH"`
+
 	// JWT
 	AccessSecret  string `mapstructure:"ACCESS_SECRET"`
 	RefreshSecret string `mapstructure:"REFRESH_SECRET"`
@@ -52,9 +55,6 @@ type EnvType struct {
 	// Migration Settings
 	ForceMigrate  bool   `mapstructure:"FORCE_MIGRATE"`
 	MigrationPath string `mapstructure:"MIGRATION_PATH"`
-
-	// Metrics
-	Metrics int `mapstructure:"METRICS_COUNT"`
 }
 
 // FIXME: I should fix this one day

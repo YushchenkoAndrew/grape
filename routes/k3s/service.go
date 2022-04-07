@@ -4,8 +4,10 @@ import (
 	c "api/controllers/k3s"
 	"api/interfaces"
 	m "api/middleware"
+	s "api/service/k3s"
 
 	"github.com/gin-gonic/gin"
+	"k8s.io/client-go/kubernetes"
 )
 
 type serviceRouter struct {
@@ -13,19 +15,25 @@ type serviceRouter struct {
 	service interfaces.Default
 }
 
-func NewServiceRouterFactory() func(*gin.RouterGroup) interfaces.Router {
+func NewServiceRouterFactory(k3s *kubernetes.Clientset) func(*gin.RouterGroup) interfaces.Router {
 	return func(rg *gin.RouterGroup) interfaces.Router {
 		return &serviceRouter{
 			auth:    rg.Group("/service", m.GetMiddleware().Auth()),
-			service: c.NewServiceController(),
+			service: c.NewServiceController(s.NewServiceService(k3s)),
 		}
 	}
 }
 
 func (c *serviceRouter) Init() {
 	c.auth.POST("/:namespace", c.service.CreateOne)
+	c.auth.POST("/list/:namespace", c.service.CreateAll)
 
-	c.auth.GET("", c.service.ReadAll)
+	c.auth.GET("/:namespace/:label", c.service.ReadOne)
 	c.auth.GET("/:namespace", c.service.ReadAll)
-	c.auth.GET("/:namespace/:name", c.service.ReadOne)
+
+	c.auth.PUT("/:namespace", c.service.UpdateOne)
+	c.auth.PUT("/list/:namespace", c.service.UpdateAll)
+
+	c.auth.DELETE("/:namespace/:name", c.service.DeleteAll)
+	c.auth.DELETE("/:namespace", c.service.DeleteOne)
 }

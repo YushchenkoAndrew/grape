@@ -1,12 +1,14 @@
 package main
 
 import (
+	"api/client"
 	"api/config"
-	"api/db"
 	"api/interfaces"
 	m "api/middleware"
 	"api/models"
 	"api/routes"
+	k "api/routes/k3s"
+	"api/routes/k3s/pods"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,11 +33,10 @@ import (
 func main() {
 	config.NewConfig([]func() interfaces.Config{
 		config.NewEnvConfig("./", ""),
-		config.NewK3sConfig("./k3s.yaml"),
 		config.NewOperationConfig("./", "operations"),
 	}).Init()
 
-	db, client := db.Init([]interfaces.Table{
+	db, client, k3s, metrics := client.Init([]interfaces.Table{
 		models.NewInfo(),
 		models.NewWorld(),
 
@@ -64,15 +65,15 @@ func main() {
 		// 	info.NewRangeRouterFactory(),
 		// }),
 
-		// routes.NewK3sRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
-		// 	k3s.NewDeploymentRouterFactory(),
-		// 	k3s.NewIngressRouterFactory(),
-		// 	k3s.NewPodsRouterFactory([]func(*gin.RouterGroup) interfaces.Router{
-		// 		pods.NewMetricsRouterFactory(),
-		// 	}),
-		// 	k3s.NewNamespaceRouterFactory(),
-		// 	k3s.NewServiceRouterFactory(),
-		// }),
+		routes.NewK3sRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
+			k.NewDeploymentRouterFactory(k3s),
+			k.NewIngressRouterFactory(k3s),
+			k.NewPodsRouterFactory([]func(*gin.RouterGroup) interfaces.Router{
+				pods.NewMetricsRouterFactory(db, client, metrics),
+			}),
+			k.NewNamespaceRouterFactory(k3s),
+			k.NewServiceRouterFactory(k3s),
+		}),
 
 		routes.NewSubscribeRouter(rg, db, client),
 	}, db, client)

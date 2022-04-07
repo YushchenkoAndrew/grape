@@ -1,8 +1,8 @@
 package services_test
 
 import (
+	"api/client"
 	"api/config"
-	"api/db"
 	"api/interfaces"
 	m "api/models"
 	"api/service"
@@ -279,7 +279,7 @@ func init() {
 		config.NewEnvConfig("./", ""),
 	}).Init()
 
-	db, client := db.Init([]interfaces.Table{
+	db, client, _, _ := client.Init([]interfaces.Table{
 		m.NewLink(),
 		m.NewProject(),
 	})

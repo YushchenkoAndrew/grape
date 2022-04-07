@@ -1,7 +1,7 @@
 cfg:
   - name: metrics
     method: post
-    path: /k3s/pods/metrics/{id}/{namespace}/{name}
+    path: /k3s/pods/metrics/{namespace}/{name}?id={id}
     required:
       - id
       - name

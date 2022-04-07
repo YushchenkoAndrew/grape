@@ -1,156 +1,22 @@
 package pods
 
 import (
+	"api/helper"
 	"api/interfaces"
+	m "api/models"
+	"api/service/k3s/pods"
+	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-type metricsController struct{}
-
-func NewMetricsController() interfaces.Default {
-	return &metricsController{}
+type metricsController struct {
+	service *pods.FullMetricsService
 }
 
-func getScaledValue(q *resource.Quantity, scale int) (int64, int) {
-	if scale >= 0 {
-		return q.ScaledValue(resource.Scale(-int32(scale))), scale
-	}
-
-	var value int64
-	if value = q.Value(); value%10 == 0 {
-		return value, 0
-	}
-
-	for i := 1; i < 12; i++ {
-		if value = q.ScaledValue(resource.Scale(-int32(i))); value%10 == 0 {
-			return value, i
-		}
-	}
-
-	return 0, 0
-}
-
-// @Tags Metrics
-// @Summary Save an array of Pods Metrics
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param namespace path string true "Namespace of the Pod"
-// @Param prefix query string false "Selector label, read more here: https://stackoverflow.com/a/47453572"
-// @Param id path int true "Project primaray id"
-// @Param namespace path string true "Namespace name"
-// @Success 200 {object} models.Success{int}
-// @failure 422 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /k3s/pod/metrics/{id}/{namespace}/ [post]
-func (*metricsController) CreateAll(c *gin.Context) {
-	// var id int
-	// var namespace string
-
-	// if namespace = c.Param("namespace"); namespace == "" {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, "Namespace shouldn't be empty")
-	// 	return
-	// }
-
-	// if !helper.GetID(c, &id) {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect project id param")
-	// 	return
-	// }
-
-	// options := metaV1.ListOptions{}
-	// if prefix := c.DefaultQuery("prefix", ""); prefix != "" {
-	// 	options.LabelSelector = fmt.Sprintf("app=%s", c.DefaultQuery("prefix", ""))
-	// }
-
-	// ctx := context.Background()
-	// result, err := config.Metrics.MetricsV1beta1().PodMetricses(namespace).List(ctx, options)
-	// if err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-
-	// for _, pod := range result.Items {
-	// 	var count int
-	// 	key := fmt.Sprintf("METRICS:%s:%s:%d", pod.Namespace, pod.Name, id)
-	// 	if count, err = db.Redis.Get(ctx, key).Int(); err != nil {
-	// 		count = 0
-	// 	}
-
-	// 	if count < config.ENV.Metrics {
-	// 		db.Redis.Incr(ctx, key)
-
-	// 		for i, container := range pod.Containers {
-
-	// 			var cpuArg int64
-	// 			if cpuArg, err = db.Redis.Get(ctx, fmt.Sprintf("%s:CPU:%d", key, i)).Int64(); err != nil {
-	// 				cpuArg = 0
-	// 			}
-
-	// 			var cpuArgScale int
-	// 			if cpuArgScale, err = db.Redis.Get(ctx, fmt.Sprintf("%s:CPU:SCALE:%d", key, i)).Int(); err != nil {
-	// 				cpuArgScale = -1
-	// 			}
-
-	// 			var memoryArg int64
-	// 			if memoryArg, err = db.Redis.Get(ctx, fmt.Sprintf("%s:MEMORY:%d", key, i)).Int64(); err != nil {
-	// 				memoryArg = 0
-	// 			}
-
-	// 			var memoryArgScale int
-	// 			if memoryArgScale, err = db.Redis.Get(ctx, fmt.Sprintf("%s:MEMORY:SCALE:%d", key, i)).Int(); err != nil {
-	// 				memoryArgScale = -1
-	// 			}
-
-	// 			container.Usage.Cpu().MilliValue()
-
-	// 			cpu, cpuScale := getScaledValue(container.Usage.Cpu(), cpuArgScale)
-	// 			memory, memoryScale := getScaledValue(container.Usage.Memory(), memoryArgScale)
-
-	// 			db.Redis.Set(ctx, fmt.Sprintf("%s:CPU:%d", key, i), cpuArg+cpu/int64(config.ENV.Metrics), 0)
-	// 			db.Redis.Set(ctx, fmt.Sprintf("%s:MEMORY:%d", key, i), memoryArg+memory/int64(config.ENV.Metrics), 0)
-
-	// 			db.Redis.Set(ctx, fmt.Sprintf("%s:CPU:SCALE:%d", key, i), cpuScale, 0)
-	// 			db.Redis.Set(ctx, fmt.Sprintf("%s:MEMORY:SCALE:%d", key, i), memoryScale, 0)
-	// 		}
-
-	// 	} else {
-	// 		db.Redis.Del(ctx, key)
-	// 		model := make([]models.Metrics, len(pod.Containers))
-
-	// 		for i, container := range pod.Containers {
-	// 			model[i].ProjectID = uint32(id)
-
-	// 			model[i].Name = pod.Name
-	// 			model[i].Namespace = pod.Namespace
-	// 			model[i].ContainerName = container.Name
-
-	// 			model[i].CPU, _ = db.Redis.Get(ctx, fmt.Sprintf("%s:CPU:%d", key, i)).Int64()
-	// 			model[i].Memory, _ = db.Redis.Get(ctx, fmt.Sprintf("%s:MEMORY:%d", key, i)).Int64()
-
-	// 			cpuScale, _ := db.Redis.Get(ctx, fmt.Sprintf("%s:CPU:SCALE:%d", key, i)).Int()
-	// 			memScale, _ := db.Redis.Get(ctx, fmt.Sprintf("%s:MEMORY:SCALE:%d", key, i)).Int()
-
-	// 			model[i].CpuScale = int8(cpuScale)
-	// 			model[i].MemoryScale = int8(memScale)
-
-	// 			db.Redis.Del(ctx, fmt.Sprintf("%s:CPU:%d", key, i))
-	// 			db.Redis.Del(ctx, fmt.Sprintf("%s:MEMORY:%d", key, i))
-
-	// 			db.Redis.Del(ctx, fmt.Sprintf("%s:CPU:SCALE:%d", key, i))
-	// 			db.Redis.Del(ctx, fmt.Sprintf("%s:MEMORY:SCALE:%d", key, i))
-	// 		}
-
-	// 		if result := db.DB.Create(&model); result.Error != nil || result.RowsAffected == 0 {
-	// 			helper.ErrHandler(c, http.StatusInternalServerError, "Something unexpected happend")
-	// 			go logs.DefaultLog("/controllers/k3s/pods/metrics.go", result.Error)
-	// 			return
-	// 		}
-	// 	}
-	// }
+func NewMetricsController(s *pods.FullMetricsService) interfaces.Default {
+	return &metricsController{service: s}
 }
 
 // @Tags Metrics
@@ -159,118 +25,115 @@ func (*metricsController) CreateAll(c *gin.Context) {
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
-// @Param namespace path string true "Namespace of the Pod"
-// @Param name path string true "Specified name of the Pod"
-// @Param id path int true "Project primaray id"
+// @Param id query int true "Project primaray id"
+// @Param label path string true "LabelSelector, read more here: https://stackoverflow.com/a/47453572"
 // @Param namespace path string true "Namespace name"
-// @Success 200 {object} models.Success{int}
-// @failure 422 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /k3s/pod/metrics/{id}/{namespace}/{name} [post]
-func (*metricsController) CreateOne(c *gin.Context) {
-	// var id int
-	// var name string
-	// var namespace string
+// @Success 200 {object} m.Success{result=[]m.Metrics}
+// @failure 422 {object} m.Error
+// @failure 429 {object} m.Error
+// @failure 500 {object} m.Error
+// @Router /k3s/pod/metrics/{namespace}/{name} [post]
+func (o *metricsController) CreateOne(c *gin.Context) {
+	var id = helper.GetID(c)
+	var label = c.Param("label")
+	var namespace = c.Param("namespace")
 
-	// if name = c.Param("name"); name == "" {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, "Name shouldn't be empty")
-	// 	return
-	// }
+	if id == 0 || label == "" || namespace == "" {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Incorrect params { id: %t, label: %t, namespace: %t }", id == 0, label == "", namespace == ""))
+		return
+	}
 
-	// if namespace = c.Param("namespace"); namespace == "" {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, "Namespace shouldn't be empty")
-	// 	return
-	// }
+	metrics, err := o.service.Pods.Read(namespace, &m.K3sListQueryDto{LabelSelector: label})
+	if err != nil {
+		helper.ErrHandler(c, http.StatusInternalServerError, fmt.Sprintf("Hmmm k3s is broken, I guess: %v", err))
+		return
+	}
 
-	// if !helper.GetID(c, &id) {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect project id param")
-	// 	return
-	// }
+	var models = []m.Metrics{}
+	for _, pod := range metrics.Items {
+		for _, item := range pod.Containers {
+			// NOTE: Maybe, maybe one day check on inf.dec value
+			var cpu, _ = item.Usage.Cpu().AsInt64()
+			var memory, _ = item.Usage.Memory().AsInt64()
 
-	// ctx := context.Background()
-	// result, err := config.Metrics.MetricsV1beta1().PodMetricses(namespace).Get(ctx, name, metaV1.GetOptions{})
-	// if err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
+			var model = m.Metrics{ProjectID: uint32(id), Name: pod.Name, Namespace: pod.Namespace, ContainerName: item.Name, CPU: cpu, Memory: memory}
+			if err := o.service.Metrics.Create(&model); err != nil {
+				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+				return
+			}
 
-	// var count int
-	// key := fmt.Sprintf("METRICS:%s:%s:%d", result.Namespace, result.Name, id)
-	// if count, err = db.Redis.Get(ctx, key).Int(); err != nil {
-	// 	count = 0
-	// }
+			models = append(models, model)
+		}
+	}
 
-	// if count < config.ENV.Metrics {
-	// 	db.Redis.Incr(ctx, key)
+	helper.ResHandler(c, http.StatusCreated, &m.Success{
+		Status: "OK",
+		Result: models,
+		Items:  len(models),
+	})
+}
 
-	// 	for i, container := range result.Containers {
+// @Tags Metrics
+// @Summary Save an array of Pods Metrics
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id query int true "Project primaray id"
+// @Param namespace path string true "Namespace of the Pod"
+// @Param kind query string false "Kind is a string value representing the REST resource this object represents."
+// @Param api_version query string false "APIVersion defines the versioned schema of this representation of an object."
+// @Param label_selector query string false "A selector to restrict the list of returned objects by their labels."
+// @Param field_selector query string false "A selector to restrict the list of returned objects by their fields."
+// @Param watch query bool false "Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion."
+// @Param allow_watch_bookmarks query bool false "allowWatchBookmarks requests watch events with type "BOOKMARK"."
+// @Param resource_version query string false "resourceVersionMatch determines how resourceVersion is applied to list calls."
+// @Param limit query int64 false "limit is a maximum number of responses to return for a list call."
+// @Param continue query string false "The continue option should be set when retrieving more results from the server."
+// @Success 200 {object} m.Success{result=[]m.Metrics}
+// @Success 200 {object} m.Success{int}
+// @failure 422 {object} m.Error
+// @failure 429 {object} m.Error
+// @failure 500 {object} m.Error
+// @Router /k3s/pod/metrics/{namespace} [post]
+func (o *metricsController) CreateAll(c *gin.Context) {
+	var id = helper.GetID(c)
+	var query = m.K3sListQueryDto{}
+	var namespace = c.Param("namespace")
 
-	// 		var cpuArg int64
-	// 		if cpuArg, err = db.Redis.Get(ctx, fmt.Sprintf("%s:CPU:%d", key, i)).Int64(); err != nil {
-	// 			cpuArg = 0
-	// 		}
+	if err := c.ShouldBindQuery(&query); err != nil || id == 0 || namespace == "" {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Incorrect params { id: %t, query: %v, namespace: %t }", id == 0, err, namespace == ""))
+		return
+	}
 
-	// 		var cpuArgScale int
-	// 		if cpuArgScale, err = db.Redis.Get(ctx, fmt.Sprintf("%s:CPU:SCALE:%d", key, i)).Int(); err != nil {
-	// 			cpuArgScale = -1
-	// 		}
+	metrics, err := o.service.Pods.Read(namespace, &query)
+	if err != nil {
+		helper.ErrHandler(c, http.StatusInternalServerError, fmt.Sprintf("Hmmm k3s is broken, I guess: %v", err))
+		return
+	}
 
-	// 		var memoryArg int64
-	// 		if memoryArg, err = db.Redis.Get(ctx, fmt.Sprintf("%s:MEMORY:%d", key, i)).Int64(); err != nil {
-	// 			memoryArg = 0
-	// 		}
+	var models = []m.Metrics{}
+	for _, pod := range metrics.Items {
+		for _, item := range pod.Containers {
+			// NOTE: Maybe, maybe one day check on inf.dec value
+			var cpu, _ = item.Usage.Cpu().AsInt64()
+			var memory, _ = item.Usage.Memory().AsInt64()
 
-	// 		var memoryArgScale int
-	// 		if memoryArgScale, err = db.Redis.Get(ctx, fmt.Sprintf("%s:MEMORY:SCALE:%d", key, i)).Int(); err != nil {
-	// 			memoryArgScale = -1
-	// 		}
+			var model = m.Metrics{ProjectID: uint32(id), Name: pod.Name, Namespace: pod.Namespace, ContainerName: item.Name, CPU: cpu, Memory: memory}
+			if err := o.service.Metrics.Create(&model); err != nil {
+				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+				return
+			}
 
-	// 		container.Usage.Cpu().MilliValue()
+			models = append(models, model)
+		}
+	}
 
-	// 		cpu, cpuScale := getScaledValue(container.Usage.Cpu(), cpuArgScale)
-	// 		memory, memoryScale := getScaledValue(container.Usage.Memory(), memoryArgScale)
-
-	// 		db.Redis.Set(ctx, fmt.Sprintf("%s:CPU:%d", key, i), cpuArg+cpu/int64(config.ENV.Metrics), 0)
-	// 		db.Redis.Set(ctx, fmt.Sprintf("%s:MEMORY:%d", key, i), memoryArg+memory/int64(config.ENV.Metrics), 0)
-
-	// 		db.Redis.Set(ctx, fmt.Sprintf("%s:CPU:SCALE:%d", key, i), cpuScale, 0)
-	// 		db.Redis.Set(ctx, fmt.Sprintf("%s:MEMORY:SCALE:%d", key, i), memoryScale, 0)
-	// 	}
-
-	// } else {
-	// 	db.Redis.Del(ctx, key)
-	// 	model := make([]models.Metrics, len(result.Containers))
-
-	// 	for i, container := range result.Containers {
-	// 		model[i].ProjectID = uint32(id)
-
-	// 		model[i].Name = result.Name
-	// 		model[i].Namespace = result.Namespace
-	// 		model[i].ContainerName = container.Name
-
-	// 		model[i].CPU, _ = db.Redis.Get(ctx, fmt.Sprintf("%s:CPU:%d", key, i)).Int64()
-	// 		model[i].Memory, _ = db.Redis.Get(ctx, fmt.Sprintf("%s:MEMORY:%d", key, i)).Int64()
-
-	// 		cpuScale, _ := db.Redis.Get(ctx, fmt.Sprintf("%s:CPU:SCALE:%d", key, i)).Int()
-	// 		memScale, _ := db.Redis.Get(ctx, fmt.Sprintf("%s:MEMORY:SCALE:%d", key, i)).Int()
-
-	// 		model[i].CpuScale = int8(cpuScale)
-	// 		model[i].MemoryScale = int8(memScale)
-
-	// 		db.Redis.Del(ctx, fmt.Sprintf("%s:CPU:%d", key, i))
-	// 		db.Redis.Del(ctx, fmt.Sprintf("%s:MEMORY:%d", key, i))
-
-	// 		db.Redis.Del(ctx, fmt.Sprintf("%s:CPU:SCALE:%d", key, i))
-	// 		db.Redis.Del(ctx, fmt.Sprintf("%s:MEMORY:SCALE:%d", key, i))
-	// 	}
-
-	// 	if result := db.DB.Create(&model); result.Error != nil || result.RowsAffected == 0 {
-	// 		helper.ErrHandler(c, http.StatusInternalServerError, "Something unexpected happend")
-	// 		go logs.DefaultLog("/controllers/k3s/pods/metrics.go", result.Error)
-	// 		return
-	// 	}
-	// }
+	helper.ResHandler(c, http.StatusCreated, &m.Success{
+		Status: "OK",
+		Result: models,
+		Items:  len(models),
+	})
 }
 
 // @Tags Metrics
@@ -282,14 +145,14 @@ func (*metricsController) CreateOne(c *gin.Context) {
 // @Param id path string true "Project id"
 // @Param page query int false "Page: '0'"
 // @Param limit query int false "Limit: '1'"
-// @Success 200 {object} models.Success{result=[]models.Metrics}
-// @failure 422 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
+// @Success 200 {object} m.Success{result=[]m.Metrics}
+// @failure 422 {object} m.Error
+// @failure 429 {object} m.Error
+// @failure 500 {object} m.Error
 // @Router /k3s/pod/metrics/{id} [get]
 func (*metricsController) ReadOne(c *gin.Context) {
 	// var id int
-	// var model []models.Metrics
+	// var model []m.Metrics
 
 	// if !helper.GetID(c, &id) {
 	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id value")
@@ -310,11 +173,11 @@ func (*metricsController) ReadOne(c *gin.Context) {
 	// // var err error
 	// // if items, err = db.Redis.Get(context.Background(), "nLINK").Int64(); err != nil {
 	// // 	items = -1
-	// // 	go (&models.Link{}).Redis(db.DB, db.Redis)
+	// // 	go (&m.Link{}).Redis(db.DB, db.Redis)
 	// // 	go logs.DefaultLog("/controllers/k3s/pods/metrics.go", err.Error())
 	// // }
 
-	// helper.ResHandler(c, http.StatusOK, &models.Success{
+	// helper.ResHandler(c, http.StatusOK, &m.Success{
 	// 	Status: "OK",
 	// 	Result: model,
 	// 	Items:  int64(len(model)),

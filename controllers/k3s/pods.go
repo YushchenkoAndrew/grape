@@ -1,20 +1,9 @@
 package k3s
 
 import (
-	"api/config"
-	"api/helper"
 	"api/interfaces/k3s"
-	"api/logs"
-	"api/models"
-	"context"
-	"fmt"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
-	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/remotecommand"
 )
 
 type podsController struct{}
@@ -38,61 +27,61 @@ func NewPodsController() k3s.Pods {
 // @failure 500 {object} models.Error
 // @Router /k3s/pods/{namespace}/{name} [post]
 func (*podsController) Exec(c *gin.Context) {
-	var name string
-	var namespace string
+	// var name string
+	// var namespace string
 
-	name = c.Param("name")
-	if name == "" {
-		helper.ErrHandler(c, http.StatusBadRequest, "Namespace name shouldn't be empty")
-		return
-	}
+	// name = c.Param("name")
+	// if name == "" {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Namespace name shouldn't be empty")
+	// 	return
+	// }
 
-	if namespace = c.Param("namespace"); namespace == "" {
-		helper.ErrHandler(c, http.StatusBadRequest, "Namespace shouldn't be empty")
-		return
-	}
+	// if namespace = c.Param("namespace"); namespace == "" {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Namespace shouldn't be empty")
+	// 	return
+	// }
 
-	cmd, err := c.GetRawData()
-	if err != nil {
-		helper.ErrHandler(c, http.StatusBadRequest, err.Error())
-		return
-	}
+	// cmd, err := c.GetRawData()
+	// if err != nil {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, err.Error())
+	// 	return
+	// }
 
-	req := config.K3s.CoreV1().RESTClient().Post().Namespace(namespace).Resource("pods").Name(name).SubResource("exec").VersionedParams(&v1.PodExecOptions{
-		Command: []string{"sh", "-c", string(cmd)},
-		Stdout:  true,
-		Stderr:  true,
-		TTY:     true,
-	}, scheme.ParameterCodec)
+	// req := config.K3s.CoreV1().RESTClient().Post().Namespace(namespace).Resource("pods").Name(name).SubResource("exec").VersionedParams(&v1.PodExecOptions{
+	// 	Command: []string{"sh", "-c", string(cmd)},
+	// 	Stdout:  true,
+	// 	Stderr:  true,
+	// 	TTY:     true,
+	// }, scheme.ParameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(config.K3sConfig, "POST", req.URL())
-	if err != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-		return
-	}
+	// exec, err := remotecommand.NewSPDYExecutor(config.K3sConfig, "POST", req.URL())
+	// if err != nil {
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+	// 	return
+	// }
 
-	outWriter := helper.StreamWriter{}
-	errWriter := helper.StreamWriter{}
-	err = exec.Stream(remotecommand.StreamOptions{
-		Stdout: &outWriter,
-		Stderr: &errWriter,
-	})
+	// outWriter := helper.StreamWriter{}
+	// errWriter := helper.StreamWriter{}
+	// err = exec.Stream(remotecommand.StreamOptions{
+	// 	Stdout: &outWriter,
+	// 	Stderr: &errWriter,
+	// })
 
-	if err != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-		return
-	}
+	// if err != nil {
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+	// 	return
+	// }
 
-	if len(errWriter.Result) != 0 {
-		logs.DefaultLog("containers/k3s/pods", string(errWriter.Result))
-		helper.ErrHandler(c, http.StatusInternalServerError, string(errWriter.Result))
-		return
-	}
+	// if len(errWriter.Result) != 0 {
+	// 	logs.DefaultLog("containers/k3s/pods", string(errWriter.Result))
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, string(errWriter.Result))
+	// 	return
+	// }
 
-	helper.ResHandler(c, http.StatusCreated, &models.Success{
-		Status: "OK",
-		Result: string(outWriter.Result),
-	})
+	// helper.ResHandler(c, http.StatusCreated, &models.Success{
+	// 	Status: "OK",
+	// 	Result: string(outWriter.Result),
+	// })
 }
 
 // @Tags Pods
@@ -110,32 +99,32 @@ func (*podsController) Exec(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /k3s/pods/{namespace}/{name} [get]
 func (*podsController) ReadOne(c *gin.Context) {
-	var name string
-	var namespace string
+	// var name string
+	// var namespace string
 
-	if name = c.Param("name"); name == "" {
-		helper.ErrHandler(c, http.StatusBadRequest, "Name shouldn't be empty")
-		return
-	}
+	// if name = c.Param("name"); name == "" {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Name shouldn't be empty")
+	// 	return
+	// }
 
-	if namespace = c.Param("namespace"); namespace == "" {
-		helper.ErrHandler(c, http.StatusBadRequest, "Namespace shouldn't be empty")
-		return
-	}
+	// if namespace = c.Param("namespace"); namespace == "" {
+	// 	helper.ErrHandler(c, http.StatusBadRequest, "Namespace shouldn't be empty")
+	// 	return
+	// }
 
-	ctx := context.Background()
-	result, err := config.K3s.CoreV1().Pods(namespace).Get(ctx, name, metaV1.GetOptions{})
+	// ctx := context.Background()
+	// result, err := config.K3s.CoreV1().Pods(namespace).Get(ctx, name, metaV1.GetOptions{})
 
-	if err != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-		return
-	}
+	// if err != nil {
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+	// 	return
+	// }
 
-	helper.ResHandler(c, http.StatusOK, &models.Success{
-		Status: "OK",
-		Result: []*v1.Pod{result},
-		Items:  1,
-	})
+	// helper.ResHandler(c, http.StatusOK, &models.Success{
+	// 	Status: "OK",
+	// 	Result: []*v1.Pod{result},
+	// 	Items:  1,
+	// })
 }
 
 // @Tags Pods
@@ -152,25 +141,25 @@ func (*podsController) ReadOne(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /k3s/pods/{namespace} [get]
 func (*podsController) ReadAll(c *gin.Context) {
-	ctx := context.Background()
+	// ctx := context.Background()
 
-	options := metaV1.ListOptions{}
-	if prefix := c.DefaultQuery("prefix", ""); prefix != "" {
-		options.LabelSelector = fmt.Sprintf("app=%s", c.DefaultQuery("prefix", ""))
-	}
+	// options := metaV1.ListOptions{}
+	// if prefix := c.DefaultQuery("prefix", ""); prefix != "" {
+	// 	options.LabelSelector = fmt.Sprintf("app=%s", c.DefaultQuery("prefix", ""))
+	// }
 
-	result, err := config.K3s.CoreV1().Pods(c.Param("namespace")).List(ctx, options)
+	// result, err := config.K3s.CoreV1().Pods(c.Param("namespace")).List(ctx, options)
 
-	if err != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-		return
-	}
+	// if err != nil {
+	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+	// 	return
+	// }
 
-	// TODO: Save result in chache ....
+	// // TODO: Save result in chache ....
 
-	helper.ResHandler(c, http.StatusOK, &models.Success{
-		Status: "OK",
-		Result: result,
-		Items:  len(result.Items),
-	})
+	// helper.ResHandler(c, http.StatusOK, &models.Success{
+	// 	Status: "OK",
+	// 	Result: result,
+	// 	Items:  len(result.Items),
+	// })
 }

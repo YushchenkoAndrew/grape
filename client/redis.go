@@ -1,4 +1,4 @@
-package db
+package client
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-func ConnectToRedis() *redis.Client {
+func connRedis() *redis.Client {
 	var client = redis.NewClient(&redis.Options{
 		Addr:     config.ENV.RedisHost + ":" + config.ENV.RedisPort,
 		Password: config.ENV.RedisPass,
@@ -31,16 +31,3 @@ func ConnectToRedis() *redis.Client {
 	client.Set(ctx, "Mutex", 1, 0)
 	return client
 }
-
-// func FlushValue(client *redis.Client, key string) {
-// 	ctx := context.Background()
-// 	iter := client.Scan(ctx, 0, fmt.Sprintf("%s:*", key), 0).Iterator()
-
-// 	for iter.Next(ctx) {
-// 		go client.Del(ctx, iter.Val())
-// 	}
-
-// 	if err := iter.Err(); err != nil {
-// 		fmt.Println("[Redis] Error happed while setting interating through keys")
-// 	}
-// }
