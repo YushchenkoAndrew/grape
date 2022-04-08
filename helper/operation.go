@@ -13,11 +13,11 @@ func FormPathFromHandler(c *gin.Context, handler *config.Handler) (string, error
 
 	for _, param := range handler.Required {
 		if value := c.DefaultQuery(param, ""); value != "" {
-			path = strings.ReplaceAll(path, fmt.Sprintf("{%s}", param), value)
+			path = strings.Replace(path, fmt.Sprintf("{%s}", param), value, 1)
 			continue
 		}
 
-		return "", fmt.Errorf("Reqired parameter '%s'", param)
+		return "", fmt.Errorf("Reqired parameter '%s' does not presented", param)
 	}
 
 	return path, nil

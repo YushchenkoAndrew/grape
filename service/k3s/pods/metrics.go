@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
@@ -42,7 +43,7 @@ func (c *MetricsService) precache(model *m.Metrics) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("PROJECT_ID=%d#NAME=%s#NAMESPACE=%s#CONTAINER_NAME=%s", model.ProjectID, model.Name, model.Namespace, model.ContainerName), model)
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			var data []m.Metrics
@@ -74,6 +75,16 @@ func (c *MetricsService) precache(model *m.Metrics) {
 
 				case "CONTAINER_NAME":
 					if model.ContainerName != res[1] {
+						return data
+					}
+
+				case "CREATED_FROM":
+					if created_from, _ := time.Parse("2006-01-02", res[1]); created_from.Year() < model.CreatedAt.Year() || created_from.YearDay() < model.CreatedAt.YearDay() {
+						return data
+					}
+
+				case "CREATED_TO":
+					if created_to, _ := time.Parse("2006-01-02", res[1]); created_to.Year() > model.CreatedAt.Year() || created_to.YearDay() > model.CreatedAt.YearDay() {
 						return data
 					}
 
@@ -136,7 +147,7 @@ func (c *MetricsService) deepcache(models []m.Metrics, key string) interface{} {
 func (c *MetricsService) recache(model *m.Metrics, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
@@ -184,13 +195,23 @@ func (c *MetricsService) query(dto *m.MetricsQueryDto, client *gorm.DB) (*gorm.D
 	}
 
 	if len(dto.Namespace) > 0 {
-		suffix = append(suffix, fmt.Sprintf("NAMESPACE=%s", dto.Name))
-		client = client.Where("namespace = ?", dto.Name)
+		suffix = append(suffix, fmt.Sprintf("NAMESPACE=%s", dto.Namespace))
+		client = client.Where("namespace = ?", dto.Namespace)
 	}
 
 	if len(dto.ContainerName) > 0 {
-		suffix = append(suffix, fmt.Sprintf("CONTAINER_NAME=%s", dto.Name))
-		client = client.Where("container_name = ?", dto.Name)
+		suffix = append(suffix, fmt.Sprintf("CONTAINER_NAME=%s", dto.ContainerName))
+		client = client.Where("container_name = ?", dto.ContainerName)
+	}
+
+	if !dto.CreatedFrom.IsZero() {
+		suffix = append(suffix, fmt.Sprintf("CREATED_FROM=%s", dto.CreatedFrom.Format("2006-01-02")))
+		client = client.Where("created_at >= ?", dto.CreatedFrom)
+	}
+
+	if !dto.CreatedTo.IsZero() {
+		suffix = append(suffix, fmt.Sprintf("CREATED_TO=%s", dto.CreatedTo.Format("2006-01-02")))
+		client = client.Where("created_at <= ?", dto.CreatedTo)
 	}
 
 	if dto.Page >= 0 {

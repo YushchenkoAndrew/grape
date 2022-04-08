@@ -89,7 +89,7 @@ type MetricsDto struct {
 }
 
 func (c *MetricsDto) IsOK() bool {
-	return c.CPU != 0 && c.Memory != 0
+	return c.CPU > 0 && c.Memory > 0
 }
 
 type MetricsQueryDto struct {
@@ -98,6 +98,9 @@ type MetricsQueryDto struct {
 	Namespace     string `form:"namespace,omitempty" example:"void-deployment-8985bd57d-k9n5g"`
 	ContainerName string `form:"container_name,omitempty" example:"void"`
 	ProjectID     uint32 `form:"project_id,omitempty" example:"1"`
+
+	CreatedTo   time.Time `form:"created_to,omitempty" time_format:"2006-01-02" example:"2021-08-06"`
+	CreatedFrom time.Time `form:"created_from,omitempty" time_format:"2006-01-02" example:"2021-08-06"`
 
 	Page  int `form:"page,omitempty" example:"1"`
 	Limit int `form:"limit,omitempty" example:"10"`

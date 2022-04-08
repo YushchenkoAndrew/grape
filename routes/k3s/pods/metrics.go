@@ -30,10 +30,15 @@ func NewMetricsRouterFactory(db *gorm.DB, client *redis.Client, metrics *metrics
 }
 
 func (c *metricsRouter) Init() {
-	c.auth.GET("", c.metrics.ReadAll)
-	c.auth.GET("/:id", c.metrics.ReadOne)
-	// c.auth.GET("/:id/:namespace/:name", c.metrics.ReadOne)
+	c.authToken.POST("/:namespace/:label", c.metrics.CreateOne)
+	c.authToken.POST("/:namespace", c.metrics.CreateAll)
 
-	c.authToken.POST("/:id/:namespace", c.metrics.CreateAll)
-	c.authToken.POST("/:id/:namespace/:name", c.metrics.CreateOne)
+	c.auth.GET("/:id", c.metrics.ReadOne)
+	c.auth.GET("", c.metrics.ReadAll)
+
+	c.auth.PUT("/:id", c.metrics.UpdateOne)
+	c.auth.PUT("", c.metrics.UpdateAll)
+
+	c.auth.DELETE("/:id", c.metrics.DeleteOne)
+	c.auth.DELETE("", c.metrics.DeleteAll)
 }

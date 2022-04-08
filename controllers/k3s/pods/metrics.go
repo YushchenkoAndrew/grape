@@ -32,7 +32,7 @@ func NewMetricsController(s *pods.FullMetricsService) interfaces.Default {
 // @failure 422 {object} m.Error
 // @failure 429 {object} m.Error
 // @failure 500 {object} m.Error
-// @Router /k3s/pod/metrics/{namespace}/{name} [post]
+// @Router /k3s/pod/metrics/{namespace}/{label} [post]
 func (o *metricsController) CreateOne(c *gin.Context) {
 	var id = helper.GetID(c)
 	var label = c.Param("label")
@@ -137,58 +137,238 @@ func (o *metricsController) CreateAll(c *gin.Context) {
 }
 
 // @Tags Metrics
-// @Summary Get Pod Metrics by Project ID
+// @Summary Get Pod Metrics by ID
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
-// @Param id path string true "Project id"
-// @Param page query int false "Page: '0'"
-// @Param limit query int false "Limit: '1'"
+// @Param id path int true "Instance id"
 // @Success 200 {object} m.Success{result=[]m.Metrics}
 // @failure 422 {object} m.Error
 // @failure 429 {object} m.Error
 // @failure 500 {object} m.Error
 // @Router /k3s/pod/metrics/{id} [get]
-func (*metricsController) ReadOne(c *gin.Context) {
-	// var id int
-	// var model []m.Metrics
+func (o *metricsController) ReadOne(c *gin.Context) {
+	var id = helper.GetID(c)
 
-	// if !helper.GetID(c, &id) {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect id value")
-	// 	return
-	// }
-	// page, limit := helper.Pagination(c)
+	if id == 0 {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
+		return
+	}
 
-	// hasher := md5.New()
-	// hasher.Write([]byte(fmt.Sprintf("PROJECT_ID=%d", id)))
-	// if err := helper.PrecacheResult(fmt.Sprintf("METRICS:%s", hex.EncodeToString(hasher.Sum(nil))), db.DB.Where("project_id = ?", id).Order("created_at DESC").Offset(page*config.ENV.Items).Limit(limit), &model); err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	go logs.DefaultLog("/controllers/k3s/pods/metrics.go", err.Error())
-	// 	return
-	// }
+	models, err := o.service.Metrics.Read(&m.MetricsQueryDto{ID: uint32(id)})
+	if err != nil {
+		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-	// // TODO: Maybe one day ....
-	// // var items int64
-	// // var err error
-	// // if items, err = db.Redis.Get(context.Background(), "nLINK").Int64(); err != nil {
-	// // 	items = -1
-	// // 	go (&m.Link{}).Redis(db.DB, db.Redis)
-	// // 	go logs.DefaultLog("/controllers/k3s/pods/metrics.go", err.Error())
-	// // }
-
-	// helper.ResHandler(c, http.StatusOK, &m.Success{
-	// 	Status: "OK",
-	// 	Result: model,
-	// 	Items:  int64(len(model)),
-	// 	// TotalItems: items,
-	// })
+	helper.ResHandler(c, http.StatusOK, &m.Success{
+		Status: "OK",
+		Result: models,
+		Items:  len(models),
+	})
 }
 
-func (*metricsController) ReadAll(c *gin.Context) {
+// @Tags Metrics
+// @Summary Read Metrics by Query
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id query int false "Type: '1'"
+// @Param name query string false "Type: 'Name: 'main'"
+// @Param namespace query string false "Pod namespace"
+// @Param container_name query string false "Container name"
+// @Param project_id query string false "ProjectID: '1'"
+// @Param created_from query string false "CreatedAt date >= start"
+// @Param created_to query string false "CreatedAt date <= end"
+// @Param page query int false "Page: '0'"
+// @Param limit query int false "Limit: '1'"
+// @Success 200 {object} m.Success{result=[]m.Metrics}
+// @failure 429 {object} m.Error
+// @failure 400 {object} m.Error
+// @failure 500 {object} m.Error
+// @Router /k3s/pod/metrics [get]
+func (o *metricsController) ReadAll(c *gin.Context) {
+	var query = m.MetricsQueryDto{Page: -1}
+	if err := c.ShouldBindQuery(&query); err != nil {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
+		return
+	}
+
+	models, err := o.service.Metrics.Read(&query)
+	if err != nil {
+		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	helper.ResHandler(c, http.StatusOK, &m.Success{
+		Status: "OK",
+		Result: models,
+		Page:   query.Page,
+		Limit:  query.Limit,
+		Items:  len(models),
+	})
 }
 
-func (*metricsController) UpdateOne(c *gin.Context) {}
-func (*metricsController) UpdateAll(c *gin.Context) {}
-func (*metricsController) DeleteOne(c *gin.Context) {}
-func (*metricsController) DeleteAll(c *gin.Context) {}
+// @Tags Metrics
+// @Summary Update Metrics by :id
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path int true "Instance id"
+// @Param model body m.MetricsDto true "Metrics Data"
+// @Success 200 {object} m.Success{result=[]m.Metrics}
+// @failure 400 {object} m.Error
+// @failure 401 {object} m.Error
+// @failure 422 {object} m.Error
+// @failure 429 {object} m.Error
+// @failure 500 {object} m.Error
+// @Router /k3s/pod/metrics/{id} [put]
+func (o *metricsController) UpdateOne(c *gin.Context) {
+	var body m.MetricsDto
+	var id = helper.GetID(c)
+
+	if err := c.ShouldBind(&body); err != nil || id == 0 {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
+		return
+	}
+
+	models, err := o.service.Metrics.Update(&m.MetricsQueryDto{ID: uint32(id)}, &m.Metrics{CPU: body.CPU, Memory: body.Memory})
+	if err != nil {
+		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	helper.ResHandler(c, http.StatusCreated, &m.Success{
+		Status: "OK",
+		Result: models,
+		Items:  len(models),
+	})
+}
+
+// @Tags Metrics
+// @Summary Update Metrics by Query
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id query int false "Type: '1'"
+// @Param name query string false "Type: 'Name: 'main'"
+// @Param namespace query string false "Pod namespace"
+// @Param container_name query string false "Container name"
+// @Param project_id query string false "ProjectID: '1'"
+// @Param created_from query string false "CreatedAt date >= start"
+// @Param created_to query string false "CreatedAt date <= end"
+// @Param page query int false "Page: '0'"
+// @Param limit query int false "Limit: '1'"
+// @Success 200 {object} m.Success{result=[]m.Metrics}
+// @failure 400 {object} m.Error
+// @failure 401 {object} m.Error
+// @failure 422 {object} m.Error
+// @failure 429 {object} m.Error
+// @failure 500 {object} m.Error
+// @Router /k3s/pod/metrics [put]
+func (o *metricsController) UpdateAll(c *gin.Context) {
+	var query = m.MetricsQueryDto{Page: -1}
+	if err := c.ShouldBindQuery(&query); err != nil {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
+		return
+	}
+
+	var body m.MetricsDto
+	if err := c.ShouldBind(&body); err != nil {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
+		return
+	}
+
+	models, err := o.service.Metrics.Update(&query, &m.Metrics{CPU: body.CPU, Memory: body.Memory})
+	if err != nil {
+		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	helper.ResHandler(c, http.StatusCreated, &m.Success{
+		Status: "OK",
+		Result: models,
+		Items:  len(models),
+	})
+}
+
+// @Tags Metrics
+// @Summary Delete Metrics by :id
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path int true "Instance id"
+// @Success 200 {object} m.Success{result=[]string{}}
+// @failure 400 {object} m.Error
+// @failure 401 {object} m.Error
+// @failure 422 {object} m.Error
+// @failure 429 {object} m.Error
+// @failure 500 {object} m.Error
+// @Router /k3s/pod/metrics/{id} [delete]
+func (o *metricsController) DeleteOne(c *gin.Context) {
+	var id = helper.GetID(c)
+
+	if id == 0 {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
+		return
+	}
+
+	items, err := o.service.Metrics.Delete(&m.MetricsQueryDto{ID: uint32(id)})
+	if err != nil {
+		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	helper.ResHandler(c, http.StatusOK, &m.Success{
+		Status: "OK",
+		Result: []string{},
+		Items:  items,
+	})
+}
+
+// @Tags Metrics
+// @Summary Delete Metrics by Query
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id query int false "Type: '1'"
+// @Param name query string false "Type: 'Name: 'main'"
+// @Param namespace query string false "Pod namespace"
+// @Param container_name query string false "Container name"
+// @Param project_id query string false "ProjectID: '1'"
+// @Param created_from query string false "CreatedAt date >= start"
+// @Param created_to query string false "CreatedAt date <= end"
+// @Param page query int false "Page: '0'"
+// @Param limit query int false "Limit: '1'"
+// @Success 200 {object} m.Success{result=[]string{}}
+// @failure 400 {object} m.Error
+// @failure 401 {object} m.Error
+// @failure 422 {object} m.Error
+// @failure 429 {object} m.Error
+// @failure 500 {object} m.Error
+// @Router /k3s/pod/metrics [delete]
+func (o *metricsController) DeleteAll(c *gin.Context) {
+	var query = m.MetricsQueryDto{Page: -1}
+	if err := c.ShouldBindQuery(&query); err != nil {
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
+		return
+	}
+
+	items, err := o.service.Metrics.Delete(&query)
+	if err != nil {
+		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	helper.ResHandler(c, http.StatusOK, &m.Success{
+		Status: "OK",
+		Result: []string{},
+		Items:  items,
+	})
+}
