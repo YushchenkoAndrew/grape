@@ -38,22 +38,16 @@ func NewMetricsService(db *gorm.DB, client *redis.Client) *MetricsService {
 	return &MetricsService{key: "METRICS", db: db, client: client}
 }
 
-func (c *MetricsService) isExist(model *m.Metrics) bool {
-	var res = []*m.Metrics{model}
-	err, rows := helper.Getcache(c.db.Where("project_id = ? AND name = ? AND namespace = ? AND container_name = ?", model.ProjectID, model.Name, model.Namespace, model.ContainerName), c.client, c.key, fmt.Sprintf("PROJECT_ID=%d#NAME=%s#NAMESPACE=%s#CONTAINER_NAME=%s", model.ProjectID, model.Name, model.Namespace, model.ContainerName), &res)
-	return err != nil || rows != 0
-}
-
-func (c *MetricsService) precache(model *m.Link) {
+func (c *MetricsService) precache(model *m.Metrics) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
-	helper.Precache(c.client, c.key, fmt.Sprintf("PROJECT_ID=%d#NAME=%s", model.ProjectID, model.Name), model)
+	helper.Precache(c.client, c.key, fmt.Sprintf("PROJECT_ID=%d#NAME=%s#NAMESPACE=%s#CONTAINER_NAME=%s", model.ProjectID, model.Name, model.Namespace, model.ContainerName), model)
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
-			var data []m.Link
+			var data []m.Metrics
 			if !strings.HasPrefix(str, "[") {
-				data = make([]m.Link, 1)
+				data = make([]m.Metrics, 1)
 				json.Unmarshal([]byte(str), &data[0])
 			} else {
 				json.Unmarshal([]byte(str), &data)
@@ -70,6 +64,16 @@ func (c *MetricsService) precache(model *m.Link) {
 
 				case "NAME":
 					if model.Name != res[1] {
+						return data
+					}
+
+				case "NAMESPACE":
+					if model.Namespace != res[1] {
+						return data
+					}
+
+				case "CONTAINER_NAME":
+					if model.ContainerName != res[1] {
 						return data
 					}
 
@@ -90,7 +94,7 @@ func (c *MetricsService) precache(model *m.Link) {
 	}
 }
 
-func (c *MetricsService) deepcache(models []m.Link, key string) interface{} {
+func (c *MetricsService) deepcache(models []m.Metrics, key string) interface{} {
 	var suffix []string
 	for _, item := range strings.Split(key, "#") {
 		var res = strings.Split(item, "=")
@@ -113,7 +117,7 @@ func (c *MetricsService) deepcache(models []m.Link, key string) interface{} {
 		suffix = append(suffix, item)
 	}
 
-	var items []m.Link
+	var items []m.Metrics
 	if err := helper.Popcache(c.client, c.key, strings.Join(suffix, "#"), &items); err == nil {
 		if len(items) == 0 {
 			return nil
@@ -129,18 +133,18 @@ func (c *MetricsService) deepcache(models []m.Link, key string) interface{} {
 	return nil
 }
 
-func (c *MetricsService) recache(model *m.Link, delete bool) {
+func (c *MetricsService) recache(model *m.Metrics, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
 				str = fmt.Sprintf("[%s]", str)
 			}
 
-			var data []m.Link
-			var result []m.Link
+			var data []m.Metrics
+			var result []m.Metrics
 
 			json.Unmarshal([]byte(str), &data)
 			for _, item := range data {
@@ -161,7 +165,7 @@ func (c *MetricsService) recache(model *m.Link, delete bool) {
 	}
 }
 
-func (c *MetricsService) query(dto *m.LinkQueryDto, client *gorm.DB) (*gorm.DB, string) {
+func (c *MetricsService) query(dto *m.MetricsQueryDto, client *gorm.DB) (*gorm.DB, string) {
 	var suffix []string
 
 	if dto.ID > 0 {
@@ -177,6 +181,16 @@ func (c *MetricsService) query(dto *m.LinkQueryDto, client *gorm.DB) (*gorm.DB, 
 	if len(dto.Name) > 0 {
 		suffix = append(suffix, fmt.Sprintf("NAME=%s", dto.Name))
 		client = client.Where("name = ?", dto.Name)
+	}
+
+	if len(dto.Namespace) > 0 {
+		suffix = append(suffix, fmt.Sprintf("NAMESPACE=%s", dto.Name))
+		client = client.Where("namespace = ?", dto.Name)
+	}
+
+	if len(dto.ContainerName) > 0 {
+		suffix = append(suffix, fmt.Sprintf("CONTAINER_NAME=%s", dto.Name))
+		client = client.Where("container_name = ?", dto.Name)
 	}
 
 	if dto.Page >= 0 {
@@ -202,13 +216,7 @@ func (c *MetricsService) Create(model *m.Metrics) error {
 	}
 
 	var res *gorm.DB
-	var existed = model.Copy()
-
-	if c.isExist(existed) {
-		if res = c.db.Model(&m.Metrics{}).Where("id = ?", existed.ID).Updates(model); res.Error == nil {
-			c.recache(existed.Fill(model), false)
-		}
-	} else if res = c.db.Create(model); res.Error == nil {
+	if res = c.db.Create(model); res.Error == nil {
 		c.precache(model)
 	}
 
@@ -220,26 +228,26 @@ func (c *MetricsService) Create(model *m.Metrics) error {
 	return nil
 }
 
-func (c *MetricsService) Read(query *m.LinkQueryDto) ([]m.Link, error) {
-	var model []m.Link
+func (c *MetricsService) Read(query *m.MetricsQueryDto) ([]m.Metrics, error) {
+	var model []m.Metrics
 	client, suffix := c.query(query, c.db)
 
-	err, _ := helper.Getcache(client.Order("updated_at DESC"), c.client, c.key, suffix, &model)
+	err, _ := helper.Getcache(client.Order("created_at DESC"), c.client, c.key, suffix, &model)
 	return model, err
 }
 
-func (c *MetricsService) Update(query *m.LinkQueryDto, model *m.Link) ([]m.Link, error) {
+func (c *MetricsService) Update(query *m.MetricsQueryDto, model *m.Metrics) ([]m.Metrics, error) {
 	var res *gorm.DB
 	client, suffix := c.query(query, c.db)
 
-	var models = []m.Link{}
+	var models = []m.Metrics{}
 	if err, rows := helper.Getcache(client, c.client, c.key, suffix, &models); err != nil || rows == 0 {
 		return nil, fmt.Errorf("Requested model do not exist")
 	}
 
-	client, _ = c.query(query, c.db.Model(&m.Link{}))
+	client, _ = c.query(query, c.db.Model(&m.Metrics{}))
 	if res = client.Updates(model); res.Error != nil {
-		go logs.DefaultLog("/controllers/link.go", res.Error)
+		go logs.DefaultLog("/controllers/metrics.go", res.Error)
 		return nil, fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}
 
@@ -250,8 +258,8 @@ func (c *MetricsService) Update(query *m.LinkQueryDto, model *m.Link) ([]m.Link,
 	return c.Read(query)
 }
 
-func (c *MetricsService) Delete(query *m.LinkQueryDto) (int, error) {
-	var models []m.Link
+func (c *MetricsService) Delete(query *m.MetricsQueryDto) (int, error) {
+	var models []m.Metrics
 	client, suffix := c.query(query, c.db)
 
 	if err, _ := helper.Getcache(client, c.client, c.key, suffix, &models); err != nil {
@@ -262,5 +270,5 @@ func (c *MetricsService) Delete(query *m.LinkQueryDto) (int, error) {
 		c.recache(&model, true)
 	}
 
-	return len(models), client.Delete(&m.Link{}).Error
+	return len(models), client.Delete(&m.Metrics{}).Error
 }

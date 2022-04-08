@@ -2,6 +2,7 @@ package client
 
 import (
 	"api/config"
+	"api/interfaces"
 	"api/logs"
 	"api/models"
 
@@ -9,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func connDB() *gorm.DB {
+func ConnDB(tables []interfaces.Table) *gorm.DB {
 	var db, err = gorm.Open(postgres.Open(
 		"host="+config.ENV.DBHost+
 			" user="+config.ENV.DBUser+
@@ -26,6 +27,12 @@ func connDB() *gorm.DB {
 			Desc:    err.Error(),
 		})
 		panic("Failed on db connection")
+	}
+
+	for _, table := range tables {
+		if err := table.Migrate(db, config.ENV.ForceMigrate); err != nil {
+			panic(err)
+		}
 	}
 
 	return db

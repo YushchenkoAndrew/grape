@@ -279,13 +279,14 @@ func init() {
 		config.NewEnvConfig("./", ""),
 	}).Init()
 
-	db, client, _, _ := client.Init([]interfaces.Table{
+	redis := client.ConnRedis()
+	db := client.ConnDB([]interfaces.Table{
 		m.NewLink(),
 		m.NewProject(),
 	})
 
-	link = *service.NewLinkService(db, client)
+	link = *service.NewLinkService(db, redis)
 
-	var project = *service.NewProjectService(db, client)
+	var project = *service.NewProjectService(db, redis)
 	project.Create(&m.Project{ID: 1, Name: "yes", Title: "js", Flag: "js", Desc: "js", Note: "js"})
 }

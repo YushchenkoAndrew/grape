@@ -10,7 +10,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-func connRedis() *redis.Client {
+func ConnRedis() *redis.Client {
 	var client = redis.NewClient(&redis.Options{
 		Addr:     config.ENV.RedisHost + ":" + config.ENV.RedisPort,
 		Password: config.ENV.RedisPass,

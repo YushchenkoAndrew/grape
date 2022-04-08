@@ -11,7 +11,7 @@ import (
 	m "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
-func connK3s() (k3s *kubernetes.Clientset, metrics *m.Clientset) {
+func ConnK3s() (k3s *kubernetes.Clientset, metrics *m.Clientset) {
 	var cfg *rest.Config
 	var err error
 

@@ -36,7 +36,9 @@ func main() {
 		config.NewOperationConfig("./", "operations"),
 	}).Init()
 
-	db, client, k3s, metrics := client.Init([]interfaces.Table{
+	redis := client.ConnRedis()
+	k3s, metrics := client.ConnK3s()
+	db := client.ConnDB([]interfaces.Table{
 		models.NewInfo(),
 		models.NewWorld(),
 
@@ -51,13 +53,13 @@ func main() {
 	})
 
 	r := gin.Default()
-	rg := r.Group(config.ENV.BasePath, m.NewMiddleware(db, client).Limit())
+	rg := r.Group(config.ENV.BasePath, m.NewMiddleware(db, redis).Limit())
 	router := routes.NewIndexRouter(rg, &[]interfaces.Router{
 		routes.NewSwaggerRouter(rg),
-		routes.NewProjectRouter(rg, db, client),
-		routes.NewFileRouter(rg, db, client),
-		routes.NewLinkRouter(rg, db, client),
-		routes.NewBotRouter(rg, db, client),
+		routes.NewProjectRouter(rg, db, redis),
+		routes.NewFileRouter(rg, db, redis),
+		routes.NewLinkRouter(rg, db, redis),
+		routes.NewBotRouter(rg, db, redis),
 
 		// routes.NewWorldRouter(rg),
 		// routes.NewInfoRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
@@ -69,14 +71,14 @@ func main() {
 			k.NewDeploymentRouterFactory(k3s),
 			k.NewIngressRouterFactory(k3s),
 			k.NewPodsRouterFactory([]func(*gin.RouterGroup) interfaces.Router{
-				pods.NewMetricsRouterFactory(db, client, metrics),
+				pods.NewMetricsRouterFactory(db, redis, metrics),
 			}),
 			k.NewNamespaceRouterFactory(k3s),
 			k.NewServiceRouterFactory(k3s),
 		}),
 
-		routes.NewSubscribeRouter(rg, db, client),
-	}, db, client)
+		routes.NewSubscribeRouter(rg, db, redis),
+	}, db, redis)
 
 	router.Init()
 	r.Run(config.ENV.Host + ":" + config.ENV.Port)

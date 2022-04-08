@@ -289,13 +289,14 @@ func init() {
 		config.NewEnvConfig("./", ""),
 	}).Init()
 
-	db, client, _, _ := client.Init([]interfaces.Table{
+	redis := client.ConnRedis()
+	db := client.ConnDB([]interfaces.Table{
 		m.NewSubscription(),
 		m.NewProject(),
 	})
 
-	subscription = *service.NewSubscriptionService(db, client)
+	subscription = *service.NewSubscriptionService(db, redis)
 
-	var project = *service.NewProjectService(db, client)
+	var project = *service.NewProjectService(db, redis)
 	project.Create(&m.Project{ID: 1, Name: "yes", Title: "js", Flag: "js", Desc: "js", Note: "js"})
 }

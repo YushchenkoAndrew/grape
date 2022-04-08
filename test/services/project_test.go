@@ -467,9 +467,10 @@ func init() {
 		config.NewEnvConfig("./", ""),
 	}).Init()
 
-	db, client, _, _ := client.Init([]interfaces.Table{
+	redis := client.ConnRedis()
+	db := client.ConnDB([]interfaces.Table{
 		m.NewProject(),
 	})
 
-	project = *service.NewProjectService(db, client)
+	project = *service.NewProjectService(db, redis)
 }

@@ -16,9 +16,6 @@ type Metrics struct {
 	CPU           int64     `gorm:"not null" json:"cpu" xml:"cpu" example:"690791"`
 	Memory        int64     `gorm:"not null" json:"memory" xml:"memory" example:"690791"`
 	ProjectID     uint32    `gorm:"foreignKey:ProjectID;not null" json:"project_id" xml:"project_id" example:"1"`
-
-	// CpuScale    int8 `gorm:"not null" json:"cpu_scale" xml:"cpu_scale" example:"3"`
-	// MemoryScale int8 `gorm:"not null" json:"memory_scale" xml:"memory_scale" example:"6"`
 }
 
 func NewMetrics() interfaces.Table {
@@ -39,11 +36,14 @@ func (c *Metrics) Migrate(db *gorm.DB, forced bool) error {
 
 func (c *Metrics) Copy() *Metrics {
 	return &Metrics{
-		ID: c.ID,
-		// UpdatedAt: c.UpdatedAt,
-		Name: c.Name,
-		// Link:      c.Link,
-		ProjectID: c.ProjectID,
+		ID:            c.ID,
+		CreatedAt:     c.CreatedAt,
+		Name:          c.Name,
+		Namespace:     c.Namespace,
+		ContainerName: c.ContainerName,
+		CPU:           c.CPU,
+		Memory:        c.Memory,
+		ProjectID:     c.ProjectID,
 	}
 }
 
@@ -52,17 +52,29 @@ func (c *Metrics) Fill(updated *Metrics) *Metrics {
 		c.ID = updated.ID
 	}
 
-	// if !updated.UpdatedAt.IsZero() {
-	// 	c.UpdatedAt = updated.UpdatedAt
-	// }
+	if !updated.CreatedAt.IsZero() {
+		c.CreatedAt = updated.CreatedAt
+	}
 
 	if updated.Name != "" {
 		c.Name = updated.Name
 	}
 
-	// if updated.Link != "" {
-	// 	c.Link = updated.Link
-	// }
+	if updated.Namespace != "" {
+		c.Namespace = updated.Namespace
+	}
+
+	if updated.ContainerName != "" {
+		c.ContainerName = updated.ContainerName
+	}
+
+	if updated.CPU != 0 {
+		c.CPU = updated.CPU
+	}
+
+	if updated.Memory != 0 {
+		c.Memory = updated.Memory
+	}
 
 	if updated.ProjectID != 0 {
 		c.ProjectID = updated.ProjectID
@@ -72,22 +84,21 @@ func (c *Metrics) Fill(updated *Metrics) *Metrics {
 }
 
 type MetricsDto struct {
-	// ID        uint32    `json:"id" xml:"id"`
-	Name string `json:"name,omitempty" xml:"name,omitempty"`
-	Link string `json:"link,omitempty" xml:"link,omitempty"`
+	CPU    int64 `json:"cpu,omitempty" xml:"cpu,omitempty" example:"690791"`
+	Memory int64 `json:"memory,omitempty" xml:"memory,omitempty" example:"690791"`
 }
 
 func (c *MetricsDto) IsOK() bool {
-	return c.Name != "" && c.Link != ""
+	return c.CPU != 0 && c.Memory != 0
 }
 
 type MetricsQueryDto struct {
-	ID        uint32 `form:"id,omitempty"`
-	Name      string `form:"name,omitempty" example:"main"`
-	ProjectID uint32 `form:"project_id,omitempty" example:"1"`
+	ID            uint32 `form:"id,omitempty"`
+	Name          string `form:"name,omitempty" example:"main"`
+	Namespace     string `form:"namespace,omitempty" example:"void-deployment-8985bd57d-k9n5g"`
+	ContainerName string `form:"container_name,omitempty" example:"void"`
+	ProjectID     uint32 `form:"project_id,omitempty" example:"1"`
 
 	Page  int `form:"page,omitempty" example:"1"`
 	Limit int `form:"limit,omitempty" example:"10"`
-	// UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at" xml:"updated_at" example:"2021-08-27T16:17:53.119571+03:00"`
-	// Link      string    `form:"link" example:"https://github.com/YushchenkoAndrew/template"`
 }
