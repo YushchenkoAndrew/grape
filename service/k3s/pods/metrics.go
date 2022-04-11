@@ -43,7 +43,7 @@ func (c *MetricsService) precache(model *m.Metrics) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("PROJECT_ID=%d#NAME=%s#NAMESPACE=%s#CONTAINER_NAME=%s", model.ProjectID, model.Name, model.Namespace, model.ContainerName), model)
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			var data []m.Metrics
@@ -147,7 +147,7 @@ func (c *MetricsService) deepcache(models []m.Metrics, key string) interface{} {
 func (c *MetricsService) recache(model *m.Metrics, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {

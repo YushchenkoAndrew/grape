@@ -51,7 +51,7 @@ func (c *ProjectService) precache(model *m.Project) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("NAME=%s", model.Name), model)
 
-	var keys = []string{fmt.Sprintf("FLAG=%s*", model.Flag), "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("FLAG=%s*", model.Flag), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			if !strings.HasPrefix(str, "[") {
@@ -144,7 +144,7 @@ func (c *ProjectService) recache(model *m.Project, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 	helper.Delcache(c.client, c.key, fmt.Sprintf("NAME=%s*", model.Name))
 
-	var keys = []string{fmt.Sprintf("FLAG=%s*", model.Flag), "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("FLAG=%s*", model.Flag), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
@@ -224,6 +224,13 @@ func (c *ProjectService) Create(model *m.Project) error {
 		return fmt.Errorf("Requested project with name=%s has already existed", model.Name)
 	}
 
+	// FIXME:
+	// 	* Some strange error with page
+	// 	* I guess the problim in limit value
+	// 	* What I mean is what if we have several pages
+	// 	* And First one is full, in this case I need to check another one
+	// 	* To be sure that the new value was created
+	// 	* I guess such functionality is missing !!!
 	if res := c.db.Create(model); res.Error != nil {
 		go logs.DefaultLog("/controllers/link.go", res.Error)
 		return fmt.Errorf("Something unexpected happend: %v", res.Error)

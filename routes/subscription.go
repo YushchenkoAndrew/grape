@@ -24,8 +24,8 @@ func NewSubscribeRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) 
 }
 
 func (c *subscriptionRouter) Init() {
-	c.auth.POST("/:id", c.subscription.CreateOne)
-	c.auth.POST("/list/:id", c.subscription.CreateAll)
+	c.auth.POST("", c.subscription.CreateOne)
+	c.auth.POST("/list", c.subscription.CreateAll)
 
 	c.auth.GET("/:id", c.subscription.ReadOne)
 	c.auth.GET("", c.subscription.ReadAll)

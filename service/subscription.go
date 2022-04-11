@@ -44,7 +44,7 @@ func (c *SubscriptionService) precache(model *m.Subscription) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("TOKEN=%s", model.Token), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("CRON_ID=%s", model.CronID), model)
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			var data []m.Subscription
@@ -135,7 +135,7 @@ func (c *SubscriptionService) recache(model *m.Subscription, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("TOKEN=%s*", model.Token))
 	helper.Delcache(c.client, c.key, fmt.Sprintf("CRON_ID=%s*", model.CronID))
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {

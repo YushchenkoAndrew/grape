@@ -35,7 +35,7 @@ func (c *LinkService) precache(model *m.Link) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("PROJECT_ID=%d#NAME=%s", model.ProjectID, model.Name), model)
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			var data []m.Link
@@ -119,7 +119,7 @@ func (c *LinkService) deepcache(models []m.Link, key string) interface{} {
 func (c *LinkService) recache(model *m.Link, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {

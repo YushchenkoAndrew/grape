@@ -17,6 +17,17 @@ type subscriptionController struct {
 }
 
 func NewSubscriptionController(s *service.FullSubscriptionService) interfaces.Default {
+	models, _ := s.Subscription.Read(&m.SubscribeQueryDto{Page: -1})
+	for _, item := range models {
+		if entity, _ := s.Cron.Read(&m.CronQueryDto{ID: item.CronID}); entity != nil {
+			continue
+		}
+
+		if entity, err := s.Cron.Create(&m.CronDto{CronTime: item.CronTime, URL: config.ENV.URL + item.Path, Method: item.Method, Token: helper.GetToken()}); err == nil {
+			s.Subscription.Update(&m.SubscribeQueryDto{ID: item.ID}, &m.Subscription{Name: item.Name, CronID: entity.ID, CronTime: entity.Exec.CronTime, Method: entity.Exec.Method, Path: item.Path, Token: helper.HashSecret(entity.Exec.Token)})
+		}
+	}
+
 	return &subscriptionController{service: s}
 }
 
@@ -26,7 +37,7 @@ func NewSubscriptionController(s *service.FullSubscriptionService) interfaces.De
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
-// @Param id path int true "Project primaray id"
+// @Param id query int true "Project primaray id"
 // @Param _ query string false "For more info about query see request: 'GET /operations'"
 // @Param model body m.SubscribeDto true "Small info about subscription for k3s"
 // @Success 201 {object} m.Success{result=[]m.Subscription}
@@ -35,14 +46,14 @@ func NewSubscriptionController(s *service.FullSubscriptionService) interfaces.De
 // @failure 422 {object} m.Error
 // @failure 429 {object} m.Error
 // @failure 500 {object} m.Error
-// @Router /subscription/{id} [post]
+// @Router /subscription [post]
 func (o *subscriptionController) CreateOne(c *gin.Context) {
 	var body m.SubscribeDto
 	var id = helper.GetID(c)
 	var handler config.Handler
 
 	if err := c.ShouldBind(&body); err != nil || !body.IsOK() || id == 0 || !config.GetOperation(body.Name, &handler) {
-		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t, id: %t, operation: %t }", body.IsOK(), id != 0, !config.GetOperation(body.Name, &handler)))
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %v, id: %t, operation: %t }", err, id != 0, !config.GetOperation(body.Name, &handler)))
 		return
 	}
 
@@ -52,13 +63,13 @@ func (o *subscriptionController) CreateOne(c *gin.Context) {
 		return
 	}
 
-	entity, err := o.service.Cron.Create(&m.CronDto{CronTime: body.CronTime, URL: config.ENV.URL + path, Method: handler.Method, Token: helper.HashSecret(helper.GetToken())})
+	entity, err := o.service.Cron.Create(&m.CronDto{CronTime: body.CronTime, URL: config.ENV.URL + path, Method: handler.Method, Token: helper.GetToken()})
 	if err != nil {
 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	var model = m.Subscription{ProjectID: uint32(id), Name: body.Name, CronID: entity.ID, CronTime: entity.Exec.CronTime, Method: entity.Exec.Method, Path: path, Token: entity.Exec.Token}
+	var model = m.Subscription{ProjectID: uint32(id), Name: body.Name, CronID: entity.ID, CronTime: entity.Exec.CronTime, Method: entity.Exec.Method, Path: path, Token: helper.HashSecret(entity.Exec.Token)}
 	if err := o.service.Subscription.Create(&model); err != nil {
 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
@@ -77,7 +88,7 @@ func (o *subscriptionController) CreateOne(c *gin.Context) {
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
-// @Param id path int true "Project primaray id"
+// @Param id query int true "Project primaray id"
 // @Param _ query string false "For more info about query see request: 'GET /operations'"
 // @Param model body []m.SubscribeDto true "Small info about subscription for k3s"
 // @Success 201 {object} m.Success{result=[]m.Subscription}
@@ -86,14 +97,14 @@ func (o *subscriptionController) CreateOne(c *gin.Context) {
 // @failure 422 {object} m.Error
 // @failure 429 {object} m.Error
 // @failure 500 {object} m.Error
-// @Router /subscription/list/{id} [post]
+// @Router /subscription/list [post]
 func (o *subscriptionController) CreateAll(c *gin.Context) {
 	var body []m.SubscribeDto
 	var id = helper.GetID(c)
 	var handler config.Handler
 
 	if err := c.ShouldBind(&body); err != nil || len(body) == 0 || id == 0 {
-		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t, id: %t }", len(body) == 0, id != 0))
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %v, id: %t }", err, id != 0))
 		return
 	}
 
@@ -105,13 +116,13 @@ func (o *subscriptionController) CreateAll(c *gin.Context) {
 		}
 
 		if path, err := helper.FormPathFromHandler(c, &handler); err == nil {
-			entity, err := o.service.Cron.Create(&m.CronDto{CronTime: item.CronTime, URL: config.ENV.URL + path, Method: handler.Method, Token: helper.HashSecret(helper.GetToken())})
+			entity, err := o.service.Cron.Create(&m.CronDto{CronTime: item.CronTime, URL: config.ENV.URL + path, Method: handler.Method, Token: helper.GetToken()})
 			if err != nil {
 				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 				return
 			}
 
-			var model = m.Subscription{ProjectID: uint32(id), Name: item.Name, CronID: entity.ID, CronTime: entity.Exec.CronTime, Method: entity.Exec.Method, Path: path, Token: entity.Exec.Token}
+			var model = m.Subscription{ProjectID: uint32(id), Name: item.Name, CronID: entity.ID, CronTime: entity.Exec.CronTime, Method: entity.Exec.Method, Path: path, Token: helper.HashSecret(entity.Exec.Token)}
 			if err := o.service.Subscription.Create(&model); err != nil {
 				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 				return
@@ -224,7 +235,7 @@ func (o *subscriptionController) UpdateOne(c *gin.Context) {
 	var handler config.Handler
 
 	if err := c.ShouldBind(&body); err != nil || id == "" || !config.GetOperation(body.Name, &handler) {
-		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t, id: %t, operation: %t }", body.IsOK(), id == "", !config.GetOperation(body.Name, &handler)))
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %v, id: %t, operation: %t }", err, id == "", !config.GetOperation(body.Name, &handler)))
 		return
 	}
 
@@ -234,13 +245,13 @@ func (o *subscriptionController) UpdateOne(c *gin.Context) {
 		return
 	}
 
-	entity, err := o.service.Cron.Update(&m.CronQueryDto{ID: id}, &m.CronDto{CronTime: body.CronTime, URL: config.ENV.URL + path, Method: handler.Method, Token: helper.HashSecret(helper.GetToken())})
+	entity, err := o.service.Cron.Update(&m.CronQueryDto{ID: id}, &m.CronDto{CronTime: body.CronTime, URL: config.ENV.URL + path, Method: handler.Method, Token: helper.GetToken()})
 	if err != nil {
 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	models, err := o.service.Subscription.Update(&m.SubscribeQueryDto{CronID: id}, &m.Subscription{Name: body.Name, CronID: entity.ID, CronTime: entity.Exec.CronTime, Method: entity.Exec.Method, Path: path, Token: entity.Exec.Token})
+	models, err := o.service.Subscription.Update(&m.SubscribeQueryDto{CronID: id}, &m.Subscription{Name: body.Name, CronID: entity.ID, CronTime: entity.Exec.CronTime, Method: entity.Exec.Method, Path: path, Token: helper.HashSecret(entity.Exec.Token)})
 	if err != nil {
 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
@@ -283,7 +294,7 @@ func (o *subscriptionController) UpdateAll(c *gin.Context) {
 	var body m.SubscribeDto
 	var handler config.Handler
 	if err := c.ShouldBind(&body); err != nil || !config.GetOperation(body.Name, &handler) {
-		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t, operation: %t }", body.IsOK(), !config.GetOperation(body.Name, &handler)))
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %v, operation: %t }", err, !config.GetOperation(body.Name, &handler)))
 		return
 	}
 
@@ -301,13 +312,13 @@ func (o *subscriptionController) UpdateAll(c *gin.Context) {
 
 	var models = []m.Subscription{}
 	for _, item := range model {
-		entity, err := o.service.Cron.Update(&m.CronQueryDto{ID: item.CronID}, &m.CronDto{CronTime: body.CronTime, URL: config.ENV.URL + path, Method: handler.Method, Token: helper.HashSecret(helper.GetToken())})
+		entity, err := o.service.Cron.Update(&m.CronQueryDto{ID: item.CronID}, &m.CronDto{CronTime: body.CronTime, URL: config.ENV.URL + path, Method: handler.Method, Token: helper.GetToken()})
 		if err != nil {
 			helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		model, err := o.service.Subscription.Update(&m.SubscribeQueryDto{CronID: item.CronID}, &m.Subscription{Name: body.Name, CronID: entity.ID, CronTime: entity.Exec.CronTime, Method: entity.Exec.Method, Path: path, Token: entity.Exec.Token})
+		model, err := o.service.Subscription.Update(&m.SubscribeQueryDto{CronID: item.CronID}, &m.Subscription{Name: body.Name, CronID: entity.ID, CronTime: entity.Exec.CronTime, Method: entity.Exec.Method, Path: path, Token: helper.HashSecret(entity.Exec.Token)})
 		if err != nil {
 			helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 			return

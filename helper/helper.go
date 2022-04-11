@@ -36,6 +36,10 @@ func GetID(c *gin.Context) int {
 		return id
 	}
 
+	if id, err := strconv.Atoi(c.Query("id")); err == nil && id > 0 {
+		return id
+	}
+
 	return 0
 }
 

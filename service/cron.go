@@ -84,8 +84,35 @@ func (c *CronService) Create(dto *m.CronDto) (*m.CronEntity, error) {
 	return &model, nil
 }
 
-func (c *CronService) Read(query *m.CronQueryDto) ([]m.CronEntity, error) {
-	return nil, fmt.Errorf("Not implimented")
+func (c *CronService) Read(query *m.CronQueryDto) (*m.CronEntity, error) {
+	var salt, token = helper.BotToken()
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/cron/subscribe/%s?key=%s", config.ENV.BotUrl, query.ID, token), bytes.NewBuffer([]byte{}))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-Custom-Header", salt)
+	req.Header.Set("Content-Type", "application/json")
+
+	var res *http.Response
+
+	client := &http.Client{}
+	if res, err = client.Do(req); err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, nil
+	}
+
+	var model m.CronEntity
+	if err = json.NewDecoder(res.Body).Decode(&model); err != nil {
+		return nil, err
+	}
+
+	return &model, nil
 }
 
 func (c *CronService) Update(query *m.CronQueryDto, dto *m.CronDto) (*m.CronEntity, error) {

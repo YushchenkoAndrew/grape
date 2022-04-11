@@ -39,7 +39,7 @@ func (o *deploymentController) CreateOne(c *gin.Context) {
 	var namespace = c.Param("namespace")
 
 	if err := c.ShouldBind(&body); namespace == "" || err != nil {
-		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Incorrect { namespace: %t, body: %t }", namespace == "", err != nil))
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Incorrect { namespace: %t, body: %v }", namespace == "", err))
 		return
 	}
 

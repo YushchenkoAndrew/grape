@@ -102,14 +102,13 @@ func BotToken() (string, string) {
 
 func GetToken() string {
 	hasher := md5.New()
-	salt := uuid.New()
-	hasher.Write([]byte(salt.String()))
+	hasher.Write([]byte(uuid.New().String()))
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 func HashSecret(secret string) string {
 	hasher := md5.New()
-	salt := uuid.New()
-	hasher.Write([]byte(salt.String() + config.ENV.Pepper + secret))
-	return salt.String() + "$" + hex.EncodeToString(hasher.Sum(nil))
+	salt := uuid.New().String()
+	hasher.Write([]byte(salt + config.ENV.Pepper + secret))
+	return salt + "$" + hex.EncodeToString(hasher.Sum(nil))
 }

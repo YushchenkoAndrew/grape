@@ -33,7 +33,7 @@ func (c *FileService) isExist(model *m.File) bool {
 func (c *FileService) precache(model *m.File) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PATH=%s*", model.Path), fmt.Sprintf("ROLE=%s*", model.Role), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PATH=%s*", model.Path), fmt.Sprintf("ROLE=%s*", model.Role), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			var data []m.File
@@ -127,7 +127,7 @@ func (c *FileService) deepcache(models []m.File, key string) interface{} {
 func (c *FileService) recache(model *m.File, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PATH=%s*", model.Path), fmt.Sprintf("ROLE=%s*", model.Role), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "PAGE=*", "LIMIT=*"}
+	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PATH=%s*", model.Path), fmt.Sprintf("ROLE=%s*", model.Role), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
