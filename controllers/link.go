@@ -36,7 +36,7 @@ func NewLinkController(s *service.LinkService) interfaces.Default {
 // @Router /link/{id} [post]
 func (o *linkController) CreateOne(c *gin.Context) {
 	var body m.LinkDto
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if err := c.ShouldBind(&body); err != nil || !body.IsOK() || id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t, id: %t }", body.IsOK(), id != 0))
@@ -73,7 +73,7 @@ func (o *linkController) CreateOne(c *gin.Context) {
 // @Router /link/list/{id} [post]
 func (o *linkController) CreateAll(c *gin.Context) {
 	var body []m.LinkDto
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if err := c.ShouldBind(&body); err != nil || len(body) == 0 || id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t, id: %t }", len(body) != 0, id != 0))
@@ -112,7 +112,7 @@ func (o *linkController) CreateAll(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /link/{id} [get]
 func (o *linkController) ReadOne(c *gin.Context) {
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
@@ -186,7 +186,7 @@ func (o *linkController) ReadAll(c *gin.Context) {
 // @Router /link/{id} [put]
 func (o *linkController) UpdateOne(c *gin.Context) {
 	var body m.LinkDto
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if err := c.ShouldBind(&body); err != nil || id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
@@ -264,7 +264,7 @@ func (o *linkController) UpdateAll(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /link/{id} [delete]
 func (o *linkController) DeleteOne(c *gin.Context) {
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))

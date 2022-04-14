@@ -49,8 +49,8 @@ func NewSubscriptionController(s *service.FullSubscriptionService) interfaces.De
 // @Router /subscription [post]
 func (o *subscriptionController) CreateOne(c *gin.Context) {
 	var body m.SubscribeDto
-	var id = helper.GetID(c)
 	var handler config.Handler
+	var id = helper.GetID(c, "project_id")
 
 	if err := c.ShouldBind(&body); err != nil || !body.IsOK() || id == 0 || !config.GetOperation(body.Name, &handler) {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %v, id: %t, operation: %t }", err, id != 0, !config.GetOperation(body.Name, &handler)))
@@ -100,8 +100,8 @@ func (o *subscriptionController) CreateOne(c *gin.Context) {
 // @Router /subscription/list [post]
 func (o *subscriptionController) CreateAll(c *gin.Context) {
 	var body []m.SubscribeDto
-	var id = helper.GetID(c)
 	var handler config.Handler
+	var id = helper.GetID(c, "project_id")
 
 	if err := c.ShouldBind(&body); err != nil || len(body) == 0 || id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %v, id: %t }", err, id != 0))

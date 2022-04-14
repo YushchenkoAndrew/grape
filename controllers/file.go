@@ -42,7 +42,7 @@ func NewFileController(s *service.FileService) interfaces.Default {
 // @Router /file/{id} [post]
 func (o *fileController) CreateOne(c *gin.Context) {
 	var body m.FileDto
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if err := c.ShouldBind(&body); err != nil || !body.IsOK() || id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t, id: %t }", body.IsOK(), id != 0))
@@ -79,7 +79,7 @@ func (o *fileController) CreateOne(c *gin.Context) {
 // @Router /file/list/{id} [post]
 func (o *fileController) CreateAll(c *gin.Context) {
 	var body []m.FileDto
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if err := c.ShouldBind(&body); err != nil || len(body) == 0 || id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t, id: %t }", len(body) != 0, id != 0))
@@ -118,7 +118,7 @@ func (o *fileController) CreateAll(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /file/{id} [get]
 func (o *fileController) ReadOne(c *gin.Context) {
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
@@ -194,7 +194,7 @@ func (o *fileController) ReadAll(c *gin.Context) {
 // @Router /file/{id} [put]
 func (o *fileController) UpdateOne(c *gin.Context) {
 	var body m.FileDto
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if err := c.ShouldBind(&body); err != nil || id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
@@ -273,7 +273,7 @@ func (o *fileController) UpdateAll(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /file/{id} [delete]
 func (o *fileController) DeleteOne(c *gin.Context) {
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))

@@ -34,7 +34,7 @@ func NewMetricsController(s *pods.FullMetricsService) interfaces.Default {
 // @failure 500 {object} m.Error
 // @Router /k3s/pod/metrics/{namespace}/{label} [post]
 func (o *metricsController) CreateOne(c *gin.Context) {
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 	var label = c.Param("label")
 	var namespace = c.Param("namespace")
 
@@ -97,7 +97,7 @@ func (o *metricsController) CreateOne(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /k3s/pod/metrics/{namespace} [post]
 func (o *metricsController) CreateAll(c *gin.Context) {
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 	var query = m.K3sListQueryDto{}
 	var namespace = c.Param("namespace")
 
@@ -149,7 +149,7 @@ func (o *metricsController) CreateAll(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /k3s/pod/metrics/{id} [get]
 func (o *metricsController) ReadOne(c *gin.Context) {
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
@@ -228,7 +228,7 @@ func (o *metricsController) ReadAll(c *gin.Context) {
 // @Router /k3s/pod/metrics/{id} [put]
 func (o *metricsController) UpdateOne(c *gin.Context) {
 	var body m.MetricsDto
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if err := c.ShouldBind(&body); err != nil || id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
@@ -311,7 +311,7 @@ func (o *metricsController) UpdateAll(c *gin.Context) {
 // @failure 500 {object} m.Error
 // @Router /k3s/pod/metrics/{id} [delete]
 func (o *metricsController) DeleteOne(c *gin.Context) {
-	var id = helper.GetID(c)
+	var id = helper.GetID(c, "id")
 
 	if id == 0 {
 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))

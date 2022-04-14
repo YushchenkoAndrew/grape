@@ -31,12 +31,12 @@ func Pagination(c *gin.Context) (page int, limit int) {
 	return
 }
 
-func GetID(c *gin.Context) int {
-	if id, err := strconv.Atoi(c.Param("id")); err == nil && id > 0 {
+func GetID(c *gin.Context, name string) int {
+	if id, err := strconv.Atoi(c.Param(name)); err == nil && id > 0 {
 		return id
 	}
 
-	if id, err := strconv.Atoi(c.Query("id")); err == nil && id > 0 {
+	if id, err := strconv.Atoi(c.Query(name)); err == nil && id > 0 {
 		return id
 	}
 

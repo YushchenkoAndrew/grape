@@ -3,9 +3,9 @@ cfg:
     method: post
     path: /k3s/pods/metrics/{namespace}?id={id}&label_selector={label}
     required:
-      - id
       - label
       - namespace
+      - project_id
 
   - name: ping
     method: get
