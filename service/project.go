@@ -5,6 +5,7 @@ import (
 	"api/helper"
 	"api/logs"
 	m "api/models"
+	"api/service/k3s/pods"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -19,7 +20,9 @@ type FullProjectService struct {
 	Link         *LinkService
 	File         *FileService
 	Project      *ProjectService
+	Cron         *CronService
 	Subscription *SubscriptionService
+	Metrics      *pods.MetricsService
 }
 
 func NewFullProjectService(db *gorm.DB, client *redis.Client) *FullProjectService {
@@ -27,7 +30,9 @@ func NewFullProjectService(db *gorm.DB, client *redis.Client) *FullProjectServic
 		Link:         NewLinkService(db, client),
 		File:         NewFileService(db, client),
 		Project:      NewProjectService(db, client),
+		Cron:         NewCronService(),
 		Subscription: NewSubscriptionService(db, client),
+		Metrics:      pods.NewMetricsService(db, client),
 	}
 }
 

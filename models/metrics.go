@@ -102,6 +102,6 @@ type MetricsQueryDto struct {
 	CreatedTo   time.Time `form:"created_to,omitempty" time_format:"2006-01-02" example:"2021-08-06"`
 	CreatedFrom time.Time `form:"created_from,omitempty" time_format:"2006-01-02" example:"2021-08-06"`
 
-	Page  int `form:"page,omitempty" example:"1"`
+	Page  int `form:"page,omitempty,default=-1" example:"1"`
 	Limit int `form:"limit,omitempty" example:"10"`
 }

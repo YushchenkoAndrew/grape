@@ -97,6 +97,6 @@ type FileQueryDto struct {
 	Path      string `form:"path,omitempty" example:"/test"`
 	ProjectID uint32 `form:"project_id,omitempty" example:"1"`
 
-	Page  int `form:"page,omitempty" example:"1"`
+	Page  int `form:"page,omitempty,default=-1" example:"1"`
 	Limit int `form:"limit,omitempty" example:"10"`
 }

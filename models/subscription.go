@@ -104,7 +104,7 @@ type SubscribeQueryDto struct {
 	CronID    string `form:"cron_id,omitempty" example:"main"`
 	ProjectID uint32 `form:"project_id,omitempty" example:"1"`
 
-	Page  int `form:"page,omitempty" example:"1"`
+	Page  int `form:"page,omitempty,default=-1" example:"1"`
 	Limit int `form:"limit,omitempty" example:"10"`
 	// UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at" xml:"updated_at" example:"2021-08-27T16:17:53.119571+03:00"`
 	// Link      string    `form:"link" example:"https://github.com/YushchenkoAndrew/template"`

@@ -56,6 +56,8 @@ func (o *metricsController) CreateOne(c *gin.Context) {
 			var cpu, _ = item.Usage.Cpu().AsInt64()
 			var memory, _ = item.Usage.Memory().AsInt64()
 
+			// NOTE: Add network usage by checking DNS (lets-dns-it)
+
 			var model = m.Metrics{ProjectID: uint32(id), Name: pod.Name, Namespace: pod.Namespace, ContainerName: item.Name, CPU: cpu, Memory: memory}
 			if err := o.service.Metrics.Create(&model); err != nil {
 				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())

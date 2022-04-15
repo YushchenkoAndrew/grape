@@ -186,6 +186,7 @@ func (o *projectController) ReadOne(c *gin.Context) {
 		models[i].Links, _ = o.service.Link.Read(&m.LinkQueryDto{ProjectID: models[i].ID})
 		models[i].Files, _ = o.service.File.Read(&m.FileQueryDto{ProjectID: models[i].ID})
 		models[i].Subscription, _ = o.service.Subscription.Read(&m.SubscribeQueryDto{ProjectID: models[i].ID})
+		models[i].Metrics, _ = o.service.Metrics.Read(&m.MetricsQueryDto{ProjectID: models[i].ID})
 	}
 
 	helper.ResHandler(c, http.StatusOK, &m.Success{
@@ -239,6 +240,7 @@ func (o *projectController) ReadAll(c *gin.Context) {
 		models[i].Links, _ = o.service.Link.Read(&m.LinkQueryDto{ID: query.Link.ID, Name: query.Link.Name, ProjectID: models[i].ID, Page: query.Link.Page, Limit: query.Link.Limit})
 		models[i].Files, _ = o.service.File.Read(&m.FileQueryDto{ID: query.File.ID, Name: query.File.Name, Role: query.File.Role, Path: query.File.Path, ProjectID: models[i].ID, Page: query.File.Page, Limit: query.File.Limit})
 		models[i].Subscription, _ = o.service.Subscription.Read(&m.SubscribeQueryDto{ID: query.Subscription.ID, Name: query.Subscription.Name, CronID: query.Subscription.CronID, ProjectID: models[i].ID, Page: query.Subscription.Page, Limit: query.Subscription.Limit})
+		models[i].Metrics, _ = o.service.Metrics.Read(&m.MetricsQueryDto{ID: query.Metrics.ID, Name: query.Metrics.Name, Namespace: query.Metrics.Namespace, ContainerName: query.Metrics.ContainerName, CreatedTo: query.Metrics.CreatedTo, CreatedFrom: query.Metrics.CreatedFrom, Page: query.Metrics.Page, Limit: query.Metrics.Limit})
 	}
 
 	helper.ResHandler(c, http.StatusOK, &m.Success{
@@ -365,8 +367,15 @@ func (o *projectController) DeleteOne(c *gin.Context) {
 	for _, item := range models {
 		o.service.Link.Delete(&m.LinkQueryDto{ProjectID: item.ID})
 		o.service.File.Delete(&m.FileQueryDto{ProjectID: item.ID})
+		o.service.Metrics.Delete(&m.MetricsQueryDto{ProjectID: item.ID})
 
-		// TODO: Add Subscription
+		// NOTE: Delete subscription at two places at the same time
+		model, _ := o.service.Subscription.Read(&m.SubscribeQueryDto{ProjectID: item.ID})
+		for _, item := range model {
+			if err := o.service.Cron.Delete(&m.CronQueryDto{ID: item.CronID}); err == nil {
+				o.service.Subscription.Delete(&m.SubscribeQueryDto{ProjectID: item.ID})
+			}
+		}
 	}
 
 	items, err := o.service.Project.Delete(&query)
@@ -419,8 +428,15 @@ func (o *projectController) DeleteAll(c *gin.Context) {
 	for _, item := range models {
 		o.service.Link.Delete(&m.LinkQueryDto{ProjectID: item.ID, Page: -1})
 		o.service.File.Delete(&m.FileQueryDto{ProjectID: item.ID, Page: -1})
+		o.service.Metrics.Delete(&m.MetricsQueryDto{ProjectID: item.ID, Page: -1})
 
-		// TODO: Add Subscription
+		// NOTE: Delete subscription at two places at the same time
+		model, _ := o.service.Subscription.Read(&m.SubscribeQueryDto{ProjectID: item.ID, Page: -1})
+		for _, item := range model {
+			if err := o.service.Cron.Delete(&m.CronQueryDto{ID: item.CronID}); err == nil {
+				o.service.Subscription.Delete(&m.SubscribeQueryDto{ProjectID: item.ID, Page: -1})
+			}
+		}
 	}
 
 	items, err := o.service.Project.Delete(&query)
