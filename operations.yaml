@@ -1,7 +1,7 @@
 cfg:
   - name: metrics-all
     method: post
-    path: /k3s/pods/metrics/{namespace}?id={id}&label_selector={label}
+    path: /k3s/pods/metrics/{namespace}?id={project_id}&label_selector={label}
     required:
       - label
       - namespace
