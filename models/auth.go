@@ -9,6 +9,38 @@ type Auth struct {
 	RefreshExpire int64
 }
 
+func NewAuth() *Auth {
+	return &Auth{}
+}
+
+func (c *Auth) Fill(auth map[string]interface{}) *Auth {
+	if val, ok := auth["access_token"]; ok && val != "" {
+		c.AccessToken = val.(string)
+	}
+
+	if val, ok := auth["refresh_token"]; ok && val != "" {
+		c.RefreshToken = val.(string)
+	}
+
+	if val, ok := auth["access_uuid"]; ok && val != "" {
+		c.AccessUUID = val.(string)
+	}
+
+	if val, ok := auth["refresh_uuid"]; ok && val != "" {
+		c.RefreshUUID = val.(string)
+	}
+
+	if val, ok := auth["access_expire"]; ok && val != 0 {
+		c.AccessExpire = val.(int64)
+	}
+
+	if val, ok := auth["refresh_expire"]; ok && val != "" {
+		c.RefreshExpire = val.(int64)
+	}
+
+	return c
+}
+
 type LoginDto struct {
 	User string `json:"user" xml:"user" binding:"required"`
 	Pass string `json:"pass" xml:"pass" binding:"required"`

@@ -84,7 +84,7 @@ func (o *indexController) Login(c *gin.Context) {
 	token, err := o.service.Login(&login)
 	if err != nil {
 		helper.ErrHandler(c, http.StatusUnauthorized, err.Error())
-		go logs.SendLogs(&m.LogMessage{
+		go logs.SendLogs(&logs.Message{
 			Stat:    "ERR",
 			Name:    "API",
 			Url:     "/api/refresh",
@@ -123,7 +123,7 @@ func (o *indexController) Refresh(c *gin.Context) {
 	token, err := o.service.Refresh(&body)
 	if err != nil {
 		helper.ErrHandler(c, http.StatusUnauthorized, err.Error())
-		go logs.SendLogs(&m.LogMessage{
+		go logs.SendLogs(&logs.Message{
 			Stat:    "ERR",
 			Name:    "API",
 			Url:     "/api/refresh",

@@ -4,6 +4,7 @@ import (
 	"api/config"
 	"api/helper"
 	m "api/models"
+	v "api/validation"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
@@ -37,31 +38,33 @@ func (c *IndexService) Login(dto *m.LoginDto) (*m.Auth, error) {
 	pass := strings.Split(dto.Pass, "$")
 	hasher.Write([]byte(pass[0] + config.ENV.Pepper + config.ENV.Pass))
 
-	if !helper.ValidateStr(dto.User, config.ENV.User) ||
-		!helper.ValidateStr(hex.EncodeToString(hasher.Sum(nil)), pass[1]) {
+	if !v.ValidateStr(dto.User, config.ENV.User) ||
+		!v.ValidateStr(hex.EncodeToString(hasher.Sum(nil)), pass[1]) {
 		return nil, fmt.Errorf("Invalid login inforamation")
 	}
 
-	var token m.Auth
-	if err := helper.CreateToken(&token); err != nil {
+	var t, err = helper.CreateToken()
+	if err != nil {
 		return nil, err
 	}
 
 	now := time.Now().Unix()
 	ctx := context.Background()
+	token := m.NewAuth().Fill(t)
 	c.client.Set(ctx, token.AccessUUID, config.ENV.ID, time.Duration((token.AccessExpire-now)*int64(time.Second)))
 	c.client.Set(ctx, token.RefreshUUID, config.ENV.ID, time.Duration((token.RefreshExpire-now)*int64(time.Second)))
 
-	return &token, nil
+	return token, nil
 }
 
 func (c *IndexService) Refresh(dto *m.TokenDto) (*m.Auth, error) {
-	auth, err := helper.CheckToken(dto)
+	t, err := helper.CheckToken(dto.RefreshToken)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx := context.Background()
+	auth := m.NewAuth().Fill(t)
 
 	// Double check if such UUID exist in cache + it's the same user
 	// (btw don't need it, I have only one user)
@@ -71,14 +74,15 @@ func (c *IndexService) Refresh(dto *m.TokenDto) (*m.Auth, error) {
 
 	c.client.Del(ctx, auth.RefreshUUID)
 
-	var token m.Auth
-	if err := helper.CreateToken(&token); err != nil {
+	t, err = helper.CreateToken()
+	if err != nil {
 		return nil, err
 	}
 
 	now := time.Now().Unix()
+	token := m.NewAuth().Fill(t)
 	c.client.Set(ctx, token.AccessUUID, config.ENV.ID, time.Duration((token.AccessExpire-now)*int64(time.Second)))
 	c.client.Set(ctx, token.RefreshUUID, config.ENV.ID, time.Duration((token.RefreshExpire-now)*int64(time.Second)))
 
-	return &token, nil
+	return token, nil
 }

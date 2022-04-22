@@ -60,6 +60,7 @@ func main() {
 		routes.NewFileRouter(rg, db, redis),
 		routes.NewLinkRouter(rg, db, redis),
 		routes.NewBotRouter(rg, db, redis),
+		routes.NewPatternRouter(rg, db, redis),
 
 		// routes.NewWorldRouter(rg),
 		// routes.NewInfoRouter(rg, []func(*gin.RouterGroup) interfaces.Router{

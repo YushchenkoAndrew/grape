@@ -4,7 +4,6 @@ import (
 	"api/config"
 	"api/helper"
 	"api/logs"
-	"api/models"
 	"context"
 	"net/http"
 	"time"
@@ -26,7 +25,7 @@ func (o *Middleware) Limit() gin.HandlerFunc {
 		go o.client.Incr(ctx, ip)
 		if rate >= config.ENV.RateLimit {
 			helper.ErrHandler(c, http.StatusTooManyRequests, "Toggled Reqest rate limiter")
-			go logs.SendLogs(&models.LogMessage{
+			go logs.SendLogs(&logs.Message{
 				Stat:    "OK",
 				Name:    "API",
 				Url:     "/api/refresh",

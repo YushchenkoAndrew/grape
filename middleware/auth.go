@@ -4,7 +4,6 @@ import (
 	"api/config"
 	"api/helper"
 	"api/logs"
-	"api/models"
 	"context"
 	"fmt"
 	"net/http"
@@ -21,7 +20,7 @@ func (o *Middleware) Auth() gin.HandlerFunc {
 
 		if len(bearToken) != 2 {
 			helper.ErrHandler(c, http.StatusUnauthorized, "Invalid token inforamation")
-			go logs.SendLogs(&models.LogMessage{
+			go logs.SendLogs(&logs.Message{
 				Stat:    "ERR",
 				Name:    "API",
 				Url:     "/api/refresh",
@@ -45,7 +44,7 @@ func (o *Middleware) Auth() gin.HandlerFunc {
 
 		if err != nil {
 			helper.ErrHandler(c, http.StatusUnauthorized, err.Error())
-			go logs.SendLogs(&models.LogMessage{
+			go logs.SendLogs(&logs.Message{
 				Stat:    "ERR",
 				Name:    "API",
 				Url:     "/api/refresh",
@@ -95,7 +94,7 @@ func (o *Middleware) AuthToken(key string, model interface{}) gin.HandlerFunc {
 
 		if len(bearToken) != 2 || !valid.MatchString(bearToken[1]) {
 			helper.ErrHandler(c, http.StatusUnauthorized, "Invalid token inforamation")
-			go logs.SendLogs(&models.LogMessage{
+			go logs.SendLogs(&logs.Message{
 				Stat:    "ERR",
 				Name:    "API",
 				File:    "/middleware/auth.go",
@@ -106,7 +105,7 @@ func (o *Middleware) AuthToken(key string, model interface{}) gin.HandlerFunc {
 
 		if err, items := helper.Getcache(o.db.Where(fmt.Sprintf("MD5(CONCAT(SPLIT_PART(token, '$', 1), '%s', '%s')) = SPLIT_PART(token, '$', 2)", config.ENV.Pepper, bearToken[1])), o.client, key, fmt.Sprintf("TOKEN=%s", bearToken[1]), model); err != nil || items == 0 {
 			helper.ErrHandler(c, http.StatusUnauthorized, err.Error())
-			go logs.SendLogs(&models.LogMessage{
+			go logs.SendLogs(&logs.Message{
 				Stat:    "ERR",
 				Name:    "API",
 				File:    "/middleware/auth.go",

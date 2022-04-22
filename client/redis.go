@@ -5,7 +5,6 @@ import (
 
 	"api/config"
 	"api/logs"
-	"api/models"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -18,7 +17,7 @@ func ConnRedis() *redis.Client {
 
 	ctx := context.Background()
 	if _, err := client.Ping(ctx).Result(); err != nil {
-		logs.SendLogs(&models.LogMessage{
+		logs.SendLogs(&logs.Message{
 			Stat:    "ERR",
 			Name:    "API",
 			File:    "/db/redis.go",

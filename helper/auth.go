@@ -2,7 +2,6 @@ package helper
 
 import (
 	"api/config"
-	"api/models"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -12,37 +11,40 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateToken(token *models.Auth) (err error) {
-	token.AccessUUID = uuid.New().String()
-	token.RefreshUUID = uuid.New().String()
+func CreateToken() (map[string]interface{}, error) {
+	var err error
+	token := make(map[string]interface{})
 
-	token.AccessExpire = time.Now().Add(time.Minute * 15).Unix()
-	token.RefreshExpire = time.Now().Add(time.Hour * 24 * 7).Unix()
+	token["access_uuid"] = uuid.New().String()
+	token["refresh_uuid"] = uuid.New().String()
+
+	token["access_expire"] = time.Now().Add(time.Minute * 15).Unix()
+	token["refresh_expire"] = time.Now().Add(time.Hour * 24 * 7).Unix()
 
 	access := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.MapClaims{
 		"authorized":  true,
-		"access_uuid": token.AccessUUID,
+		"access_uuid": token["access_uuid"],
 		"user_id":     config.ENV.ID,
-		"expire":      token.AccessExpire,
+		"expire":      token["access_expire"],
 	})
 
-	token.AccessToken, err = access.SignedString([]byte(config.ENV.AccessSecret))
+	token["access_token"], err = access.SignedString([]byte(config.ENV.AccessSecret))
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	refresh := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"refresh_uuid": token.RefreshUUID,
+		"refresh_uuid": token["refresh_uuid"],
 		"user_id":      config.ENV.ID,
-		"expire":       token.RefreshExpire,
+		"expire":       token["refresh_expire"],
 	})
 
-	token.RefreshToken, err = refresh.SignedString([]byte(config.ENV.RefreshSecret))
-	return
+	token["refresh_token"], err = refresh.SignedString([]byte(config.ENV.RefreshSecret))
+	return token, err
 }
 
-func CheckToken(dto *models.TokenDto) (*models.Auth, error) {
-	token, err := jwt.Parse(dto.RefreshToken, func(t *jwt.Token) (interface{}, error) {
+func CheckToken(refreshToken string) (map[string]interface{}, error) {
+	token, err := jwt.Parse(refreshToken, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("invalid signing method")
 		}
@@ -71,26 +73,7 @@ func CheckToken(dto *models.TokenDto) (*models.Auth, error) {
 		return nil, fmt.Errorf("Invalid token inforamation")
 	}
 
-	return &models.Auth{AccessUUID: claims["user_id"].(string), RefreshUUID: claims["refresh_uuid"].(string)}, nil
-}
-
-func ValidateStr(str1 string, str2 string) (equal bool) {
-	var len1 = len(str1)
-	var len2 = len(str2)
-
-	var max = len2
-	if len1 > len2 {
-		max = len1
-	}
-
-	equal = true
-	for i := 0; i < max; i++ {
-		if i >= len1 || i >= len2 || str1[i] != str2[i] {
-			equal = false
-		}
-	}
-
-	return
+	return map[string]interface{}{"access_uuid": claims["user_id"].(string), "refresh_uuid": claims["refresh_uuid"].(string)}, nil
 }
 
 func BotToken() (string, string) {

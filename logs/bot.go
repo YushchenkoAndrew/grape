@@ -2,7 +2,6 @@ package logs
 
 import (
 	"api/config"
-	"api/models"
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
@@ -13,7 +12,16 @@ import (
 	"strconv"
 )
 
-func SendLogs(message *models.LogMessage) {
+type Message struct {
+	Stat    string      `json:"stat" xml:"stat" binding:"required"`
+	Name    string      `json:"name" xml:"name" binding:"required"`
+	Url     string      `json:"url" xml:"url"`
+	File    string      `json:"file" xml:"file"`
+	Message string      `json:"message" xml:"message" binding:"required"`
+	Desc    interface{} `json:"desc" xml:"desc"`
+}
+
+func SendLogs(message *Message) {
 	var err error
 	var body []byte
 
@@ -47,7 +55,7 @@ func SendLogs(message *models.LogMessage) {
 }
 
 func DefaultLog(file string, err interface{}) {
-	SendLogs(&models.LogMessage{
+	SendLogs(&Message{
 		Stat:    "ERR",
 		Name:    "API",
 		File:    file,

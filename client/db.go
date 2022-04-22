@@ -4,7 +4,6 @@ import (
 	"api/config"
 	"api/interfaces"
 	"api/logs"
-	"api/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -19,7 +18,7 @@ func ConnDB(tables []interfaces.Table) *gorm.DB {
 			" dbname="+config.ENV.DBName), &gorm.Config{})
 
 	if err != nil {
-		logs.SendLogs(&models.LogMessage{
+		logs.SendLogs(&logs.Message{
 			Stat:    "ERR",
 			Name:    "API",
 			File:    "/db/db.go",
