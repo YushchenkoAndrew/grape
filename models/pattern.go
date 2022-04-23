@@ -1,9 +1,11 @@
 package models
 
 import (
+	"api/config"
 	"api/interfaces"
 	v "api/validation"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -22,17 +24,19 @@ type Pattern struct {
 	MaxSpacingX uint8 `gorm:"not null" json:"max_spacing_x" xml:"max_spacing_x" example:"5"`
 	MaxSpacingY uint8 `gorm:"not null" json:"max_spacing_y" xml:"max_spacing_y" example:"5"`
 
-	Width  float32 `gorm:"not null" json:"width" xml:"width" example:"70.00"`
-	Height float32 `gorm:"not null" json:"height" xml:"height" example:"8.00"`
-	Path   string  `gorm:"not null" json:"path" xml:"path" example:"<path d='M-.02 22c8.373 0 11.938-4.695 16.32-9.662C20.785 7.258 25.728 2 35 2c9.272 0 14.215 5.258 18.7 10.338C58.082 17.305 61.647 22 70.02 22M-.02 14.002C8.353 14 11.918 9.306 16.3 4.339 20.785-.742 25.728-6 35-6 44.272-6 49.215-.742 53.7 4.339c4.382 4.967 7.947 9.661 16.32 9.664M70 6.004c-8.373-.001-11.918-4.698-16.3-9.665C49.215-8.742 44.272-14 35-14c-9.272 0-14.215 5.258-18.7 10.339C11.918 1.306 8.353 6-.02 6.002'/>"`
+	Width   float32 `gorm:"not null" json:"width" xml:"width" example:"70.00"`
+	Height  float32 `gorm:"not null" json:"height" xml:"height" example:"8.00"`
+	VHeight uint32  `gorm:"not null" json:"v_height" xml:"v_height" example:"8"`
+
+	Path string `gorm:"not null" json:"path" xml:"path" example:"<path d='M-.02 22c8.373 0 11.938-4.695 16.32-9.662C20.785 7.258 25.728 2 35 2c9.272 0 14.215 5.258 18.7 10.338C58.082 17.305 61.647 22 70.02 22M-.02 14.002C8.353 14 11.918 9.306 16.3 4.339 20.785-.742 25.728-6 35-6 44.272-6 49.215-.742 53.7 4.339c4.382 4.967 7.947 9.661 16.32 9.664M70 6.004c-8.373-.001-11.918-4.698-16.3-9.665C49.215-8.742 44.272-14 35-14c-9.272 0-14.215 5.258-18.7 10.339C11.918 1.306 8.353 6-.02 6.002'/>"`
 }
 
 func NewPattern() interfaces.Table {
-	return &Metrics{}
+	return &Pattern{}
 }
 
 func (*Pattern) TableName() string {
-	return "Pattern"
+	return "pattern"
 }
 
 func (c *Pattern) Migrate(db *gorm.DB, forced bool) error {
@@ -40,7 +44,19 @@ func (c *Pattern) Migrate(db *gorm.DB, forced bool) error {
 		db.Migrator().DropTable(c)
 	}
 
-	return db.AutoMigrate(c)
+	if err := db.AutoMigrate(c); err != nil {
+		return err
+	}
+
+	var nSize int64
+	if db.Model(c).Count(&nSize); nSize == 0 {
+
+		// The most quick and easiest way !!!
+		res := db.Exec("\\copy pattern from '" + config.ENV.MigrationPath + "/default_patterns.csv' delimiter ',' csv header;")
+		fmt.Println(res.Error)
+	}
+
+	return nil
 }
 
 func (c *Pattern) Copy() *Pattern {
@@ -96,6 +112,10 @@ func (c *Pattern) Fill(updated *Pattern) *Pattern {
 		c.Height = updated.Height
 	}
 
+	if updated.VHeight != 0 {
+		c.VHeight = updated.VHeight
+	}
+
 	if updated.Path != "" {
 		c.Path = updated.Path
 	}
@@ -112,9 +132,11 @@ type PatternDto struct {
 	MaxSpacingX uint8 `json:"max_spacing_x" xml:"max_spacing_x" example:"5"`
 	MaxSpacingY uint8 `json:"max_spacing_y" xml:"max_spacing_y" example:"5"`
 
-	Width  float32 `json:"width" xml:"width" example:"70.00"`
-	Height float32 `json:"height" xml:"height" example:"8.00"`
-	Path   string  `json:"path" xml:"path" example:"<path d='M-.02 22c8.373 0 11.938-4.695 16.32-9.662C20.785 7.258 25.728 2 35 2c9.272 0 14.215 5.258 18.7 10.338C58.082 17.305 61.647 22 70.02 22M-.02 14.002C8.353 14 11.918 9.306 16.3 4.339 20.785-.742 25.728-6 35-6 44.272-6 49.215-.742 53.7 4.339c4.382 4.967 7.947 9.661 16.32 9.664M70 6.004c-8.373-.001-11.918-4.698-16.3-9.665C49.215-8.742 44.272-14 35-14c-9.272 0-14.215 5.258-18.7 10.339C11.918 1.306 8.353 6-.02 6.002'/>"`
+	Width   float32 `json:"width" xml:"width" example:"70.00"`
+	Height  float32 `json:"height" xml:"height" example:"8.00"`
+	VHeight uint32  `json:"v_height" xml:"v_height" example:"8"`
+
+	Path string `json:"path" xml:"path" example:"<path d='M-.02 22c8.373 0 11.938-4.695 16.32-9.662C20.785 7.258 25.728 2 35 2c9.272 0 14.215 5.258 18.7 10.338C58.082 17.305 61.647 22 70.02 22M-.02 14.002C8.353 14 11.918 9.306 16.3 4.339 20.785-.742 25.728-6 35-6 44.272-6 49.215-.742 53.7 4.339c4.382 4.967 7.947 9.661 16.32 9.664M70 6.004c-8.373-.001-11.918-4.698-16.3-9.665C49.215-8.742 44.272-14 35-14c-9.272 0-14.215 5.258-18.7 10.339C11.918 1.306 8.353 6-.02 6.002'/>"`
 }
 
 func (c *PatternDto) IsOK() bool {
@@ -124,7 +146,7 @@ func (c *PatternDto) IsOK() bool {
 	decoder.AutoClose = xml.HTMLAutoClose
 	decoder.Entity = xml.HTMLEntity
 
-	return c.Mode != "" && c.Colors > 0 && c.MaxStroke > 0 && c.MaxScale > 0 && c.Width > 0 && c.Height > 0 && v.ValidateHTML(decoder, []v.ValidationHTMLCondition{
+	return c.Mode != "" && c.Colors > 1 && c.MaxStroke > 0 && c.MaxScale > 0 && c.Width > 0 && c.Height > 0 && v.ValidateHTML(decoder, []v.ValidationHTMLCondition{
 		{
 			Name: "path",
 			El:   "start",

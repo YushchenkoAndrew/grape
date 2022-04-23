@@ -44,6 +44,7 @@ func main() {
 
 		models.NewGeoIpBlocks(),
 		models.NewGeoIpLocations(),
+		models.NewPattern(),
 
 		models.NewFile(),
 		models.NewLink(),
