@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"api/helper"
-	"api/interfaces"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +9,8 @@ import (
 
 type infoController struct{}
 
-func NewInfoController() interfaces.Info {
+// func NewInfoController() interfaces.Info {
+func NewInfoController() interface{} {
 	return &infoController{}
 }
 

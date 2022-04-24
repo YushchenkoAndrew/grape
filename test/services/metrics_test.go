@@ -4,6 +4,7 @@ import (
 	"api/client"
 	"api/config"
 	"api/interfaces"
+	i "api/interfaces/service"
 	m "api/models"
 	"api/service"
 	"api/service/k3s/pods"
@@ -16,7 +17,7 @@ import (
 const METRICS_ID = 305
 
 var (
-	metrics pods.MetricsService
+	metrics i.Default[m.Metrics, m.MetricsQueryDto]
 
 	m_createdTo   = time.Now().Add(time.Hour)
 	m_createdFrom = time.Now().Add(-1 * time.Hour)
@@ -313,8 +314,8 @@ func init() {
 		m.NewProject(),
 	})
 
-	metrics = *pods.NewMetricsService(db, redis)
+	metrics = pods.NewMetricsService(db, redis)
 
-	var project = *service.NewProjectService(db, redis)
+	var project = service.NewProjectService(db, redis)
 	project.Create(&m.Project{ID: 1, Name: "yes", Title: "js", Flag: "js", Desc: "js", Note: "js"})
 }

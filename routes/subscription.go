@@ -3,6 +3,7 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
+	i "api/interfaces/controller"
 	m "api/middleware"
 	s "api/service"
 
@@ -13,7 +14,7 @@ import (
 
 type subscriptionRouter struct {
 	auth         *gin.RouterGroup
-	subscription interfaces.Default
+	subscription i.Default
 }
 
 func NewSubscribeRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) interfaces.Router {

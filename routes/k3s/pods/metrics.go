@@ -3,6 +3,7 @@ package pods
 import (
 	c "api/controllers/k3s/pods"
 	"api/interfaces"
+	i "api/interfaces/controller"
 	m "api/middleware"
 	"api/models"
 	s "api/service/k3s/pods"
@@ -16,7 +17,7 @@ import (
 type metricsRouter struct {
 	auth      *gin.RouterGroup
 	authToken *gin.RouterGroup
-	metrics   interfaces.Default
+	metrics   i.Default
 }
 
 func NewMetricsRouterFactory(db *gorm.DB, client *redis.Client, metrics *metrics.Clientset) func(*gin.RouterGroup) interfaces.Router {

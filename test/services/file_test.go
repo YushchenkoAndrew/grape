@@ -4,6 +4,7 @@ import (
 	"api/client"
 	"api/config"
 	"api/interfaces"
+	i "api/interfaces/service"
 	m "api/models"
 	"api/service"
 	"testing"
@@ -13,7 +14,7 @@ import (
 
 const FILE_ID = 305
 
-var file service.FileService
+var file i.Default[m.File, m.FileQueryDto]
 
 func TestFileCreate(t *testing.T) {
 	var tests = []struct {
@@ -246,7 +247,7 @@ func TestFileDelete(t *testing.T) {
 	}
 }
 
-func TestFinalCacheState(t *testing.T) {
+func TestFileFinalCacheState(t *testing.T) {
 	var tests = []struct {
 		name     string
 		query    m.FileQueryDto
@@ -299,8 +300,8 @@ func init() {
 		m.NewProject(),
 	})
 
-	file = *service.NewFileService(db, redis)
+	file = service.NewFileService(db, redis)
 
-	var project = *service.NewProjectService(db, redis)
+	var project = service.NewProjectService(db, redis)
 	project.Create(&m.Project{ID: 1, Name: "yes", Title: "js", Flag: "js", Desc: "js", Note: "js"})
 }

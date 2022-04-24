@@ -3,6 +3,7 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
+	i "api/interfaces/controller"
 	m "api/middleware"
 	s "api/service"
 
@@ -14,7 +15,7 @@ import (
 type projectRouter struct {
 	route   *gin.RouterGroup
 	auth    *gin.RouterGroup
-	project interfaces.Default
+	project i.Default
 }
 
 func NewProjectRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) interfaces.Router {

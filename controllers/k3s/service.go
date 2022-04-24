@@ -2,7 +2,7 @@ package k3s
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
 	m "api/models"
 	"api/service/k3s"
 	"fmt"
@@ -16,7 +16,7 @@ type serviceController struct {
 	service *k3s.ServiceService
 }
 
-func NewServiceController(s *k3s.ServiceService) interfaces.Default {
+func NewServiceController(s *k3s.ServiceService) controller.Default {
 	return &serviceController{service: s}
 }
 

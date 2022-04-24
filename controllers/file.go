@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
+	"api/interfaces/service"
 	m "api/models"
-	"api/service"
 	"fmt"
 	"net/http"
 
@@ -12,18 +12,12 @@ import (
 )
 
 type fileController struct {
-	service *service.FileService
+	service service.Default[m.File, m.FileQueryDto]
 }
 
-func NewFileController(s *service.FileService) interfaces.Default {
+func NewFileController(s service.Default[m.File, m.FileQueryDto]) controller.Default {
 	return &fileController{service: s}
 }
-
-// func (*fileController) isExist(id int, body *m.FileDto) bool {
-// 	var model []m.File
-// 	res := db.DB.Where("project_id = ? AND name = ? AND role = ? AND type = ?", id, body.Name, body.Role, body.Type).Find(&model)
-// 	return !(res.RowsAffected == 0)
-// }
 
 // @Tags File
 // @Summary Create file by project id

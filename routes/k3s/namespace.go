@@ -3,6 +3,7 @@ package k3s
 import (
 	c "api/controllers/k3s"
 	"api/interfaces"
+	i "api/interfaces/controller"
 	m "api/middleware"
 	s "api/service/k3s"
 
@@ -12,7 +13,7 @@ import (
 
 type namespaceRouter struct {
 	auth      *gin.RouterGroup
-	namespace interfaces.Default
+	namespace i.Default
 }
 
 func NewNamespaceRouterFactory(k3s *kubernetes.Clientset) func(*gin.RouterGroup) interfaces.Router {

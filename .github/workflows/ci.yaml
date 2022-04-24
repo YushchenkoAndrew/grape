@@ -92,3 +92,6 @@ jobs:
 
       - name: Test Service Project
         run: go test -v ./test/services/project_test.go
+
+      - name: Test Service Pattern
+        run: go test -v ./test/services/pattern_test.go

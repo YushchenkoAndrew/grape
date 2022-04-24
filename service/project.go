@@ -3,6 +3,7 @@ package service
 import (
 	"api/config"
 	"api/helper"
+	i "api/interfaces/service"
 	"api/logs"
 	m "api/models"
 	"api/service/k3s/pods"
@@ -17,12 +18,12 @@ import (
 )
 
 type FullProjectService struct {
-	Link         *LinkService
-	File         *FileService
-	Project      *ProjectService
+	Link         i.Default[m.Link, m.LinkQueryDto]
+	File         i.Default[m.File, m.FileQueryDto]
+	Project      i.Default[m.Project, m.ProjectQueryDto]
 	Cron         *CronService
-	Subscription *SubscriptionService
-	Metrics      *pods.MetricsService
+	Subscription i.Default[m.Subscription, m.SubscribeQueryDto]
+	Metrics      i.Default[m.Metrics, m.MetricsQueryDto]
 }
 
 func NewFullProjectService(db *gorm.DB, client *redis.Client) *FullProjectService {
@@ -43,8 +44,12 @@ type ProjectService struct {
 	client *redis.Client
 }
 
-func NewProjectService(db *gorm.DB, client *redis.Client) *ProjectService {
+func NewProjectService(db *gorm.DB, client *redis.Client) i.Default[m.Project, m.ProjectQueryDto] {
 	return &ProjectService{key: "PROJECT", db: db, client: client}
+}
+
+func (c *ProjectService) keys(model *m.Project) []string {
+	return []string{fmt.Sprintf("FLAG=%s*", model.Flag), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 }
 
 func (c *ProjectService) isExist(model *m.Project) bool {
@@ -52,11 +57,10 @@ func (c *ProjectService) isExist(model *m.Project) bool {
 	return err != nil || rows != 0
 }
 
-func (c *ProjectService) precache(model *m.Project) {
+func (c *ProjectService) precache(model *m.Project, keys []string) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("NAME=%s", model.Name), model)
 
-	var keys = []string{fmt.Sprintf("FLAG=%s*", model.Flag), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			if !strings.HasPrefix(str, "[") {
@@ -145,11 +149,52 @@ func (c *ProjectService) deepcache(models []m.Project, key string) interface{} {
 	return nil
 }
 
-func (c *ProjectService) recache(model *m.Project, delete bool) {
+func (c *ProjectService) postfilter(data []m.Project, suffix string) []m.Project {
+	var result = []m.Project{}
+
+ITEM:
+	for _, item := range data {
+		for _, key := range strings.Split(suffix, "#") {
+			var res = strings.Split(key, "=")
+
+			switch res[0] {
+			case "ID":
+				if id, _ := strconv.Atoi(res[1]); item.ID != uint32(id) {
+					continue ITEM
+				}
+
+			case "NAME":
+				if item.Name != res[1] {
+					continue ITEM
+				}
+
+			case "FLAG":
+				if item.Flag != res[1] {
+					continue ITEM
+				}
+
+			case "CREATED_FROM":
+				if created_from, _ := time.Parse("2006-01-02", res[1]); created_from.Year() < item.CreatedAt.Year() || created_from.YearDay() < item.CreatedAt.YearDay() {
+					continue ITEM
+				}
+
+			case "CREATED_TO":
+				if created_to, _ := time.Parse("2006-01-02", res[1]); created_to.Year() > item.CreatedAt.Year() || created_to.YearDay() > item.CreatedAt.YearDay() {
+					continue ITEM
+				}
+			}
+		}
+
+		result = append(result, item)
+	}
+
+	return result
+}
+
+func (c *ProjectService) recache(model *m.Project, keys []string, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 	helper.Delcache(c.client, c.key, fmt.Sprintf("NAME=%s*", model.Name))
 
-	var keys = []string{fmt.Sprintf("FLAG=%s*", model.Flag), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
@@ -167,6 +212,9 @@ func (c *ProjectService) recache(model *m.Project, delete bool) {
 					result = append(result, *model)
 				}
 			}
+
+			// Postfilter elements with cache query
+			result = c.postfilter(result, suffix)
 
 			// Check if size of an array was changed
 			if delete {
@@ -241,7 +289,7 @@ func (c *ProjectService) Create(model *m.Project) error {
 		return fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}
 
-	c.precache(model)
+	c.precache(model, c.keys(model))
 	return nil
 }
 
@@ -276,8 +324,10 @@ func (c *ProjectService) Update(query *m.ProjectQueryDto, model *m.Project) ([]m
 	}
 
 	for _, item := range models {
-		c.recache(&item, (existed.Name != "" && existed.ID == 0) || existed.Flag != model.Flag)
-		c.recache(item.Fill(model), false)
+		// FIXME: !!!!
+		// c.recache(&item, (existed.Name != "" && existed.ID == 0) || existed.Flag != model.Flag)
+		c.recache(item.Copy().Fill(model), c.keys(&item), false)
+		c.recache(item.Fill(model), c.keys(&item), false)
 	}
 
 	// Check if Name is not empty, if so that for some safety magers
@@ -299,7 +349,7 @@ func (c *ProjectService) Delete(query *m.ProjectQueryDto) (int, error) {
 	}
 
 	for _, model := range models {
-		c.recache(&model, true)
+		c.recache(&model, c.keys(&model), true)
 	}
 
 	return len(models), client.Delete(&m.Project{}).Error

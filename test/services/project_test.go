@@ -4,6 +4,7 @@ import (
 	"api/client"
 	"api/config"
 	"api/interfaces"
+	i "api/interfaces/service"
 	m "api/models"
 	"api/service"
 	"testing"
@@ -13,7 +14,7 @@ import (
 )
 
 var (
-	project service.ProjectService
+	project i.Default[m.Project, m.ProjectQueryDto]
 
 	createdTo   = time.Now().Add(time.Hour)
 	createdFrom = time.Now().Add(-1 * time.Hour)
@@ -472,5 +473,5 @@ func init() {
 		m.NewProject(),
 	})
 
-	project = *service.NewProjectService(db, redis)
+	project = service.NewProjectService(db, redis)
 }

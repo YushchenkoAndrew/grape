@@ -3,6 +3,7 @@ package service
 import (
 	"api/config"
 	"api/helper"
+	i "api/interfaces/service"
 	"api/logs"
 	m "api/models"
 	"encoding/json"
@@ -21,20 +22,23 @@ type PatternService struct {
 	client *redis.Client
 }
 
-func NewPatternService(db *gorm.DB, client *redis.Client) *PatternService {
+func NewPatternService(db *gorm.DB, client *redis.Client) i.Default[m.Pattern, m.PatternQueryDto] {
 	return &PatternService{key: "PATTERN", db: db, client: client}
+}
+
+func (c *PatternService) keys(model *m.Pattern) []string {
+	return []string{fmt.Sprintf("MODE=%s*", model.Mode), fmt.Sprintf("COLORS=%d*", model.Colors), "", "PAGE=*", "LIMIT=*"}
 }
 
 func (c *PatternService) isExist(model *m.Pattern) bool {
 	var res = []*m.Pattern{model}
-	result := c.db.Where("path = ?", model.Path).Find(res)
+	result := c.db.Where("path = ?", model.Path).Find(&res)
 	return result.Error != nil || result.RowsAffected != 0
 }
 
-func (c *PatternService) precache(model *m.Pattern) {
+func (c *PatternService) precache(model *m.Pattern, keys []string) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 
-	var keys = []string{fmt.Sprintf("MODE=%s*", model.Mode), fmt.Sprintf("COLORS=%d*", model.Colors), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			var data []m.Pattern
@@ -115,10 +119,41 @@ func (c *PatternService) deepcache(models []m.Pattern, key string) interface{} {
 	return nil
 }
 
-func (c *PatternService) recache(model *m.Pattern, delete bool) {
+func (c *PatternService) postfilter(data []m.Pattern, suffix string) []m.Pattern {
+	var result = []m.Pattern{}
+
+ITEM:
+	for _, item := range data {
+		for _, key := range strings.Split(suffix, "#") {
+			var res = strings.Split(key, "=")
+
+			switch res[0] {
+			case "ID":
+				if id, _ := strconv.Atoi(res[1]); item.ID != uint32(id) {
+					continue ITEM
+				}
+
+			case "MODE":
+				if item.Mode != res[1] {
+					continue ITEM
+				}
+
+			case "COLORS":
+				if colors, _ := strconv.Atoi(res[1]); uint32(item.Colors) != uint32(colors) {
+					continue ITEM
+				}
+			}
+		}
+
+		result = append(result, item)
+	}
+
+	return result
+}
+
+func (c *PatternService) recache(model *m.Pattern, keys []string, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 
-	var keys = []string{fmt.Sprintf("MODE=%s*", model.Mode), fmt.Sprintf("COLORS=%d*", model.Colors), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
@@ -136,6 +171,9 @@ func (c *PatternService) recache(model *m.Pattern, delete bool) {
 					result = append(result, *model)
 				}
 			}
+
+			// Postfilter elements with cache query
+			result = c.postfilter(result, suffix)
 
 			// Check if size of an array was changed
 			if delete {
@@ -192,7 +230,7 @@ func (c *PatternService) Create(model *m.Pattern) error {
 		return fmt.Errorf("Something unexpected happend: %v", res.Error)
 	}
 
-	c.precache(model)
+	c.precache(model, c.keys(model))
 	return nil
 }
 
@@ -227,8 +265,10 @@ func (c *PatternService) Update(query *m.PatternQueryDto, model *m.Pattern) ([]m
 	}
 
 	for _, item := range models {
-		c.recache(&item, (existed.Path != "" && existed.ID == 0))
-		c.recache(item.Fill(model), false)
+		// FIXME: CHECK WITH PROJECT !!!
+		// c.recache(&item, (existed.Path != "" && existed.ID == 0))
+		c.recache(item.Copy().Fill(model), c.keys(&item), false)
+		c.recache(item.Fill(model), c.keys(&item), false)
 	}
 
 	return c.Read(query)
@@ -243,7 +283,7 @@ func (c *PatternService) Delete(query *m.PatternQueryDto) (int, error) {
 	}
 
 	for _, model := range models {
-		c.recache(&model, true)
+		c.recache(&model, c.keys(&model), true)
 	}
 
 	return len(models), client.Delete(&m.Pattern{}).Error

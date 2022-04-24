@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
 	"api/logs"
 	m "api/models"
 	"api/service"
@@ -16,7 +16,7 @@ type indexController struct {
 	service *service.IndexService
 }
 
-func NewIndexController(s *service.IndexService) interfaces.Index {
+func NewIndexController(s *service.IndexService) controller.Index {
 	return &indexController{service: s}
 }
 

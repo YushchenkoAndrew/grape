@@ -3,6 +3,7 @@ package models
 import (
 	"api/config"
 	"api/interfaces"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -37,7 +38,7 @@ func (c *GeoIpBlocks) Migrate(db *gorm.DB, forced bool) error {
 	if db.Model(c).Count(&nSize); nSize == 0 {
 
 		// The most quick and easiest way !!!
-		db.Exec("\\copy geo_ip_blocks from '" + config.ENV.MigrationPath + "/GeoLite2-Country-Blocks.csv' delimiter ',' csv header;")
+		db.Exec(fmt.Sprintf("copy geo_ip_blocks from '%s/GeoLite2-Country-Blocks.csv' delimiter ',' csv header;", config.ENV.MigrationPath))
 		db.Exec("CREATE INDEX geo_ip_blocks_network_idx ON geo_ip_blocks USING gist (network inet_ops);")
 	}
 

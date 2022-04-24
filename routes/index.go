@@ -3,6 +3,7 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
+	i "api/interfaces/controller"
 	s "api/service"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,7 @@ import (
 
 type indexRouter struct {
 	route     *gin.RouterGroup
-	index     interfaces.Index
+	index     i.Index
 	subRoutes *[]interfaces.Router
 }
 

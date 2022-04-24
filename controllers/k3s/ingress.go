@@ -2,7 +2,7 @@ package k3s
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
 	m "api/models"
 	"api/service/k3s"
 	"fmt"
@@ -16,7 +16,7 @@ type ingressController struct {
 	service *k3s.IngressService
 }
 
-func NewIngressController(s *k3s.IngressService) interfaces.Default {
+func NewIngressController(s *k3s.IngressService) controller.Default {
 	return &ingressController{service: s}
 }
 

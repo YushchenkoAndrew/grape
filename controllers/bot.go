@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
 	m "api/models"
 	"api/service"
 	"net/http"
@@ -14,7 +14,7 @@ type botController struct {
 	service *service.BotService
 }
 
-func NewBotController(s *service.BotService) interfaces.Bot {
+func NewBotController(s *service.BotService) controller.Bot {
 	return &botController{service: s}
 }
 

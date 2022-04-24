@@ -3,6 +3,7 @@ package k3s
 import (
 	c "api/controllers/k3s"
 	"api/interfaces"
+	i "api/interfaces/controller"
 	m "api/middleware"
 	s "api/service/k3s"
 
@@ -12,7 +13,7 @@ import (
 
 type ingressRouter struct {
 	auth    *gin.RouterGroup
-	ingress interfaces.Default
+	ingress i.Default
 }
 
 func NewIngressRouterFactory(k3s *kubernetes.Clientset) func(*gin.RouterGroup) interfaces.Router {

@@ -3,6 +3,7 @@ package service
 import (
 	"api/config"
 	"api/helper"
+	i "api/interfaces/service"
 	"api/logs"
 	m "api/models"
 	"encoding/json"
@@ -21,8 +22,12 @@ type LinkService struct {
 	client *redis.Client
 }
 
-func NewLinkService(db *gorm.DB, client *redis.Client) *LinkService {
+func NewLinkService(db *gorm.DB, client *redis.Client) i.Default[m.Link, m.LinkQueryDto] {
 	return &LinkService{key: "LINK", db: db, client: client}
+}
+
+func (c *LinkService) keys(model *m.Link) []string {
+	return []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 }
 
 func (c *LinkService) isExist(model *m.Link) bool {
@@ -31,11 +36,10 @@ func (c *LinkService) isExist(model *m.Link) bool {
 	return err != nil || rows != 0
 }
 
-func (c *LinkService) precache(model *m.Link) {
+func (c *LinkService) precache(model *m.Link, keys []string) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("PROJECT_ID=%d#NAME=%s", model.ProjectID, model.Name), model)
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			var data []m.Link
@@ -116,10 +120,41 @@ func (c *LinkService) deepcache(models []m.Link, key string) interface{} {
 	return nil
 }
 
-func (c *LinkService) recache(model *m.Link, delete bool) {
+func (c *LinkService) postfilter(data []m.Link, suffix string) []m.Link {
+	var result = []m.Link{}
+
+ITEM:
+	for _, item := range data {
+		for _, key := range strings.Split(suffix, "#") {
+			var res = strings.Split(key, "=")
+
+			switch res[0] {
+			case "ID":
+				if id, _ := strconv.Atoi(res[1]); item.ID != uint32(id) {
+					continue ITEM
+				}
+
+			case "NAME":
+				if item.Name != res[1] {
+					continue ITEM
+				}
+
+			case "PROJECT_ID":
+				if id, _ := strconv.Atoi(res[1]); item.ProjectID != uint32(id) {
+					continue ITEM
+				}
+			}
+		}
+
+		result = append(result, item)
+	}
+
+	return result
+}
+
+func (c *LinkService) recache(model *m.Link, keys []string, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
@@ -137,6 +172,9 @@ func (c *LinkService) recache(model *m.Link, delete bool) {
 					result = append(result, *model)
 				}
 			}
+
+			// Postfilter elements with cache query
+			result = c.postfilter(result, suffix)
 
 			// Check if size of an array was changed
 			if delete {
@@ -193,10 +231,11 @@ func (c *LinkService) Create(model *m.Link) error {
 
 	if c.isExist(existed) {
 		if res = c.db.Model(&m.Link{}).Where("id = ?", existed.ID).Updates(model); res.Error == nil {
-			c.recache(existed.Fill(model), false)
+			c.recache(existed.Copy().Fill(model), c.keys(existed), false)
+			c.recache(existed.Fill(model), c.keys(existed), false)
 		}
 	} else if res = c.db.Create(model); res.Error == nil {
-		c.precache(model)
+		c.precache(model, c.keys(model))
 	}
 
 	if res.Error != nil {
@@ -231,7 +270,8 @@ func (c *LinkService) Update(query *m.LinkQueryDto, model *m.Link) ([]m.Link, er
 	}
 
 	for _, existed := range models {
-		c.recache(existed.Fill(model), false)
+		c.recache(existed.Copy().Fill(model), c.keys(&existed), false)
+		c.recache(existed.Fill(model), c.keys(&existed), false)
 	}
 
 	return c.Read(query)
@@ -246,7 +286,7 @@ func (c *LinkService) Delete(query *m.LinkQueryDto) (int, error) {
 	}
 
 	for _, model := range models {
-		c.recache(&model, true)
+		c.recache(&model, c.keys(&model), true)
 	}
 
 	return len(models), client.Delete(&m.Link{}).Error

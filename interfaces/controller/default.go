@@ -1,9 +1,8 @@
-package interfaces
+package controller
 
 import "github.com/gin-gonic/gin"
 
-type Info interface {
-	Create(c *gin.Context)
+type Default interface {
 	CreateOne(c *gin.Context)
 	CreateAll(c *gin.Context)
 

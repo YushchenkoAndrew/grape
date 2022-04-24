@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
 	m "api/models"
 	"api/service"
 	"fmt"
@@ -15,7 +15,7 @@ type projectController struct {
 	service *service.FullProjectService
 }
 
-func NewProjectController(s *service.FullProjectService) interfaces.Default {
+func NewProjectController(s *service.FullProjectService) controller.Default {
 	return &projectController{service: s}
 }
 

@@ -2,7 +2,7 @@ package k3s
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
 	m "api/models"
 	"api/service/k3s"
 	"fmt"
@@ -16,7 +16,7 @@ type deploymentController struct {
 	service *k3s.DeploymentService
 }
 
-func NewDeploymentController(s *k3s.DeploymentService) interfaces.Default {
+func NewDeploymentController(s *k3s.DeploymentService) controller.Default {
 	return &deploymentController{service: s}
 }
 

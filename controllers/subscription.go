@@ -3,7 +3,7 @@ package controllers
 import (
 	"api/config"
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
 	m "api/models"
 	"api/service"
 	"fmt"
@@ -16,7 +16,7 @@ type subscriptionController struct {
 	service *service.FullSubscriptionService
 }
 
-func NewSubscriptionController(s *service.FullSubscriptionService) interfaces.Default {
+func NewSubscriptionController(s *service.FullSubscriptionService) controller.Default {
 	models, _ := s.Subscription.Read(&m.SubscribeQueryDto{Page: -1})
 	for _, item := range models {
 		if entity, _ := s.Cron.Read(&m.CronQueryDto{ID: item.CronID}); entity != nil {

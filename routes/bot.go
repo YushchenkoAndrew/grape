@@ -3,6 +3,7 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
+	i "api/interfaces/controller"
 	m "api/middleware"
 	s "api/service"
 
@@ -13,7 +14,7 @@ import (
 
 type botRouter struct {
 	auth *gin.RouterGroup
-	bot  interfaces.Bot
+	bot  i.Bot
 }
 
 func NewBotRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) interfaces.Router {

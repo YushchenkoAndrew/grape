@@ -2,7 +2,6 @@ package info
 
 import (
 	"api/helper"
-	"api/interfaces/info"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +9,7 @@ import (
 
 type rangeController struct{}
 
-func NewRangeController() info.Default {
+func NewRangeController() interface{} {
 	return &rangeController{}
 }
 

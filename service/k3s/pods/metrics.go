@@ -3,6 +3,7 @@ package pods
 import (
 	"api/config"
 	"api/helper"
+	i "api/interfaces/service"
 	"api/logs"
 	m "api/models"
 	"encoding/json"
@@ -18,7 +19,7 @@ import (
 
 type FullMetricsService struct {
 	Pods    *PodsService
-	Metrics *MetricsService
+	Metrics i.Default[m.Metrics, m.MetricsQueryDto]
 }
 
 func NewFullMetricsService(db *gorm.DB, client *redis.Client, metrics *metrics.Clientset) *FullMetricsService {
@@ -28,6 +29,10 @@ func NewFullMetricsService(db *gorm.DB, client *redis.Client, metrics *metrics.C
 	}
 }
 
+func (c *MetricsService) keys(model *m.Metrics) []string {
+	return []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
+}
+
 type MetricsService struct {
 	key string
 
@@ -35,15 +40,14 @@ type MetricsService struct {
 	client *redis.Client
 }
 
-func NewMetricsService(db *gorm.DB, client *redis.Client) *MetricsService {
+func NewMetricsService(db *gorm.DB, client *redis.Client) i.Default[m.Metrics, m.MetricsQueryDto] {
 	return &MetricsService{key: "METRICS", db: db, client: client}
 }
 
-func (c *MetricsService) precache(model *m.Metrics) {
+func (c *MetricsService) precache(model *m.Metrics, keys []string) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("PROJECT_ID=%d#NAME=%s#NAMESPACE=%s#CONTAINER_NAME=%s", model.ProjectID, model.Name, model.Namespace, model.ContainerName), model)
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			var data []m.Metrics
@@ -144,10 +148,61 @@ func (c *MetricsService) deepcache(models []m.Metrics, key string) interface{} {
 	return nil
 }
 
-func (c *MetricsService) recache(model *m.Metrics, delete bool) {
+func (c *MetricsService) postfilter(data []m.Metrics, suffix string) []m.Metrics {
+	var result = []m.Metrics{}
+
+ITEM:
+	for _, item := range data {
+		for _, key := range strings.Split(suffix, "#") {
+			var res = strings.Split(key, "=")
+
+			switch res[0] {
+			case "ID":
+				if id, _ := strconv.Atoi(res[1]); item.ID != uint32(id) {
+					continue ITEM
+				}
+
+			case "NAME":
+				if item.Name != res[1] {
+					continue ITEM
+				}
+
+			case "NAMESPACE":
+				if item.Namespace != res[1] {
+					continue ITEM
+				}
+
+			case "CONTAINER_NAME":
+				if item.ContainerName != res[1] {
+					continue ITEM
+				}
+
+			case "CREATED_FROM":
+				if created_from, _ := time.Parse("2006-01-02", res[1]); created_from.Year() < item.CreatedAt.Year() || created_from.YearDay() < item.CreatedAt.YearDay() {
+					continue ITEM
+				}
+
+			case "CREATED_TO":
+				if created_to, _ := time.Parse("2006-01-02", res[1]); created_to.Year() > item.CreatedAt.Year() || created_to.YearDay() > item.CreatedAt.YearDay() {
+					continue ITEM
+				}
+
+			case "PROJECT_ID":
+				if id, _ := strconv.Atoi(res[1]); item.ProjectID != uint32(id) {
+					continue ITEM
+				}
+			}
+		}
+
+		result = append(result, item)
+	}
+
+	return result
+}
+
+func (c *MetricsService) recache(model *m.Metrics, keys []string, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("NAMESPACE=%s*", model.Namespace), fmt.Sprintf("CONTAINER_NAME=%s*", model.ContainerName), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
@@ -165,6 +220,9 @@ func (c *MetricsService) recache(model *m.Metrics, delete bool) {
 					result = append(result, *model)
 				}
 			}
+
+			// Postfilter elements with cache query
+			result = c.postfilter(result, suffix)
 
 			// Check if size of an array was changed
 			if delete {
@@ -238,7 +296,7 @@ func (c *MetricsService) Create(model *m.Metrics) error {
 
 	var res *gorm.DB
 	if res = c.db.Create(model); res.Error == nil {
-		c.precache(model)
+		c.precache(model, c.keys(model))
 	}
 
 	if res.Error != nil {
@@ -273,7 +331,8 @@ func (c *MetricsService) Update(query *m.MetricsQueryDto, model *m.Metrics) ([]m
 	}
 
 	for _, existed := range models {
-		c.recache(existed.Fill(model), false)
+		c.recache(existed.Copy().Fill(model), c.keys(&existed), false)
+		c.recache(existed.Fill(model), c.keys(&existed), false)
 	}
 
 	return c.Read(query)
@@ -288,7 +347,7 @@ func (c *MetricsService) Delete(query *m.MetricsQueryDto) (int, error) {
 	}
 
 	for _, model := range models {
-		c.recache(&model, true)
+		c.recache(&model, c.keys(&model), true)
 	}
 
 	return len(models), client.Delete(&m.Metrics{}).Error

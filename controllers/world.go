@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +10,7 @@ import (
 
 type worldController struct{}
 
-func NewWorldController() interfaces.Default {
+func NewWorldController() controller.Default {
 	return &worldController{}
 }
 

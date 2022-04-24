@@ -4,6 +4,7 @@ import (
 	"api/client"
 	"api/config"
 	"api/interfaces"
+	i "api/interfaces/service"
 	m "api/models"
 	"api/service"
 	"testing"
@@ -12,7 +13,7 @@ import (
 )
 
 var (
-	subscription service.SubscriptionService
+	subscription i.Default[m.Subscription, m.SubscribeQueryDto]
 
 	CRON_ID  = "3073ca3c-cd0a-4036-9e5d-7bc32d205d1d"
 	CRON_ID2 = "b16b056a-ccfd-41f0-a2ab-2218fe1d6950"
@@ -295,8 +296,8 @@ func init() {
 		m.NewProject(),
 	})
 
-	subscription = *service.NewSubscriptionService(db, redis)
+	subscription = service.NewSubscriptionService(db, redis)
 
-	var project = *service.NewProjectService(db, redis)
+	var project = service.NewProjectService(db, redis)
 	project.Create(&m.Project{ID: 1, Name: "yes", Title: "js", Flag: "js", Desc: "js", Note: "js"})
 }

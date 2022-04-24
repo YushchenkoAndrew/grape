@@ -1,7 +1,6 @@
 package routes
 
 import (
-	c "api/controllers"
 	"api/interfaces"
 	m "api/middleware"
 
@@ -9,9 +8,9 @@ import (
 )
 
 type infoRouter struct {
-	route     *gin.RouterGroup
-	auth      *gin.RouterGroup
-	info      interfaces.Info
+	route *gin.RouterGroup
+	auth  *gin.RouterGroup
+	// info      i.Info
 	subRoutes []interfaces.Router
 }
 
@@ -23,28 +22,29 @@ func NewInfoRouter(rg *gin.RouterGroup, handlers []func(*gin.RouterGroup) interf
 	}
 
 	return &infoRouter{
-		route:     route,
-		auth:      rg.Group("/info", m.GetMiddleware().Auth()),
-		info:      c.NewInfoController(),
+		route: route,
+		auth:  rg.Group("/info", m.GetMiddleware().Auth()),
+		// info:      c.NewInfoController(),
 		subRoutes: subRoutes,
 	}
 }
 
+// FIXME: !!!
 func (c *infoRouter) Init() {
-	c.auth.POST("", c.info.Create)
-	c.auth.POST("/list", c.info.CreateAll)
-	c.auth.POST("/:date", c.info.CreateOne)
+	// c.auth.POST("", c.info.Create)
+	// c.auth.POST("/list", c.info.CreateAll)
+	// c.auth.POST("/:date", c.info.CreateOne)
 
-	c.route.GET("", c.info.ReadAll)
-	c.route.GET("/:id", c.info.ReadOne)
+	// c.route.GET("", c.info.ReadAll)
+	// c.route.GET("/:id", c.info.ReadOne)
 
-	c.auth.PUT("", c.info.UpdateAll)
-	c.auth.PUT("/:id", c.info.UpdateOne)
+	// c.auth.PUT("", c.info.UpdateAll)
+	// c.auth.PUT("/:id", c.info.UpdateOne)
 
-	c.auth.DELETE("", c.info.DeleteAll)
-	c.auth.DELETE("/:id", c.info.DeleteOne)
+	// c.auth.DELETE("", c.info.DeleteAll)
+	// c.auth.DELETE("/:id", c.info.DeleteOne)
 
-	for _, route := range c.subRoutes {
-		route.Init()
-	}
+	// for _, route := range c.subRoutes {
+	// 	route.Init()
+	// }
 }

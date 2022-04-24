@@ -2,9 +2,9 @@ package pods
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
 	m "api/models"
-	"api/service/k3s/pods"
+	p "api/service/k3s/pods"
 	"fmt"
 	"net/http"
 
@@ -12,10 +12,10 @@ import (
 )
 
 type metricsController struct {
-	service *pods.FullMetricsService
+	service *p.FullMetricsService
 }
 
-func NewMetricsController(s *pods.FullMetricsService) interfaces.Default {
+func NewMetricsController(s *p.FullMetricsService) controller.Default {
 	return &metricsController{service: s}
 }
 

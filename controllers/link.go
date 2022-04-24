@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
+	"api/interfaces/service"
 	m "api/models"
-	"api/service"
 	"fmt"
 	"net/http"
 
@@ -12,10 +12,10 @@ import (
 )
 
 type linkController struct {
-	service *service.LinkService
+	service service.Default[m.Link, m.LinkQueryDto]
 }
 
-func NewLinkController(s *service.LinkService) interfaces.Default {
+func NewLinkController(s service.Default[m.Link, m.LinkQueryDto]) controller.Default {
 	return &linkController{service: s}
 }
 

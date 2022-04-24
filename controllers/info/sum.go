@@ -2,7 +2,6 @@ package info
 
 import (
 	"api/helper"
-	"api/interfaces/info"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +9,7 @@ import (
 
 type sumController struct{}
 
-func NewSumController() info.Default {
+func NewSumController() interface{} {
 	return &sumController{}
 }
 

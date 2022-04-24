@@ -3,6 +3,7 @@ package service
 import (
 	"api/config"
 	"api/helper"
+	i "api/interfaces/service"
 	"api/logs"
 	m "api/models"
 	"encoding/json"
@@ -21,8 +22,12 @@ type FileService struct {
 	client *redis.Client
 }
 
-func NewFileService(db *gorm.DB, client *redis.Client) *FileService {
+func NewFileService(db *gorm.DB, client *redis.Client) i.Default[m.File, m.FileQueryDto] {
 	return &FileService{key: "FILE", db: db, client: client}
+}
+
+func (c *FileService) keys(model *m.File) []string {
+	return []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PATH=%s*", model.Path), fmt.Sprintf("ROLE=%s*", model.Role), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 }
 
 func (c *FileService) isExist(model *m.File) bool {
@@ -30,10 +35,9 @@ func (c *FileService) isExist(model *m.File) bool {
 	return res.Error != nil || res.RowsAffected != 0
 }
 
-func (c *FileService) precache(model *m.File) {
+func (c *FileService) precache(model *m.File, keys []string) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PATH=%s*", model.Path), fmt.Sprintf("ROLE=%s*", model.Role), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			var data []m.File
@@ -124,10 +128,52 @@ func (c *FileService) deepcache(models []m.File, key string) interface{} {
 	return nil
 }
 
-func (c *FileService) recache(model *m.File, delete bool) {
+func (c *FileService) postfilter(data []m.File, suffix string) []m.File {
+	var result = []m.File{}
+
+ITEM:
+	for _, item := range data {
+		for _, key := range strings.Split(suffix, "#") {
+			var res = strings.Split(key, "=")
+
+			switch res[0] {
+			case "ID":
+				if id, _ := strconv.Atoi(res[1]); item.ID != uint32(id) {
+					continue ITEM
+				}
+
+			case "NAME":
+				if item.Name != res[1] {
+					continue ITEM
+				}
+
+			case "ROLE":
+				if item.Role != res[1] {
+					continue ITEM
+				}
+
+			case "PATH":
+				if item.Path != res[1] {
+					continue ITEM
+				}
+
+			case "PROJECT_ID":
+				if id, _ := strconv.Atoi(res[1]); item.ProjectID != uint32(id) {
+					continue ITEM
+				}
+
+			}
+		}
+
+		result = append(result, item)
+	}
+
+	return result
+}
+
+func (c *FileService) recache(model *m.File, keys []string, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PATH=%s*", model.Path), fmt.Sprintf("ROLE=%s*", model.Role), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
@@ -145,6 +191,9 @@ func (c *FileService) recache(model *m.File, delete bool) {
 					result = append(result, *model)
 				}
 			}
+
+			// Postfilter elements with cache query
+			result = c.postfilter(result, suffix)
 
 			// Check if size of an array was changed
 			if delete {
@@ -212,10 +261,11 @@ func (c *FileService) Create(model *m.File) error {
 
 	if c.isExist(existed) {
 		if res = c.db.Model(&m.File{}).Where("id = ?", existed.ID).Updates(model); res.Error == nil {
-			c.recache(existed.Fill(model), false)
+			c.recache(existed.Copy().Fill(model), c.keys(existed), false)
+			c.recache(existed.Fill(model), c.keys(existed), false)
 		}
 	} else if res = c.db.Create(model); res.Error == nil {
-		c.precache(model)
+		c.precache(model, c.keys(model))
 	}
 
 	if res.Error != nil {
@@ -250,7 +300,8 @@ func (c *FileService) Update(query *m.FileQueryDto, model *m.File) ([]m.File, er
 	}
 
 	for _, existed := range models {
-		c.recache(existed.Fill(model), false)
+		c.recache(existed.Copy().Fill(model), c.keys(&existed), false)
+		c.recache(existed.Fill(model), c.keys(&existed), false)
 	}
 
 	return c.Read(query)
@@ -265,7 +316,7 @@ func (c *FileService) Delete(query *m.FileQueryDto) (int, error) {
 	}
 
 	for _, model := range models {
-		c.recache(&model, true)
+		c.recache(&model, c.keys(&model), true)
 	}
 
 	return len(models), client.Delete(&m.File{}).Error

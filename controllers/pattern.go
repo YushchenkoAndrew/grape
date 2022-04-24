@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
+	"api/interfaces/service"
 	m "api/models"
-	"api/service"
 	"fmt"
 	"net/http"
 
@@ -12,10 +12,10 @@ import (
 )
 
 type patternController struct {
-	service *service.PatternService
+	service service.Default[m.Pattern, m.PatternQueryDto]
 }
 
-func NewPatternController(s *service.PatternService) interfaces.Default {
+func NewPatternController(s service.Default[m.Pattern, m.PatternQueryDto]) controller.Default {
 	return &patternController{service: s}
 }
 

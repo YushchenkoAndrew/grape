@@ -3,6 +3,7 @@ package routes
 import (
 	c "api/controllers"
 	"api/interfaces"
+	i "api/interfaces/controller"
 	m "api/middleware"
 	s "api/service"
 
@@ -14,7 +15,7 @@ import (
 type fileRouter struct {
 	route *gin.RouterGroup
 	auth  *gin.RouterGroup
-	file  interfaces.Default
+	file  i.Default
 }
 
 func NewFileRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) interfaces.Router {

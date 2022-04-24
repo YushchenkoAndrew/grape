@@ -4,6 +4,7 @@ import (
 	"api/client"
 	"api/config"
 	"api/interfaces"
+	i "api/interfaces/service"
 	m "api/models"
 	"api/service"
 	"testing"
@@ -13,7 +14,7 @@ import (
 
 const LINK_ID = 305
 
-var link service.LinkService
+var link i.Default[m.Link, m.LinkQueryDto]
 
 func TestLinkCreate(t *testing.T) {
 	var tests = []struct {
@@ -285,8 +286,8 @@ func init() {
 		m.NewProject(),
 	})
 
-	link = *service.NewLinkService(db, redis)
+	link = service.NewLinkService(db, redis)
 
-	var project = *service.NewProjectService(db, redis)
+	var project = service.NewProjectService(db, redis)
 	project.Create(&m.Project{ID: 1, Name: "yes", Title: "js", Flag: "js", Desc: "js", Note: "js"})
 }

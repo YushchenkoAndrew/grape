@@ -3,6 +3,7 @@ package service
 import (
 	"api/config"
 	"api/helper"
+	i "api/interfaces/service"
 	"api/logs"
 	m "api/models"
 	"encoding/json"
@@ -16,7 +17,7 @@ import (
 
 type FullSubscriptionService struct {
 	Cron         *CronService
-	Subscription *SubscriptionService
+	Subscription i.Default[m.Subscription, m.SubscribeQueryDto]
 }
 
 func NewFullSubscriptionService(db *gorm.DB, client *redis.Client) *FullSubscriptionService {
@@ -30,8 +31,12 @@ type SubscriptionService struct {
 	client *redis.Client
 }
 
-func NewSubscriptionService(db *gorm.DB, client *redis.Client) *SubscriptionService {
+func NewSubscriptionService(db *gorm.DB, client *redis.Client) i.Default[m.Subscription, m.SubscribeQueryDto] {
 	return &SubscriptionService{key: "SUBSCRIPTION", db: db, client: client}
+}
+
+func (c *SubscriptionService) keys(model *m.Subscription) []string {
+	return []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 }
 
 func (c *SubscriptionService) isExist(model *m.Subscription) bool {
@@ -39,12 +44,11 @@ func (c *SubscriptionService) isExist(model *m.Subscription) bool {
 	return err != nil || rows != 0
 }
 
-func (c *SubscriptionService) precache(model *m.Subscription) {
+func (c *SubscriptionService) precache(model *m.Subscription, keys []string) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("TOKEN=%s", model.Token), model)
 	helper.Precache(c.client, c.key, fmt.Sprintf("CRON_ID=%s", model.CronID), model)
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
 			var data []m.Subscription
@@ -130,12 +134,49 @@ func (c *SubscriptionService) deepcache(models []m.Subscription, key string) int
 	return nil
 }
 
-func (c *SubscriptionService) recache(model *m.Subscription, delete bool) {
+func (c *SubscriptionService) postfilter(data []m.Subscription, suffix string) []m.Subscription {
+	var result = []m.Subscription{}
+
+ITEM:
+	for _, item := range data {
+		for _, key := range strings.Split(suffix, "#") {
+			var res = strings.Split(key, "=")
+
+			switch res[0] {
+			case "ID":
+				if id, _ := strconv.Atoi(res[1]); item.ID != uint32(id) {
+					continue ITEM
+				}
+
+			case "NAME":
+				if item.Name != res[1] {
+					continue ITEM
+				}
+
+			case "CRON_ID":
+				if item.CronID != res[1] {
+					continue ITEM
+				}
+
+			case "PROJECT_ID":
+				if id, _ := strconv.Atoi(res[1]); item.ProjectID != uint32(id) {
+					continue ITEM
+				}
+
+			}
+		}
+
+		result = append(result, item)
+	}
+
+	return result
+}
+
+func (c *SubscriptionService) recache(model *m.Subscription, keys []string, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
 	helper.Delcache(c.client, c.key, fmt.Sprintf("TOKEN=%s*", model.Token))
 	helper.Delcache(c.client, c.key, fmt.Sprintf("CRON_ID=%s*", model.CronID))
 
-	var keys = []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
 			if !strings.HasPrefix(str, "[") {
@@ -153,6 +194,9 @@ func (c *SubscriptionService) recache(model *m.Subscription, delete bool) {
 					result = append(result, *model)
 				}
 			}
+
+			// Postfilter elements with cache query
+			result = c.postfilter(result, suffix)
 
 			// Check if size of an array was changed
 			if delete {
@@ -214,10 +258,11 @@ func (c *SubscriptionService) Create(model *m.Subscription) error {
 
 	if c.isExist(existed) {
 		if res = c.db.Model(&m.Subscription{}).Where("id = ?", existed.ID).Updates(model); res.Error == nil {
-			c.recache(existed.Fill(model), false)
+			c.recache(existed.Copy().Fill(model), c.keys(existed), false)
+			c.recache(existed.Fill(model), c.keys(existed), false)
 		}
 	} else if res = c.db.Create(model); res.Error == nil {
-		c.precache(model)
+		c.precache(model, c.keys(model))
 	}
 
 	if res.Error != nil {
@@ -259,8 +304,10 @@ func (c *SubscriptionService) Update(query *m.SubscribeQueryDto, model *m.Subscr
 	}
 
 	for _, item := range models {
-		c.recache(&item, existed.CronID != "" && existed.ID == 0)
-		c.recache(item.Fill(model), false)
+		// FIXME: ??
+		// c.recache(&item, existed.CronID != "" && existed.ID == 0)
+		c.recache(item.Copy().Fill(model), c.keys(&item), false)
+		c.recache(item.Fill(model), c.keys(&item), false)
 	}
 
 	// Check if Name is not empty, if so that for some safety magers
@@ -282,7 +329,7 @@ func (c *SubscriptionService) Delete(query *m.SubscribeQueryDto) (int, error) {
 	}
 
 	for _, model := range models {
-		c.recache(&model, true)
+		c.recache(&model, c.keys(&model), true)
 	}
 
 	return len(models), client.Delete(&m.Subscription{}).Error

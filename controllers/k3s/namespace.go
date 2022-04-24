@@ -2,7 +2,7 @@ package k3s
 
 import (
 	"api/helper"
-	"api/interfaces"
+	"api/interfaces/controller"
 	m "api/models"
 	"api/service/k3s"
 	"fmt"
@@ -16,7 +16,7 @@ type namespaceController struct {
 	service *k3s.NamespaceService
 }
 
-func NewNamespaceController(s *k3s.NamespaceService) interfaces.Default {
+func NewNamespaceController(s *k3s.NamespaceService) controller.Default {
 	return &namespaceController{service: s}
 }
 

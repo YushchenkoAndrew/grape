@@ -3,6 +3,7 @@ package models
 import (
 	"api/config"
 	"api/interfaces"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -38,7 +39,7 @@ func (c *GeoIpLocations) Migrate(db *gorm.DB, forced bool) error {
 	if db.Model(c).Count(&nSize); nSize == 0 {
 
 		// The most quick and easiest way !!!
-		db.Exec("\\copy geo_ip_locations from '" + config.ENV.MigrationPath + "/GeoLite2-Country-Locations-en.csv' delimiter ',' csv header;")
+		db.Exec(fmt.Sprintf("copy geo_ip_locations from '%s/GeoLite2-Country-Locations-en.csv' delimiter ',' csv header;", config.ENV.MigrationPath))
 	}
 
 	return nil
