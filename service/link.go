@@ -181,7 +181,11 @@ func (c *LinkService) recache(model *m.Link, keys []string, delete bool) {
 				return c.deepcache(result, suffix)
 			}
 
-			return result
+			if len(result) != 0 {
+				return result
+			}
+
+			return nil
 		})
 	}
 }
@@ -274,7 +278,20 @@ func (c *LinkService) Update(query *m.LinkQueryDto, model *m.Link) ([]m.Link, er
 		c.recache(existed.Fill(model), c.keys(&existed), false)
 	}
 
-	return c.Read(query)
+	if query.IsOK(model) {
+		return c.Read(query)
+	}
+
+	var result = []m.Link{}
+	for _, item := range models {
+		var model, err = c.Read(&m.LinkQueryDto{ID: item.ID})
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, model...)
+	}
+	return result, nil
 }
 
 func (c *LinkService) Delete(query *m.LinkQueryDto) (int, error) {

@@ -200,7 +200,11 @@ func (c *FileService) recache(model *m.File, keys []string, delete bool) {
 				return c.deepcache(result, suffix)
 			}
 
-			return result
+			if len(result) != 0 {
+				return result
+			}
+
+			return nil
 		})
 	}
 }
@@ -304,7 +308,20 @@ func (c *FileService) Update(query *m.FileQueryDto, model *m.File) ([]m.File, er
 		c.recache(existed.Fill(model), c.keys(&existed), false)
 	}
 
-	return c.Read(query)
+	if query.IsOK(model) {
+		return c.Read(query)
+	}
+
+	var result = []m.File{}
+	for _, item := range models {
+		var model, err = c.Read(&m.FileQueryDto{ID: item.ID})
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, model...)
+	}
+	return result, nil
 }
 
 func (c *FileService) Delete(query *m.FileQueryDto) (int, error) {

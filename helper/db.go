@@ -41,7 +41,7 @@ func Getcache(db *gorm.DB, client *redis.Client, prefix, suffix string, model in
 		}
 
 		json.Unmarshal([]byte(data), model)
-		go client.Expire(ctx, key, time.Duration(config.ENV.LiveTime)*time.Second)
+		client.Expire(ctx, key, time.Duration(config.ENV.LiveTime)*time.Second)
 	} else {
 		if result := db.Find(model); result.Error != nil || result.RowsAffected == 0 {
 			return result.Error, result.RowsAffected

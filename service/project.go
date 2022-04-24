@@ -49,7 +49,7 @@ func NewProjectService(db *gorm.DB, client *redis.Client) i.Default[m.Project, m
 }
 
 func (c *ProjectService) keys(model *m.Project) []string {
-	return []string{fmt.Sprintf("FLAG=%s*", model.Flag), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
+	return []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("FLAG=%s*", model.Flag), "", "CREATED_FROM=*", "CREATED_TO=*", "PAGE=*", "LIMIT=*"}
 }
 
 func (c *ProjectService) isExist(model *m.Project) bool {
@@ -59,7 +59,7 @@ func (c *ProjectService) isExist(model *m.Project) bool {
 
 func (c *ProjectService) precache(model *m.Project, keys []string) {
 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
-	helper.Precache(c.client, c.key, fmt.Sprintf("NAME=%s", model.Name), model)
+	// helper.Precache(c.client, c.key, fmt.Sprintf("NAME=%s", model.Name), model)
 
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
@@ -193,7 +193,7 @@ ITEM:
 
 func (c *ProjectService) recache(model *m.Project, keys []string, delete bool) {
 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
-	helper.Delcache(c.client, c.key, fmt.Sprintf("NAME=%s*", model.Name))
+	// helper.Delcache(c.client, c.key, fmt.Sprintf("NAME=%s*", model.Name))
 
 	for _, key := range keys {
 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
@@ -206,7 +206,7 @@ func (c *ProjectService) recache(model *m.Project, keys []string, delete bool) {
 
 			json.Unmarshal([]byte(str), &data)
 			for _, item := range data {
-				if item.Name != model.Name {
+				if item.ID != model.ID {
 					result = append(result, item)
 				} else if !delete {
 					result = append(result, *model)
@@ -221,7 +221,11 @@ func (c *ProjectService) recache(model *m.Project, keys []string, delete bool) {
 				return c.deepcache(result, suffix)
 			}
 
-			return result
+			if len(result) != 0 {
+				return result
+			}
+
+			return nil
 		})
 	}
 }
@@ -332,12 +336,20 @@ func (c *ProjectService) Update(query *m.ProjectQueryDto, model *m.Project) ([]m
 
 	// Check if Name is not empty, if so that for some safety magers
 	// lets replace this unique index with ID
-	if query.Name != "" {
-		query.ID = models[0].ID
-		query.Name = ""
+	if query.IsOK(model) {
+		return c.Read(query)
 	}
 
-	return c.Read(query)
+	var result = []m.Project{}
+	for _, item := range models {
+		var model, err = c.Read(&m.ProjectQueryDto{ID: item.ID})
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, model...)
+	}
+	return result, nil
 }
 
 func (c *ProjectService) Delete(query *m.ProjectQueryDto) (int, error) {

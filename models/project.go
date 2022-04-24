@@ -149,3 +149,7 @@ type ProjectQueryDto struct {
 		Limit int `form:"metrics[limit],omitempty" example:"10"`
 	}
 }
+
+func (c *ProjectQueryDto) IsOK(model *Project) bool {
+	return (c.Name == "" || c.Name == model.Name) && (c.Flag == "" || c.Flag == model.Flag)
+}

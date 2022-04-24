@@ -100,3 +100,7 @@ type FileQueryDto struct {
 	Page  int `form:"page,omitempty,default=-1" example:"1"`
 	Limit int `form:"limit,omitempty" example:"10"`
 }
+
+func (c *FileQueryDto) IsOK(model *File) bool {
+	return (c.Name == "" || c.Name == model.Name) && (c.Role == "" || c.Role == model.Role) && (c.Path == "" || c.Path == model.Path)
+}

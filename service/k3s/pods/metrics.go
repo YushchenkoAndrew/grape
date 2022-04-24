@@ -229,7 +229,11 @@ func (c *MetricsService) recache(model *m.Metrics, keys []string, delete bool) {
 				return c.deepcache(result, suffix)
 			}
 
-			return result
+			if len(result) != 0 {
+				return result
+			}
+
+			return nil
 		})
 	}
 }

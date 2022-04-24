@@ -105,3 +105,7 @@ type MetricsQueryDto struct {
 	Page  int `form:"page,omitempty,default=-1" example:"1"`
 	Limit int `form:"limit,omitempty" example:"10"`
 }
+
+func (c *MetricsQueryDto) IsOK(model *Metrics) bool {
+	return true
+}

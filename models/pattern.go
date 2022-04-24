@@ -172,3 +172,7 @@ type PatternQueryDto struct {
 	Page  int `form:"page,omitempty,default=-1" example:"1"`
 	Limit int `form:"limit,omitempty" example:"10"`
 }
+
+func (c *PatternQueryDto) IsOK(model *Pattern) bool {
+	return (c.Mode == "" || c.Mode == model.Mode) && (c.Colors == 0 || c.Colors == model.Colors)
+}

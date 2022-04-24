@@ -157,6 +157,8 @@ func TestSubscriptionUpdate(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+			require.Equal(t, 1, len(models))
+
 			if tc.model.Name != "" {
 				require.Equal(t, tc.model.Name, models[0].Name)
 			}

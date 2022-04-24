@@ -180,7 +180,11 @@ func (c *PatternService) recache(model *m.Pattern, keys []string, delete bool) {
 				return c.deepcache(result, suffix)
 			}
 
-			return result
+			if len(result) != 0 {
+				return result
+			}
+
+			return nil
 		})
 	}
 }
@@ -271,7 +275,20 @@ func (c *PatternService) Update(query *m.PatternQueryDto, model *m.Pattern) ([]m
 		c.recache(item.Fill(model), c.keys(&item), false)
 	}
 
-	return c.Read(query)
+	if query.IsOK(model) {
+		return c.Read(query)
+	}
+
+	var result = []m.Pattern{}
+	for _, item := range models {
+		var model, err = c.Read(&m.PatternQueryDto{ID: item.ID})
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, model...)
+	}
+	return result, nil
 }
 
 func (c *PatternService) Delete(query *m.PatternQueryDto) (int, error) {
