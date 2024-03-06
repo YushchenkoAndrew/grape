@@ -40,7 +40,7 @@ func (o *patternController) CreateOne(c *gin.Context) {
 		return
 	}
 
-	var model = m.Pattern{Mode: body.Mode, Colors: body.Colors, MaxStroke: body.MaxStroke, MaxScale: body.MaxScale, MaxSpacingX: body.MaxSpacingX, MaxSpacingY: body.MaxSpacingY, Width: body.Width, Height: body.Height, VHeight: body.VHeight, Path: body.Path}
+	var model = m.Pattern{Mode: body.Mode, Colors: body.Colors, MaxStroke: body.MaxStroke, MaxScale: body.MaxScale, MaxSpacingX: body.MaxSpacingX, MaxSpacingY: body.MaxSpacingY, Width: body.Width, Height: body.Height, Path: body.Path}
 	if err := o.service.Create(&model); err != nil {
 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
@@ -78,7 +78,7 @@ func (o *patternController) CreateAll(c *gin.Context) {
 	for _, item := range body {
 		if item.IsOK() {
 
-			var model = m.Pattern{Mode: item.Mode, Colors: item.Colors, MaxStroke: item.MaxStroke, MaxScale: item.MaxScale, MaxSpacingX: item.MaxSpacingX, MaxSpacingY: item.MaxSpacingY, Width: item.Width, Height: item.Height, VHeight: item.VHeight, Path: item.Path}
+			var model = m.Pattern{Mode: item.Mode, Colors: item.Colors, MaxStroke: item.MaxStroke, MaxScale: item.MaxScale, MaxSpacingX: item.MaxSpacingX, MaxSpacingY: item.MaxSpacingY, Width: item.Width, Height: item.Height, Path: item.Path}
 			if err := o.service.Create(&model); err != nil {
 				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 				return
@@ -184,11 +184,11 @@ func (o *patternController) UpdateOne(c *gin.Context) {
 	var id = helper.GetID(c, "id")
 
 	if err := c.ShouldBind(&body); err != nil || id == 0 {
-		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
+		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t, err: %v }", id != 0, err))
 		return
 	}
 
-	models, err := o.service.Update(&m.PatternQueryDto{ID: uint32(id)}, &m.Pattern{Mode: body.Mode, Colors: body.Colors, MaxStroke: body.MaxStroke, MaxScale: body.MaxScale, MaxSpacingX: body.MaxSpacingX, MaxSpacingY: body.MaxSpacingY, Width: body.Width, Height: body.Height, VHeight: body.VHeight, Path: body.Path})
+	models, err := o.service.Update(&m.PatternQueryDto{ID: uint32(id)}, &m.Pattern{Mode: body.Mode, Colors: body.Colors, MaxStroke: body.MaxStroke, MaxScale: body.MaxScale, MaxSpacingX: body.MaxSpacingX, MaxSpacingY: body.MaxSpacingY, Width: body.Width, Height: body.Height, Path: body.Path})
 	if err != nil {
 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return
@@ -232,7 +232,7 @@ func (o *patternController) UpdateAll(c *gin.Context) {
 		return
 	}
 
-	models, err := o.service.Update(&query, &m.Pattern{Mode: body.Mode, Colors: body.Colors, MaxStroke: body.MaxStroke, MaxScale: body.MaxScale, MaxSpacingX: body.MaxSpacingX, MaxSpacingY: body.MaxSpacingY, Width: body.Width, Height: body.Height, VHeight: body.VHeight, Path: body.Path})
+	models, err := o.service.Update(&query, &m.Pattern{Mode: body.Mode, Colors: body.Colors, MaxStroke: body.MaxStroke, MaxScale: body.MaxScale, MaxSpacingX: body.MaxSpacingX, MaxSpacingY: body.MaxSpacingY, Width: body.Width, Height: body.Height, Path: body.Path})
 	if err != nil {
 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 		return

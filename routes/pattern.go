@@ -27,8 +27,8 @@ func NewPatternRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) in
 }
 
 func (c *patternRouter) Init() {
-	c.auth.POST("/list/:id", c.pattern.CreateAll)
-	c.auth.POST("/:id", c.pattern.CreateOne)
+	c.auth.POST("/list", c.pattern.CreateAll)
+	c.auth.POST("/", c.pattern.CreateOne)
 
 	c.route.GET("/:id", c.pattern.ReadOne)
 	c.route.GET("", c.pattern.ReadAll)

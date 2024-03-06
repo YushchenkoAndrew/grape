@@ -5,41 +5,12 @@ metadata:
   name: api-role
   namespace: demo
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - services
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-
+  - apiGroups: [""]
+    resources: [pods, services]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses]
+    verbs: [get, list, watch, create, update, patch, delete]
