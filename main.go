@@ -1,14 +1,12 @@
 package main
 
 import (
-	"api/client"
-	"api/config"
-	"api/interfaces"
-	m "api/middleware"
-	"api/models"
-	"api/routes"
-	k "api/routes/k3s"
-	"api/routes/k3s/pods"
+	"grape/src"
+	"grape/src/common/client"
+	"grape/src/common/config"
+	"grape/src/common/middleware"
+	m "grape/src/common/module"
+	"grape/src/swagger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,58 +29,45 @@ import (
 // @host mortis-grimreaper.ddns.net
 // @BasePath /api
 func main() {
-	config.NewConfig([]func() interfaces.Config{
+	config.NewConfig([]func() config.Config{
 		config.NewEnvConfig("./", ""),
-		config.NewOperationConfig("./", "operations"),
+		// config.NewOperationConfig("./", "operations"),
 	}).Init()
 
-	redis := client.ConnRedis()
-	k3s, metrics := client.ConnK3s()
-	db := client.ConnDB([]interfaces.Table{
-		models.NewInfo(),
-		models.NewWorld(),
-
-		models.NewGeoIpBlocks(),
-		models.NewGeoIpLocations(),
-		models.NewPattern(),
-		models.NewColor(),
-
-		models.NewFile(),
-		models.NewLink(),
-		models.NewMetrics(),
-		models.NewSubscription(),
-		models.NewProject(),
-	})
+	clients := &client.Clients{
+		DB:    client.ConnDB(),
+		Redis: client.ConnRedis(),
+	}
 
 	r := gin.Default()
-	rg := r.Group(config.ENV.BasePath, m.NewMiddleware(db, redis).Limit())
-	router := routes.NewIndexRouter(rg, &[]interfaces.Router{
-		routes.NewSwaggerRouter(rg),
-		routes.NewProjectRouter(rg, db, redis),
-		routes.NewFileRouter(rg, db, redis),
-		routes.NewLinkRouter(rg, db, redis),
-		routes.NewBotRouter(rg, db, redis),
-		routes.NewPatternRouter(rg, db, redis),
+	rg := r.Group(config.ENV.BasePath, middleware.NewMiddleware(clients).Limit())
+	module := src.NewIndexModule(rg, &[]m.ModuleT{
+		swagger.NewSwaggerRouter(rg),
+		// routes.NewProjectRouter(rg, db, redis),
+		// routes.NewFileRouter(rg, db, redis),
+		// routes.NewLinkRouter(rg, db, redis),
+		// routes.NewBotRouter(rg, db, redis),
+		// routes.NewPatternRouter(rg, db, redis),
 
-		// routes.NewWorldRouter(rg),
-		// routes.NewInfoRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
-		// 	info.NewSumRouterFactory(),
-		// 	info.NewRangeRouterFactory(),
+		// // routes.NewWorldRouter(rg),
+		// // routes.NewInfoRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
+		// // 	info.NewSumRouterFactory(),
+		// // 	info.NewRangeRouterFactory(),
+		// // }),
+
+		// routes.NewK3sRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
+		// 	k.NewDeploymentRouterFactory(k3s),
+		// 	k.NewIngressRouterFactory(k3s),
+		// 	k.NewPodsRouterFactory([]func(*gin.RouterGroup) interfaces.Router{
+		// 		pods.NewMetricsRouterFactory(db, redis, metrics),
+		// 	}),
+		// 	k.NewNamespaceRouterFactory(k3s),
+		// 	k.NewServiceRouterFactory(k3s),
 		// }),
 
-		routes.NewK3sRouter(rg, []func(*gin.RouterGroup) interfaces.Router{
-			k.NewDeploymentRouterFactory(k3s),
-			k.NewIngressRouterFactory(k3s),
-			k.NewPodsRouterFactory([]func(*gin.RouterGroup) interfaces.Router{
-				pods.NewMetricsRouterFactory(db, redis, metrics),
-			}),
-			k.NewNamespaceRouterFactory(k3s),
-			k.NewServiceRouterFactory(k3s),
-		}),
+		// routes.NewSubscribeRouter(rg, db, redis),
+	}, clients)
 
-		routes.NewSubscribeRouter(rg, db, redis),
-	}, db, redis)
-
-	router.Init()
+	module.Init()
 	r.Run(config.ENV.Host + ":" + config.ENV.Port)
 }

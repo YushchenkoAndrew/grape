@@ -1,12 +1,12 @@
 package models
 
 type Success struct {
-	Status     string      `json:"status" xml:"status" example:"OK"`
-	Result     interface{} `json:"result" xml:"result"`
-	Page       int         `json:"page,omitempty" xml:"page,omitempty" example:"0"`
-	Limit      int         `json:"limit,omitempty" xml:"limit,omitempty" example:"20"`
-	Items      int         `json:"items" xml:"items" example:"1"`
-	TotalItems int64       `json:"totalItems" xml:"totalItems" example:"20"`
+	Status  string      `json:"status" xml:"status" example:"OK"`
+	Result  interface{} `json:"result" xml:"result"`
+	Page    int         `json:"page,omitempty" xml:"page,omitempty" example:"0"`
+	PerPage int         `json:"per_page,omitempty" xml:"per_page,omitempty" example:"20"`
+	Items   int         `json:"items" xml:"items" example:"1"`
+	Total   int64       `json:"total" xml:"total" example:"20"`
 }
 
 type Error struct {

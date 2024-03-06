@@ -1,6 +1,6 @@
-.PHONY: build protogen run clean migrate test cover
+.PHONY: dev migrate test cover
 
-dev: csv
+dev: 
 	go run main.go
 
 csv: 
@@ -11,6 +11,10 @@ csv:
 
 test:
 	go test -v ./...
+
+migrate:
+	read -p "Migration name: " DESC; \
+	goose -dir ./migrations create $$DESC go
 
 cover:
 	go test ./... -coverprofile=testprofile.out
