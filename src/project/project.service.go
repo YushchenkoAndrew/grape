@@ -1,6 +1,8 @@
 package project
 
-import "grape/src/common/client"
+import (
+	"grape/src/common/service"
+)
 
 type projectService struct {
 	// Link         i.Default[m.Link, m.LinkQueryDto]
@@ -11,7 +13,7 @@ type projectService struct {
 	// Metrics      i.Default[m.Metrics, m.MetricsQueryDto]
 }
 
-func NewProjectService(client *client.Clients) *projectService {
+func NewProjectService(s *service.CommonService) *projectService {
 	return &projectService{
 		// Link:         NewLinkService(db, client),
 		// File:         NewFileService(db, client),

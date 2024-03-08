@@ -1,24 +1,24 @@
 package project
 
 import (
-	"grape/src/common/client"
 	c "grape/src/common/controller"
-	"grape/src/common/middleware"
+	h "grape/src/common/middleware"
 	m "grape/src/common/module"
+	"grape/src/common/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type projectModule struct {
-	*m.Module[c.DefaultController]
+	*m.Module[c.CommonController]
 }
 
-func NewProjectModule(rg *gin.RouterGroup, modules *[]m.ModuleT, client *client.Clients) m.ModuleT {
+func NewProjectModule(rg *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT {
 	return &projectModule{
-		Module: &m.Module[c.DefaultController]{
+		Module: &m.Module[c.CommonController]{
 			Route:      rg.Group("/project"),
-			Auth:       rg.Group("/project", middleware.GetMiddleware().Auth()),
-			Controller: NewProjectController(NewProjectService(client)),
+			Auth:       rg.Group("/project", h.GetMiddleware().Jwt()),
+			Controller: NewProjectController(NewProjectService(s)),
 		},
 	}
 }

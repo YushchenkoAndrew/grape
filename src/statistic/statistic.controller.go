@@ -1,9 +1,6 @@
 package statistic
 
 import (
-	"grape/src/common/helper"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -85,7 +82,7 @@ func NewStatisticController() interface{} {
 // @failure 500 {object} models.Error
 // @Router /info [post]
 func (o *statisticController) Create(c *gin.Context) {
-	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
+	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var model = make([]models.Info, 1)
 	// var body models.InfoDto
@@ -138,7 +135,7 @@ func (o *statisticController) Create(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /info/{date} [post]
 func (o *statisticController) CreateOne(c *gin.Context) {
-	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
+	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var date = c.Param("date")
 	// var body models.InfoDto
@@ -222,7 +219,7 @@ func (o *statisticController) CreateOne(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /info/list [post]
 func (o *statisticController) CreateAll(c *gin.Context) {
-	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
+	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var body []models.InfoDto
 	// if err := c.ShouldBind(&body); err != nil {
@@ -278,7 +275,7 @@ func (o *statisticController) CreateAll(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /info/{id} [get]
 func (o *statisticController) ReadOne(c *gin.Context) {
-	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
+	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var id int
 	// var model []models.Info
@@ -327,7 +324,7 @@ func (o *statisticController) ReadOne(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /info [get]
 func (o *statisticController) ReadAll(c *gin.Context) {
-	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
+	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var model []models.Info
 	// page, limit := helper.Pagination(c)
@@ -372,7 +369,7 @@ func (o *statisticController) ReadAll(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /info/{id} [put]
 func (o *statisticController) UpdateOne(c *gin.Context) {
-	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
+	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var id int
 	// var body models.InfoDto
@@ -432,7 +429,7 @@ func (o *statisticController) UpdateOne(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /info [put]
 func (o *statisticController) UpdateAll(c *gin.Context) {
-	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
+	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var body models.InfoDto
 	// if err := c.ShouldBind(&body); err != nil {
@@ -492,7 +489,7 @@ func (o *statisticController) UpdateAll(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /info/{id} [delete]
 func (o *statisticController) DeleteOne(c *gin.Context) {
-	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
+	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var id int
 	// if !helper.GetID(c, &id) {
@@ -554,7 +551,7 @@ func (o *statisticController) DeleteOne(c *gin.Context) {
 // @failure 500 {object} models.Error
 // @Router /info [delete]
 func (o *statisticController) DeleteAll(c *gin.Context) {
-	helper.ErrHandler(c, http.StatusInternalServerError, "Not implimented")
+	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var sKeys string
 	// var result *gorm.DB

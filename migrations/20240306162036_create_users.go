@@ -13,16 +13,16 @@ func init() {
 
 func upCreateUsers(ctx context.Context, tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
-	// TODO: Add table users
 	_, err := tx.Exec(`
 	CREATE TABLE IF NOT EXISTS users (
-		id bigserial NOT NULL,
+		id bigserial PRIMARY KEY NOT NULL,
 		uuid character varying NOT NULL,
 		created_at timestamp(6) without time zone NOT NULL,
 		updated_at timestamp(6) without time zone NOT NULL,
-		organization_id bigint REFERENCES organization(id),
+		organization_id bigint REFERENCES organizations(id),
 		name character varying NOT NULL,
-		password character varying NOT NULL
+		password character varying NOT NULL,
+		status integer NOT NULL DEFAULT 0
 	);
 	`)
 

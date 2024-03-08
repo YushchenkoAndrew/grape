@@ -1,17 +1,5 @@
 package client
 
-import (
-	"bytes"
-	"crypto/md5"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"grape/src/common/config"
-	"math/rand"
-	"net/http"
-	"strconv"
-)
-
 type Message struct {
 	Stat    string      `json:"stat" xml:"stat" binding:"required"`
 	Name    string      `json:"name" xml:"name" binding:"required"`
@@ -22,36 +10,36 @@ type Message struct {
 }
 
 func SendLogs(message *Message) {
-	var err error
-	var body []byte
+	// var err error
+	// var body []byte
 
-	if body, err = json.Marshal(*message); err != nil {
-		fmt.Printf("Ohh noo; Anyway: %v", err)
-		return
-	}
+	// if body, err = json.Marshal(*message); err != nil {
+	// 	fmt.Printf("Ohh noo; Anyway: %v", err)
+	// 	return
+	// }
 
-	hasher := md5.New()
-	var salt = strconv.Itoa(rand.Intn(1000000))
-	hasher.Write([]byte(salt + config.ENV.BotKey))
+	// hasher := md5.New()
+	// var salt = strconv.Itoa(rand.Intn(1000000))
+	// hasher.Write([]byte(salt + config.ENV.BotKey))
 
-	var req *http.Request
-	if req, err = http.NewRequest("POST", config.ENV.BotUrl+"/logs/alert?key="+hex.EncodeToString(hasher.Sum(nil)), bytes.NewBuffer(body)); err != nil {
-		fmt.Printf("Ohh nyo; Anyway: %v", err)
-		return
-	}
+	// var req *http.Request
+	// if req, err = http.NewRequest("POST", config.ENV.BotUrl+"/logs/alert?key="+hex.EncodeToString(hasher.Sum(nil)), bytes.NewBuffer(body)); err != nil {
+	// 	fmt.Printf("Ohh nyo; Anyway: %v", err)
+	// 	return
+	// }
 
-	req.Header.Set("X-Custom-Header", salt)
-	req.Header.Set("Content-Type", "application/json")
+	// req.Header.Set("X-Custom-Header", salt)
+	// req.Header.Set("Content-Type", "application/json")
 
-	var res *http.Response
-	client := &http.Client{}
-	res, err = client.Do(req)
-	if err != nil {
-		fmt.Printf("Ohh noo; Anyway: %v", err)
-		return
-	}
+	// var res *http.Response
+	// client := &http.Client{}
+	// res, err = client.Do(req)
+	// if err != nil {
+	// 	fmt.Printf("Ohh noo; Anyway: %v", err)
+	// 	return
+	// }
 
-	defer res.Body.Close()
+	// defer res.Body.Close()
 }
 
 func DefaultLog(file string, err interface{}) {

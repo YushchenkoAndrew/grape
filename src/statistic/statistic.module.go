@@ -21,7 +21,7 @@ func NewInfoModule(rg *gin.RouterGroup, handlers []func(*gin.RouterGroup) m.Modu
 	return &infoModule{
 		Module: &m.Module[StatisticT]{
 			Route: rg.Group("/info"),
-			Auth:  rg.Group("/info", middleware.GetMiddleware().Auth()),
+			Auth:  rg.Group("/info", middleware.GetMiddleware().Jwt()),
 			// info:      c.NewInfoController(),
 			// SubRoutes: subRoutes,
 		},

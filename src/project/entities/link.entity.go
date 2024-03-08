@@ -5,7 +5,7 @@ import (
 )
 
 type LinkEntity struct {
-	e.UuidEntity
+	*e.UuidEntity
 
 	Name      string `gorm:"not null" json:"name" xml:"name" example:"main"`
 	Link      string `gorm:"not null" json:"link" xml:"link" example:"https://github.com/YushchenkoAndrew/template"`

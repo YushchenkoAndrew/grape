@@ -1,91 +1,88 @@
 package config
 
-import (
-	"fmt"
+// type EnvType struct {
+// 	Host     string `mapstructure:"HOST"`
+// 	Port     string `mapstructure:"PORT"`
+// 	BasePath string `mapstructure:"BASE_PATH"`
 
-	"github.com/spf13/viper"
-)
+// 	// DataBase
+// 	DBType string `mapstructure:"DB_TYPE"`
+// 	DBName string `mapstructure:"DB_NAME"`
+// 	DBHost string `mapstructure:"DB_HOST"`
+// 	DBPort string `mapstructure:"DB_PORT"`
+// 	DBUser string `mapstructure:"DB_USER"`
+// 	DBPass string `mapstructure:"DB_PASS"`
 
-// TODO: Change EnvType to use yaml
-type EnvType struct {
-	Host     string `mapstructure:"HOST"`
-	Port     string `mapstructure:"PORT"`
-	BasePath string `mapstructure:"BASE_PATH"`
+// 	// Redis
+// 	RedisHost string `mapstructure:"REDIS_HOST"`
+// 	RedisPort string `mapstructure:"REDIS_PORT"`
+// 	RedisPass string `mapstructure:"REDIS_PASS"`
 
-	// DataBase
-	DBType string `mapstructure:"DB_TYPE"`
-	DBName string `mapstructure:"DB_NAME"`
-	DBHost string `mapstructure:"DB_HOST"`
-	DBPort string `mapstructure:"DB_PORT"`
-	DBUser string `mapstructure:"DB_USER"`
-	DBPass string `mapstructure:"DB_PASS"`
+// 	// K3s
+// 	K3sPath string `mapstructure:"K3S_PATH"`
 
-	// Redis
-	RedisHost string `mapstructure:"REDIS_HOST"`
-	RedisPort string `mapstructure:"REDIS_PORT"`
-	RedisPass string `mapstructure:"REDIS_PASS"`
+// 	// JWT
+// 	AccessSecret  string `mapstructure:"ACCESS_SECRET"`
+// 	RefreshSecret string `mapstructure:"REFRESH_SECRET"`
 
-	// K3s
-	K3sPath string `mapstructure:"K3S_PATH"`
+// 	// Root User Login + Pass & Pepper
+// 	ID     string `mapstructure:"grape_ID"`
+// 	URL    string `mapstructure:"grape_URL"`
+// 	User   string `mapstructure:"grape_USER"`
+// 	Pass   string `mapstructure:"grape_PASS"`
+// 	Pepper string `mapstructure:"grape_PEPPER"`
 
-	// JWT
-	AccessSecret  string `mapstructure:"ACCESS_SECRET"`
-	RefreshSecret string `mapstructure:"REFRESH_SECRET"`
+// 	// Pagination setting
+// 	LiveTime int64 `mapstructure:"LIVE_TIME"`
+// 	Items    int   `mapstructure:"ITEMS"`
+// 	Limit    int   `mapstructure:"LIMIT"`
 
-	// Root User Login + Pass & Pepper
-	ID     string `mapstructure:"grape_ID"`
-	URL    string `mapstructure:"grape_URL"`
-	User   string `mapstructure:"grape_USER"`
-	Pass   string `mapstructure:"grape_PASS"`
-	Pepper string `mapstructure:"grape_PEPPER"`
+// 	// Rate Info
+// 	RateLimit int `mapstructure:"RATE_LIMIT"`
+// 	RateTime  int `mapstructure:"RATE_TIME"`
 
-	// Pagination setting
-	LiveTime int64 `mapstructure:"LIVE_TIME"`
-	Items    int   `mapstructure:"ITEMS"`
-	Limit    int   `mapstructure:"LIMIT"`
+// 	BotUrl    string `mapstructure:"BOT_URL"`
+// 	BotKey    string `mapstructure:"BOT_KEY"`
+// 	BotPepper string `mapstructure:"BOT_Pepper"`
 
-	// Rate Info
-	RateLimit int `mapstructure:"RATE_LIMIT"`
-	RateTime  int `mapstructure:"RATE_TIME"`
+// 	// Migration Settings
+// 	ForceMigrate  bool   `mapstructure:"FORCE_MIGRATE"`
+// 	MigrationPath string `mapstructure:"MIGRATION_PATH"`
+// }
 
-	BotUrl    string `mapstructure:"BOT_URL"`
-	BotKey    string `mapstructure:"BOT_KEY"`
-	BotPepper string `mapstructure:"BOT_Pepper"`
+// // FIXME: I should fix this one day
+// var ENV EnvType
 
-	// Migration Settings
-	ForceMigrate  bool   `mapstructure:"FORCE_MIGRATE"`
-	MigrationPath string `mapstructure:"MIGRATION_PATH"`
-}
+// type envConfig struct {
+// 	path string
+// 	name string
+// }
 
-// FIXME: I should fix this one day
-var ENV EnvType
+// type ConfigT interface {
+// 	Init()
+// }
 
-type envConfig struct {
-	path string
-	name string
-}
+// func NewEnvConfig(path, name string) func() ConfigT {
+// 	return func() ConfigT {
+// 		return &envConfig{path, name}
+// 	}
+// }
 
-func NewEnvConfig(path, name string) func() Config {
-	return func() Config {
-		return &envConfig{path, name}
-	}
-}
+// func (c *envConfig) Init() {
+// 	viper.AddConfigPath(c.path)
+// 	if c.name == "" {
+// 		viper.SetConfigFile(".env")
+// 	} else {
+// 		viper.SetConfigName(c.name)
+// 		viper.SetConfigType("env")
+// 	}
 
-func (c *envConfig) Init() {
-	viper.AddConfigPath(c.path)
-	if c.name == "" {
-		viper.SetConfigFile(".env")
-	} else {
-		viper.SetConfigName(c.name)
-		viper.SetConfigType("env")
-	}
+// 	viper.AutomaticEnv()
+// 	if err := viper.ReadInConfig(); err != nil {
+// 		panic(fmt.Errorf("Failed on reading .env file %v", err))
+// 	}
 
-	viper.AutomaticEnv()
-	if err := viper.ReadInConfig(); err != nil {
-		panic(fmt.Errorf("Failed on reading .env file %v", err))
-	}
-
-	if err := viper.Unmarshal(&ENV); err != nil {
-		panic("Failed on reading .env file")
-	}
-}
+// 	if err := viper.Unmarshal(&ENV); err != nil {
+// 		panic("Failed on reading .env file")
+// 	}
+// }

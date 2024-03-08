@@ -2,7 +2,7 @@ package controller
 
 import "github.com/gin-gonic/gin"
 
-type DefaultController interface {
+type CommonController interface {
 	FindOne(c *gin.Context)
 	FindAll(c *gin.Context)
 

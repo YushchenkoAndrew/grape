@@ -1,10 +1,6 @@
 package filter
 
 import (
-	m "grape/models"
-	"grape/src/common/helper"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -31,21 +27,21 @@ func NewFilterController(s *filterService) FilterT {
 // @failure 500 {object} m.Error
 // @Router /trace/{ip} [get]
 func (o *filterController) TraceIp(c *gin.Context) {
-	var ip string
-	if ip = c.Param("ip"); ip == "" {
-		helper.ErrHandler(c, http.StatusBadRequest, "Incorrect ip value")
-		return
-	}
+	// var ip string
+	// if ip = c.Param("ip"); ip == "" {
+	// 	helper.CreateErr(c, http.StatusBadRequest, "Incorrect ip value")
+	// 	return
+	// }
 
-	models, err := o.service.TraceIP(ip)
-	if err != nil {
-		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-		return
-	}
+	// models, err := o.service.TraceIP(ip)
+	// if err != nil {
+	// 	helper.CreateErr(c, http.StatusInternalServerError, err.Error())
+	// 	return
+	// }
 
-	helper.ResHandler(c, http.StatusOK, &m.Success{
-		Status: "OK",
-		Result: models,
-		Items:  len(models),
-	})
+	// helper.ResHandler(c, http.StatusOK, &m.Success{
+	// 	Status: "OK",
+	// 	Result: models,
+	// 	Items:  len(models),
+	// })
 }

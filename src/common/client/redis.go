@@ -2,29 +2,23 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"grape/src/common/config"
 
 	"github.com/go-redis/redis/v8"
 )
 
-func ConnRedis() *redis.Client {
-	var client = redis.NewClient(&redis.Options{
-		Addr:     config.ENV.RedisHost + ":" + config.ENV.RedisPort,
-		Password: config.ENV.RedisPass,
+func ConnRedis(cfg *config.Config) *redis.Client {
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", cfg.Redis.Host, cfg.Redis.Port),
+		Username: cfg.Redis.User,
+		Password: cfg.Redis.Pass,
 	})
 
 	ctx := context.Background()
 	if _, err := client.Ping(ctx).Result(); err != nil {
-		SendLogs(&Message{
-			Stat:    "ERR",
-			Name:    "grape",
-			File:    "/db/redis.go",
-			Message: "Bruhhh, did you even start the Redis ???",
-			Desc:    err.Error(),
-		})
-		panic("Failed on Redis connection")
+		panic("failed on redis connection")
 	}
 
-	client.Set(ctx, "Mutex", 1, 0)
 	return client
 }

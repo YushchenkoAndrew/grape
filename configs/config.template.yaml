@@ -1,0 +1,19 @@
+server:
+  host: localhost
+  port: 31337
+  prefix: /api
+  migration: migrations/
+
+psql:
+  name: api_db
+  host: localhost
+  port: 5432
+  user: root
+  pass: root
+
+redis:
+  name: ""
+  host: localhost
+  port: 6379
+  user: ""
+  pass: ""

@@ -1,12 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"grape/src"
+	"grape/src/auth"
 	"grape/src/common/client"
 	"grape/src/common/config"
 	"grape/src/common/middleware"
 	m "grape/src/common/module"
+	"grape/src/common/service"
 	"grape/src/swagger"
+
+	_ "grape/src/common/validator"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,20 +34,25 @@ import (
 // @host mortis-grimreaper.ddns.net
 // @BasePath /api
 func main() {
-	config.NewConfig([]func() config.Config{
-		config.NewEnvConfig("./", ""),
-		// config.NewOperationConfig("./", "operations"),
-	}).Init()
+	// config.NewConfigs([]func() config.ConfigT{
+	// 	config.NewEnvConfig("./", ""),
+	// 	// config.NewOperationConfig("./", "operations"),
+	// }).Init()
 
-	clients := &client.Clients{
-		DB:    client.ConnDB(),
-		Redis: client.ConnRedis(),
+	// cfg
+	cfg := config.NewConfig("configs/", "config", "yaml")
+
+	service := &service.CommonService{
+		DB:     client.ConnPsql(cfg),
+		Redis:  client.ConnRedis(cfg),
+		Config: cfg,
 	}
 
 	r := gin.Default()
-	rg := r.Group(config.ENV.BasePath, middleware.NewMiddleware(clients).Limit())
+	rg := r.Group(cfg.Server.Prefix, middleware.NewMiddleware(service).Limit())
 	module := src.NewIndexModule(rg, &[]m.ModuleT{
 		swagger.NewSwaggerRouter(rg),
+		auth.NewAuthModule(rg, &[]m.ModuleT{}, service),
 		// routes.NewProjectRouter(rg, db, redis),
 		// routes.NewFileRouter(rg, db, redis),
 		// routes.NewLinkRouter(rg, db, redis),
@@ -66,8 +76,8 @@ func main() {
 		// }),
 
 		// routes.NewSubscribeRouter(rg, db, redis),
-	}, clients)
+	}, service)
 
 	module.Init()
-	r.Run(config.ENV.Host + ":" + config.ENV.Port)
+	r.Run(fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port))
 }

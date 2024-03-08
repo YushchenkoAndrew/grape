@@ -51,7 +51,10 @@ tmp/
 # Test binary, built with `go test -c`
 *.test
 secrete.yaml
+configs/config.yaml
+configs/database.yaml
 k3s.yaml
+.vscode
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out

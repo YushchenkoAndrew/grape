@@ -10,7 +10,7 @@ type projectController struct {
 	service *projectService
 }
 
-func NewProjectController(s *projectService) c.DefaultController {
+func NewProjectController(s *projectService) c.CommonController {
 	return &projectController{service: s}
 }
 

@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"grape/src/common/client"
 	m "grape/src/common/module"
+	"grape/src/common/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,11 +11,11 @@ type authRouter struct {
 	*m.Module[AuthT]
 }
 
-func NewAuthRouter(route *gin.RouterGroup, modules *[]m.ModuleT, client *client.Clients) m.ModuleT {
+func NewAuthModule(route *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT {
 	return &authRouter{
 		Module: &m.Module[AuthT]{
 			Route:      route,
-			Controller: NewAuthController(NewAuthService(client)),
+			Controller: NewAuthController(NewAuthService(s)),
 			Modules:    modules,
 		},
 	}

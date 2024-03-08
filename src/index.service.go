@@ -1,12 +1,12 @@
 package src
 
 import (
-	"grape/src/common/client"
+	"grape/src/common/service"
 )
 
 type indexService struct {
 }
 
-func NewIndexService(client *client.Clients) *indexService {
+func NewIndexService(s *service.CommonService) *indexService {
 	return &indexService{}
 }

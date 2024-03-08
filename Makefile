@@ -10,7 +10,7 @@ csv:
 	docker cp ./tmp/GeoLite2-Country-Locations-en.csv psql:/home
 
 test:
-	go test -v ./...
+	config="$(PWD)" go test -v ./...
 
 migrate:
 	read -p "Migration name: " DESC; \

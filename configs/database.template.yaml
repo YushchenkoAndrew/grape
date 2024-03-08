@@ -1,0 +1,6 @@
+organization:
+  name: default
+
+users:
+  name: root
+  password: root

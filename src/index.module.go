@@ -1,8 +1,8 @@
 package src
 
 import (
-	"grape/src/common/client"
 	m "grape/src/common/module"
+	"grape/src/common/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,11 +11,11 @@ type indexModule struct {
 	*m.Module[IndexT]
 }
 
-func NewIndexModule(route *gin.RouterGroup, modules *[]m.ModuleT, client *client.Clients) m.ModuleT {
+func NewIndexModule(route *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT {
 	return &indexModule{
 		Module: &m.Module[IndexT]{
 			Route:      route,
-			Controller: NewIndexController(NewIndexService(client)),
+			Controller: NewIndexController(NewIndexService(s)),
 			Modules:    modules,
 		},
 	}
