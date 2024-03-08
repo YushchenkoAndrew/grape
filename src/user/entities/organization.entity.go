@@ -5,9 +5,10 @@ import (
 )
 
 type OrganizationEntity struct {
-	*e.UuidEntity
+	e.UuidEntity
 
-	Name string `gorm:"not null"`
+	Name    string `gorm:"not null"`
+	Default bool   `gorm:"not null;default:false"`
 }
 
 func (*OrganizationEntity) TableName() string {

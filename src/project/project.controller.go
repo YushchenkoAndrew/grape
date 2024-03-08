@@ -2,6 +2,10 @@ package project
 
 import (
 	c "grape/src/common/controller"
+	"grape/src/common/dto/response"
+	"grape/src/project/dto/request"
+	"grape/src/user/entities"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -154,44 +158,6 @@ func (o *projectController) CreateAll(c *gin.Context) {
 }
 
 // @Tags Project
-// @Summary Read Project by it's name
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Param name path string true "Project Name"
-// @Success 200 {object} m.Success{result=[]m.Project}
-// @failure 429 {object} m.Error
-// @failure 400 {object} m.Error
-// @failure 500 {object} m.Error
-// @Router /project/{name} [get]
-func (o *projectController) FindOne(c *gin.Context) {
-	// var name = c.Param("name")
-	// if name == "" {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { name: %t }", false))
-	// 	return
-	// }
-
-	// models, err := o.service.Project.Read(&m.ProjectQueryDto{Name: name})
-	// if err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-
-	// for i := 0; i < len(models); i++ {
-	// 	models[i].Links, _ = o.service.Link.Read(&m.LinkQueryDto{ProjectID: models[i].ID})
-	// 	models[i].Files, _ = o.service.File.Read(&m.FileQueryDto{ProjectID: models[i].ID})
-	// 	models[i].Subscription, _ = o.service.Subscription.Read(&m.SubscribeQueryDto{ProjectID: models[i].ID})
-	// 	models[i].Metrics, _ = o.service.Metrics.Read(&m.MetricsQueryDto{ProjectID: models[i].ID})
-	// }
-
-	// helper.ResHandler(c, http.StatusOK, &m.Success{
-	// 	Status: "OK",
-	// 	Result: models,
-	// 	Items:  len(models),
-	// })
-}
-
-// @Tags Project
 // @Summary Read Project by Query
 // @Accept json
 // @Produce application/json
@@ -218,33 +184,41 @@ func (o *projectController) FindOne(c *gin.Context) {
 // @failure 400 {object} m.Error
 // @failure 500 {object} m.Error
 // @Router /project [get]
-func (o *projectController) FindAll(c *gin.Context) {
-	// var query = m.ProjectQueryDto{Page: -1}
-	// if err := c.ShouldBindQuery(&query); err != nil {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
-	// 	return
-	// }
+func (c *projectController) FindAll(ctx *gin.Context) {
+	user, _ := ctx.Get("user")
 
-	// models, err := o.service.Project.Read(&query)
-	// if err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
+	dto := request.NewProjectDto(user.(*entities.UserEntity))
+	if err := ctx.ShouldBindQuery(&dto); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
-	// for i := 0; i < len(models); i++ {
-	// 	models[i].Links, _ = o.service.Link.Read(&m.LinkQueryDto{ID: query.Link.ID, Name: query.Link.Name, ProjectID: models[i].ID, Page: query.Link.Page, Limit: query.Link.Limit})
-	// 	models[i].Files, _ = o.service.File.Read(&m.FileQueryDto{ID: query.File.ID, Name: query.File.Name, Role: query.File.Role, Path: query.File.Path, ProjectID: models[i].ID, Page: query.File.Page, Limit: query.File.Limit})
-	// 	models[i].Subscription, _ = o.service.Subscription.Read(&m.SubscribeQueryDto{ID: query.Subscription.ID, Name: query.Subscription.Name, CronID: query.Subscription.CronID, ProjectID: models[i].ID, Page: query.Subscription.Page, Limit: query.Subscription.Limit})
-	// 	models[i].Metrics, _ = o.service.Metrics.Read(&m.MetricsQueryDto{ID: query.Metrics.ID, Name: query.Metrics.Name, Namespace: query.Metrics.Namespace, ContainerName: query.Metrics.ContainerName, CreatedTo: query.Metrics.CreatedTo, CreatedFrom: query.Metrics.CreatedFrom, Page: query.Metrics.Page, Limit: query.Metrics.Limit})
-	// }
+	res, err := c.service.FindAll(dto)
+	if err != nil {
+		response.ThrowErr(ctx, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
 
-	// helper.ResHandler(c, http.StatusOK, &m.Success{
-	// 	Status: "OK",
-	// 	Result: models,
-	// 	Page:   query.Page,
-	// 	Limit:  query.Limit,
-	// 	Items:  len(models),
-	// })
+	response.Build(ctx, http.StatusOK, res)
+}
+
+// @Tags Project
+// @Summary Read Project by it's name
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Param id path string true "Project id"
+// @Success 200 {object} m.Success{result=[]m.Project}
+// @failure 422 {object} response.Error
+// @Router /project/{id} [get]
+func (c *projectController) FindOne(ctx *gin.Context) {
+	res, err := c.service.FindOne(ctx.Param("id"))
+	if err != nil {
+		response.ThrowErr(ctx, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	response.Build(ctx, http.StatusOK, res)
 }
 
 // @Tags Project

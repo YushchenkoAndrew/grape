@@ -17,7 +17,7 @@ func NewProjectModule(rg *gin.RouterGroup, modules *[]m.ModuleT, s *service.Comm
 	return &projectModule{
 		Module: &m.Module[c.CommonController]{
 			Route:      rg.Group("/project"),
-			Auth:       rg.Group("/project", h.GetMiddleware().Jwt()),
+			Auth:       rg.Group("/admin/project", h.GetMiddleware(nil).Jwt()),
 			Controller: NewProjectController(NewProjectService(s)),
 		},
 	}
@@ -25,11 +25,14 @@ func NewProjectModule(rg *gin.RouterGroup, modules *[]m.ModuleT, s *service.Comm
 
 func (c *projectModule) Init() {
 	c.Route.GET("", c.Controller.FindAll)
-	c.Route.GET("/:name", c.Controller.FindOne)
+	c.Route.GET("/:id", c.Controller.FindOne)
+
+	c.Auth.GET("", c.Controller.FindAll)
+	c.Auth.GET("/:id", c.Controller.FindOne)
 
 	c.Auth.POST("", c.Controller.Create)
-	c.Auth.PUT("/:name", c.Controller.Update)
-	c.Auth.DELETE("/:name", c.Controller.Delete)
+	c.Auth.PUT("/:id", c.Controller.Update)
+	c.Auth.DELETE("/:id", c.Controller.Delete)
 
 	c.Module.Init()
 }

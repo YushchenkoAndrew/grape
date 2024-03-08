@@ -22,7 +22,7 @@ func SetUpRouter(module func(route *gin.RouterGroup, modules *[]m.ModuleT, s *se
 	}
 
 	r := gin.Default()
-	rg := r.Group(cfg.Server.Prefix, middleware.NewMiddleware(service).Limit())
+	rg := r.Group(cfg.Server.Prefix, middleware.GetMiddleware(service).Default())
 	module(rg, &[]m.ModuleT{}, service).Init()
 	return r
 }

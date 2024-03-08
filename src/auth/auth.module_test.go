@@ -33,7 +33,7 @@ func TestLogin(t *testing.T) {
 	}{
 		{
 			name:   "test correct login",
-			body:   request.LoginDto{User: cfg.User.Name, Pass: cfg.User.Password},
+			body:   request.LoginDto{Name: cfg.User.Name, Pass: cfg.User.Password},
 			status: http.StatusOK,
 			handler: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var res response.LoginResponseDto
@@ -45,13 +45,13 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name:    "test invalid password",
-			body:    request.LoginDto{User: cfg.User.Name, Pass: "invalid"},
+			body:    request.LoginDto{Name: cfg.User.Name, Pass: "invalid"},
 			status:  http.StatusUnprocessableEntity,
 			handler: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
 		{
 			name:    "test invalid username",
-			body:    request.LoginDto{User: "invalid", Pass: "invalid"},
+			body:    request.LoginDto{Name: "invalid", Pass: "invalid"},
 			status:  http.StatusUnprocessableEntity,
 			handler: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
@@ -76,7 +76,7 @@ func TestRefresh(t *testing.T) {
 
 	var res response.LoginResponseDto
 	t.Run("test correct login", func(t *testing.T) {
-		body, _ := json.Marshal(request.LoginDto{User: cfg.User.Name, Pass: cfg.User.Password})
+		body, _ := json.Marshal(request.LoginDto{Name: cfg.User.Name, Pass: cfg.User.Password})
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/grape/login", bytes.NewBuffer(body))

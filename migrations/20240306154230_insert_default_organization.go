@@ -15,8 +15,8 @@ func init() {
 func upInsertDefaultOrganizations(ctx context.Context, tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	_, err := tx.Exec(`
-	INSERT INTO organizations(uuid, created_at, updated_at, name)
-		VALUES($1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $2);
+	INSERT INTO organizations(uuid, created_at, updated_at, name, "default")
+		VALUES($1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $2, true);
 	`, uuid.New().String(), cfg.Organization.Name)
 
 	if err != nil {

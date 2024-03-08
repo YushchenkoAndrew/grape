@@ -2,16 +2,18 @@ package entities
 
 import (
 	e "grape/src/common/entities"
+	t "grape/src/user/types"
 )
 
 type UserEntity struct {
-	*e.UuidEntity
+	e.UuidEntity
 
-	Name     string `gorm:"not null"`
-	Password string `gorm:"not null"`
-	Status   int    `gorm:"not null;default:0"`
+	Name     string           `gorm:"not null"`
+	Password string           `gorm:"not null"`
+	Status   t.UserStatusEnum `gorm:"not null;default:0"`
 
-	// Organization OrganizationEntity `gorm:"foreignKey:organization_id;not null"`
+	OrganizationID int64              `gorm:"not null"`
+	Organization   OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID"`
 }
 
 func (*UserEntity) TableName() string {

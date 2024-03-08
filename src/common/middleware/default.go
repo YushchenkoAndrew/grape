@@ -1,11 +1,16 @@
 package middleware
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
+
+	"grape/src/common/dto/response"
+	e "grape/src/user/entities"
 )
 
-func (o *Middleware) Limit() gin.HandlerFunc {
-	return func(c *gin.Context) {
+func (c *Middleware) Default() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
 		// ip := "IP:" + c.ClientIP()
 		// ctx := context.Background()
 
@@ -26,5 +31,14 @@ func (o *Middleware) Limit() gin.HandlerFunc {
 		// 		Message: "Jeez man calm down, you've had inaff of traffic, I'm blocking you; " + ip,
 		// 	})
 		// }
+
+		var org *e.OrganizationEntity
+		if c.db.Limit(1).Find(&org, "organizations.default"); org == nil {
+			response.ThrowErr(ctx, http.StatusUnprocessableEntity, "organization not found")
+			return
+		}
+
+		ctx.Set("user", &e.UserEntity{Organization: *org})
+		ctx.Next()
 	}
 }

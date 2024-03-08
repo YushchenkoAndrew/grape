@@ -4,16 +4,19 @@ import (
 	"context"
 	"fmt"
 	"grape/src/auth/dto/request"
-	"grape/src/auth/dto/response"
+	r "grape/src/auth/dto/response"
+	t "grape/src/auth/types"
 	"grape/src/common/config"
-	entities "grape/src/common/entities"
 	"grape/src/common/service"
+	"grape/src/user/dto/response"
 	e "grape/src/user/entities"
+	"grape/src/user/types"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/jinzhu/copier"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -28,21 +31,22 @@ func NewAuthService(s *service.CommonService) *authService {
 	return &authService{db: s.DB, redis: s.Redis, config: s.Config}
 }
 
-func (c *authService) Login(dto *request.LoginDto) (*response.LoginResponseDto, error) {
+func (c *authService) Login(dto *request.LoginDto) (*r.LoginResponseDto, error) {
 	var user *e.UserEntity
-	if c.db.Find(&e.UserEntity{Name: dto.User}).First(&user); user == nil {
-		return nil, fmt.Errorf("user '%s' not found", dto.User)
+	if c.db.Joins("Organization").Limit(1).Find(&user, "name = ? AND status = ?", dto.Name, types.Active); user == nil {
+		return nil, fmt.Errorf("user '%s' not found", dto.Name)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.Pass)); err != nil {
-		return nil, fmt.Errorf("user '%s' not found", dto.User)
+		return nil, fmt.Errorf("user '%s' not found", dto.Name)
 	}
 
 	return c.generate(user)
 }
 
-func (c *authService) Refresh(dto *request.RefreshDto) (*response.LoginResponseDto, error) {
-	token, err := jwt.Parse(dto.RefreshToken, func(t *jwt.Token) (interface{}, error) {
+func (c *authService) Refresh(dto *request.RefreshDto) (*r.LoginResponseDto, error) {
+	var claim t.RefreshClaim
+	token, err := jwt.ParseWithClaims(dto.RefreshToken, &claim, func(t *jwt.Token) (interface{}, error) {
 		return []byte(c.config.Jwt.RefreshSecret), nil
 	})
 
@@ -50,36 +54,36 @@ func (c *authService) Refresh(dto *request.RefreshDto) (*response.LoginResponseD
 		return nil, err
 	}
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
+	if !token.Valid {
 		return nil, fmt.Errorf("unauthorized token")
 	}
 
 	ctx := context.Background()
-	refresh_id, _ := claims["uid"].(string)
-	user_id, err := c.redis.Get(ctx, refresh_id).Result()
+	user_id, err := c.redis.Get(ctx, claim.UID).Result()
 
 	if err != nil {
 		return nil, fmt.Errorf("invalid token")
 	}
 
-	c.redis.Del(ctx, refresh_id)
+	defer func() {
+		c.redis.Del(ctx, claim.UID)
+	}()
 
 	var user *e.UserEntity
-	if c.db.Find(&e.UserEntity{UuidEntity: &entities.UuidEntity{UUID: user_id}}).First(&user); user == nil {
+	if c.db.Joins("Organization").Limit(1).Find(&user, "uuid = ? AND status = ?", user_id, types.Active); user == nil {
 		return nil, fmt.Errorf("user not found")
 	}
 
 	return c.generate(user)
 }
 
-func (c *authService) generate(user *e.UserEntity) (*response.LoginResponseDto, error) {
+func (c *authService) generate(user *e.UserEntity) (*r.LoginResponseDto, error) {
 	access_id, refresh_id := uuid.New().String(), uuid.New().String()
 	access_exp, _ := time.ParseDuration(c.config.Jwt.AccessExpire)
 	refresh_exp, _ := time.ParseDuration(c.config.Jwt.RefreshExpire)
 
-	access := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.MapClaims{"uid": access_id, "rid": refresh_id, "user_id": user.ID, "exp": time.Now().Add(access_exp).Unix()})
-	refresh := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.MapClaims{"uid": refresh_id, "exp": time.Now().Add(refresh_exp).Unix()})
+	access := jwt.NewWithClaims(jwt.SigningMethodHS256, &t.AccessClaim{UID: access_id, RID: refresh_id, UserId: user.ID, Exp: time.Now().Add(access_exp).Unix()})
+	refresh := jwt.NewWithClaims(jwt.SigningMethodHS256, &t.RefreshClaim{UID: refresh_id, Exp: time.Now().Add(refresh_exp).Unix()})
 
 	access_token, err := access.SignedString([]byte(c.config.Jwt.AccessSecret))
 	if err != nil {
@@ -97,8 +101,12 @@ func (c *authService) generate(user *e.UserEntity) (*response.LoginResponseDto, 
 		c.redis.Set(ctx, refresh_id, user.UUID, refresh_exp)
 	}()
 
-	return &response.LoginResponseDto{
+	var res response.UserResponseDto
+	copier.Copy(&res, &user)
+
+	return &r.LoginResponseDto{
 		AccessToken:  access_token,
 		RefreshToken: refresh_token,
+		User:         res,
 	}, nil
 }

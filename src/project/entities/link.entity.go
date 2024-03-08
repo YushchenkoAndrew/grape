@@ -5,12 +5,11 @@ import (
 )
 
 type LinkEntity struct {
-	*e.UuidEntity
+	e.UuidEntity
 
-	Name      string `gorm:"not null" json:"name" xml:"name" example:"main"`
-	Link      string `gorm:"not null" json:"link" xml:"link" example:"https://github.com/YushchenkoAndrew/template"`
-	ProjectID uint32 `gorm:"foreignKey:ProjectID;not null" json:"project_id" xml:"project_id" example:"1"`
-	// Project   Project   `gorm:""`
+	Name      string `gorm:"not null"`
+	Link      string `gorm:"not null"`
+	ProjectID int64  `gorm:"foreignKey:ProjectID;not null"`
 }
 
 func (*LinkEntity) TableName() string {

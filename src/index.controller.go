@@ -1,7 +1,6 @@
 package src
 
 import (
-	m "grape/models"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,8 +25,5 @@ func NewIndexController(s *indexService) IndexT {
 // @failure 429 {object} m.Error
 // @Router /ping [get]
 func (*indexController) Ping(c *gin.Context) {
-	c.JSON(http.StatusOK, m.Ping{
-		Status:  "OK",
-		Message: "pong",
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "pong"})
 }

@@ -1,21 +1,30 @@
 package entities
 
 import (
+	att "grape/src/attachment/entities"
 	e "grape/src/common/entities"
+	t "grape/src/project/types"
+	org "grape/src/user/entities"
 )
 
 type ProjectEntity struct {
-	*e.UuidEntity
+	e.UuidEntity
 
-	// Title       string `gorm:"not null" json:"title" xml:"title" example:"Code Rain"`
+	Name        string              `gorm:"not null"`
+	Description string              `gorm:"default:''"`
+	Type        t.ProjectTypeEnum   `gorm:"not null;default:0"`
+	Status      t.ProjectStatusEnum `gorm:"not null;default:0"`
+	Footer      string              ``
 
-	Name        string `gorm:"not null" json:"name" xml:"name" example:"Code Rain"`
-	Description string `json:"desc" xml:"desc" example:"Take the blue pill and the sit will close, or take the red pill and I show how deep the rebbit hole goes"`
-	Type        string `json:"flag" xml:"flag" example:"js"`
-	Footer      string `json:"note" xml:"note" example:"Creating a 'Code Rain' effect from Matrix. As funny joke you can put any text to display at the end."`
+	OwnerID int64          `gorm:"not null"`
+	Owner   org.UserEntity `gorm:"foreignKey:OwnerID;references:ID"`
 
-	// Files        []File         `gorm:"foreignKey:ProjectID" json:"files" xml:"files"`
-	// Links        []Link         `gorm:"foreignKey:ProjectID" json:"links" xml:"links"`
+	OrganizationID int64                  `gorm:"not null"`
+	Organization   org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID"`
+
+	Links       []LinkEntity           `gorm:"-;foreignKey:ProjectID"`
+	Attachments []att.AttachmentEntity `gorm:"-"`
+
 	// Metrics      []Metrics      `gorm:"foreignKey:ProjectID" json:"metrics" xml:"metrics"`
 	// Subscription []Subscription `gorm:"foreignKey:ProjectID" json:"subscription" xml:"subscription"`
 }
@@ -24,22 +33,32 @@ func (*ProjectEntity) TableName() string {
 	return "projects"
 }
 
-// type ProjectDto struct {
-// 	// ID        uint32    `json:"id" xml:"id"`
-// 	Name  string `json:"name,omitempty" xml:"name,omitempty"`
-// 	Title string `json:"title,omitempty" xml:"title,omitempty"`
-// 	Flag  string `json:"flag,omitempty" xml:"flag,omitempty"`
-// 	Desc  string `json:"desc,omitempty" xml:"desc,omitempty"`
-// 	Note  string `json:"note,omitempty" xml:"note,omitempty"`
+func (c *ProjectEntity) GetStatus() string {
+	switch c.Status {
+	case t.Active:
+		return "active"
 
-// 	Links []LinkDto `json:"links,omitempty" xml:"links,omitempty"`
-// 	Files []FileDto `json:"files,omitempty" xml:"files,omitempty"`
-// }
+	case t.Inactive:
+		return "inactive"
+	}
 
-// func (c *ProjectDto) IsOK() bool {
-// 	return c.Name != "" && c.Title != "" && c.Flag != "" && c.Desc != ""
-// }
+	return ""
+}
 
-// func (c *ProjectQueryDto) IsOK(model *Project) bool {
-// 	return (c.Name == "" || c.Name == model.Name) && (c.Flag == "" || c.Flag == model.Flag)
-// }
+func (c *ProjectEntity) GetType() string {
+	switch c.Type {
+	case t.Html:
+		return "html"
+
+	case t.Markdown:
+		return "markdown"
+
+	case t.Link:
+		return "link"
+
+	case t.K3s:
+		return "k3s"
+	}
+
+	return ""
+}
