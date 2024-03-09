@@ -32,13 +32,13 @@ func (c *Middleware) Default() gin.HandlerFunc {
 		// 	})
 		// }
 
-		var org *e.OrganizationEntity
-		if c.db.Limit(1).Find(&org, "organizations.default"); org == nil {
+		var org []e.OrganizationEntity
+		if c.db.Limit(1).Find(&org, "organizations.default"); len(org) == 0 {
 			response.ThrowErr(ctx, http.StatusUnprocessableEntity, "organization not found")
 			return
 		}
 
-		ctx.Set("user", &e.UserEntity{Organization: *org})
+		ctx.Set("user", &e.UserEntity{Organization: org[0]})
 		ctx.Next()
 	}
 }

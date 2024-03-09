@@ -16,8 +16,8 @@ type projectModule struct {
 func NewProjectModule(rg *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT {
 	return &projectModule{
 		Module: &m.Module[c.CommonController]{
-			Route:      rg.Group("/project"),
-			Auth:       rg.Group("/admin/project", h.GetMiddleware(nil).Jwt()),
+			Route:      rg.Group("/projects"),
+			Auth:       rg.Group("/admin/projects", h.GetMiddleware(nil).Jwt()),
 			Controller: NewProjectController(NewProjectService(s)),
 		},
 	}

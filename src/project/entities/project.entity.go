@@ -8,22 +8,23 @@ import (
 )
 
 type ProjectEntity struct {
-	e.UuidEntity
+	*e.UuidEntity
 
 	Name        string              `gorm:"not null"`
 	Description string              `gorm:"default:''"`
-	Type        t.ProjectTypeEnum   `gorm:"not null;default:0"`
-	Status      t.ProjectStatusEnum `gorm:"not null;default:0"`
+	Type        t.ProjectTypeEnum   `gorm:"not null;default:0" copier:"GetType"`
+	Status      t.ProjectStatusEnum `gorm:"not null;default:0" copier:"-"`
 	Footer      string              ``
+	Order       int                 `gorm:"not null;default:0" copier:"-"`
 
-	OwnerID int64          `gorm:"not null"`
-	Owner   org.UserEntity `gorm:"foreignKey:OwnerID;references:ID"`
+	OwnerID int64          `gorm:"not null" copier:"-"`
+	Owner   org.UserEntity `gorm:"foreignKey:OwnerID;references:ID" copier:"-"`
 
-	OrganizationID int64                  `gorm:"not null"`
-	Organization   org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID"`
+	OrganizationID int64                  `gorm:"not null" copier:"-"`
+	Organization   org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID" copier:"-"`
 
-	Links       []LinkEntity           `gorm:"-;foreignKey:ProjectID"`
-	Attachments []att.AttachmentEntity `gorm:"-"`
+	Links       []LinkEntity           `gorm:"-;foreignKey:ProjectID" copier:"-"`
+	Attachments []att.AttachmentEntity `gorm:"-" copier:"-"`
 
 	// Metrics      []Metrics      `gorm:"foreignKey:ProjectID" json:"metrics" xml:"metrics"`
 	// Subscription []Subscription `gorm:"foreignKey:ProjectID" json:"subscription" xml:"subscription"`
@@ -34,31 +35,13 @@ func (*ProjectEntity) TableName() string {
 }
 
 func (c *ProjectEntity) GetStatus() string {
-	switch c.Status {
-	case t.Active:
-		return "active"
-
-	case t.Inactive:
-		return "inactive"
-	}
-
-	return ""
+	return c.Status.String()
 }
 
 func (c *ProjectEntity) GetType() string {
-	switch c.Type {
-	case t.Html:
-		return "html"
+	return c.Type.String()
+}
 
-	case t.Markdown:
-		return "markdown"
-
-	case t.Link:
-		return "link"
-
-	case t.K3s:
-		return "k3s"
-	}
-
-	return ""
+func NewProjectEntity() *ProjectEntity {
+	return &ProjectEntity{UuidEntity: e.NewUuidEntity()}
 }

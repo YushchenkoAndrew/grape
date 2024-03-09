@@ -5,7 +5,9 @@ import (
 	"grape/src/common/repositories"
 	r "grape/src/project/dto/request"
 	e "grape/src/project/entities"
+	"grape/src/project/types"
 
+	"github.com/samber/lo"
 	"gorm.io/gorm"
 )
 
@@ -17,14 +19,18 @@ const (
 	Owner        ProjectRelation = "Owner"
 )
 
-type ProjectRepository struct {
-	db *gorm.DB
+type ProjectRepositoryT = repositories.CommonRepository[e.ProjectEntity, r.ProjectDto, ProjectRelation]
 
-	repositories.CommonRepository[e.ProjectEntity, r.ProjectDto, ProjectRelation]
+type projectRepository struct {
+	db *gorm.DB
 }
 
-func (c *ProjectRepository) Build(dto *r.ProjectDto, relations ...ProjectRelation) *gorm.DB {
-	tx := c.db.Model(&e.ProjectEntity{})
+func (c *projectRepository) Model() *e.ProjectEntity {
+	return e.NewProjectEntity()
+}
+
+func (c *projectRepository) Build(dto *r.ProjectDto, relations ...ProjectRelation) *gorm.DB {
+	tx := c.db.Model(c.Model()).Where(`projects.organization_id = ?`, dto.CurrentUser.Organization.ID)
 
 	var required []ProjectRelation
 	c.applyFilter(tx, dto, required)
@@ -33,7 +39,7 @@ func (c *ProjectRepository) Build(dto *r.ProjectDto, relations ...ProjectRelatio
 	return tx
 }
 
-func (c *ProjectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, _ []ProjectRelation) {
+func (c *projectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, _ []ProjectRelation) {
 	if len(dto.ProjectIds) != 0 {
 		tx.Where(`projects.uuid IN ?`, dto.ProjectIds)
 	}
@@ -41,9 +47,21 @@ func (c *ProjectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, _ []Proj
 	if len(dto.Query) != 0 {
 		tx.Where(`projects.name ILIKE ?`, "%"+dto.Query+"%")
 	}
+
+	if len(dto.Statuses) != 0 {
+		tx.Where(`projects.status IN ?`, lo.Map(dto.Statuses, func(str string, _ int) types.ProjectStatusEnum {
+			return types.Active.Value(str)
+		}))
+	}
+
+	if len(dto.Types) != 0 {
+		tx.Where(`projects.type IN ?`, lo.Map(dto.Types, func(str string, _ int) types.ProjectTypeEnum {
+			return types.Html.Value(str)
+		}))
+	}
 }
 
-func (c *ProjectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relations []ProjectRelation) {
+func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relations []ProjectRelation) {
 	for _, r := range relations {
 		switch r {
 		case Attachments:
@@ -55,6 +73,19 @@ func (c *ProjectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relati
 	}
 }
 
-func NewProjectRepository(db *gorm.DB) *ProjectRepository {
-	return &ProjectRepository{}
+func (c *projectRepository) Create(dto *r.ProjectDto, entity *e.ProjectEntity) *gorm.DB {
+	tx := c.db.Model(c.Model())
+
+	var result struct{ order int }
+	c.Build(dto).Select("MAX(projects.order) AS order").Scan(&result)
+
+	entity.Order = result.order + 1
+	entity.OwnerID = dto.CurrentUser.ID
+	entity.OrganizationID = dto.CurrentUser.Organization.ID
+
+	return tx.Create(entity)
+}
+
+func NewProjectRepository(db *gorm.DB) *ProjectRepositoryT {
+	return repositories.NewRepository[e.ProjectEntity](&projectRepository{db})
 }

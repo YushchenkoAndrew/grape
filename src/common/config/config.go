@@ -17,11 +17,12 @@ type Config struct {
 	} `mapstructure:"server"`
 
 	Psql struct {
-		Name string `mapstructure:"name"`
-		Host string `mapstructure:"host"`
-		Port int    `mapstructure:"port"`
-		User string `mapstructure:"user"`
-		Pass string `mapstructure:"pass"`
+		Name   string `mapstructure:"name"`
+		Host   string `mapstructure:"host"`
+		Port   int    `mapstructure:"port"`
+		User   string `mapstructure:"user"`
+		Pass   string `mapstructure:"pass"`
+		Logger bool   `mapstructure:"logger"`
 	} `mapstructure:"psql"`
 
 	Redis struct {

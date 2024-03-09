@@ -4,6 +4,7 @@ import (
 	"fmt"
 	_ "grape/migrations"
 	"grape/src/common/config"
+	c "grape/src/common/config"
 	"os"
 	"path/filepath"
 
@@ -12,11 +13,18 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func ConnPsql(cfg *config.Config) *gorm.DB {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s port=%d dbname=%s sslmode=disable", cfg.Psql.Host, cfg.Psql.User, cfg.Psql.Pass, cfg.Psql.Port, cfg.Psql.Name)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+	var config gorm.Config
+	if cfg.Psql.Logger {
+		config.Logger = logger.Default.LogMode(logger.Info)
+	}
+
+	db, err := gorm.Open(postgres.Open(dsn), &config)
 
 	if err != nil {
 		// TODO: Think about better solution for that !
@@ -47,7 +55,7 @@ func ConnPsql(cfg *config.Config) *gorm.DB {
 		}()
 
 		var path string
-		if value, ok := os.LookupEnv(config.CONFIG_ARG); ok {
+		if value, ok := os.LookupEnv(c.CONFIG_ARG); ok {
 			path = filepath.Join(value, cfg.Server.Migration)
 		} else {
 			path = filepath.Join(value, cfg.Server.Migration)

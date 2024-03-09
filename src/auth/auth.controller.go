@@ -14,10 +14,10 @@ type AuthT interface {
 }
 
 type authController struct {
-	service *authService
+	service *AuthService
 }
 
-func NewAuthController(s *authService) AuthT {
+func NewAuthController(s *AuthService) AuthT {
 	return &authController{service: s}
 }
 

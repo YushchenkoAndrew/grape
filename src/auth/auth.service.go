@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"grape/src/auth/dto/request"
-	r "grape/src/auth/dto/response"
+	"grape/src/auth/dto/response"
 	t "grape/src/auth/types"
 	"grape/src/common/config"
+	common "grape/src/common/dto/response"
 	"grape/src/common/service"
-	"grape/src/user/dto/response"
+	u "grape/src/user/dto/response"
 	e "grape/src/user/entities"
 	"grape/src/user/types"
 	"time"
@@ -16,35 +17,34 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/jinzhu/copier"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-type authService struct {
+type AuthService struct {
 	db     *gorm.DB
 	redis  *redis.Client
 	config *config.Config
 }
 
-func NewAuthService(s *service.CommonService) *authService {
-	return &authService{db: s.DB, redis: s.Redis, config: s.Config}
+func NewAuthService(s *service.CommonService) *AuthService {
+	return &AuthService{db: s.DB, redis: s.Redis, config: s.Config}
 }
 
-func (c *authService) Login(dto *request.LoginDto) (*r.LoginResponseDto, error) {
-	var user *e.UserEntity
-	if c.db.Joins("Organization").Limit(1).Find(&user, "name = ? AND status = ?", dto.Name, types.Active); user == nil {
+func (c *AuthService) Login(dto *request.LoginDto) (*response.LoginResponseDto, error) {
+	var users []e.UserEntity
+	if c.db.Joins("Organization").Limit(1).Find(&users, "name = ? AND status = ?", dto.Name, types.Active); len(users) == 0 {
 		return nil, fmt.Errorf("user '%s' not found", dto.Name)
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.Pass)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(dto.Pass)); err != nil {
 		return nil, fmt.Errorf("user '%s' not found", dto.Name)
 	}
 
-	return c.generate(user)
+	return c.generate(&users[0])
 }
 
-func (c *authService) Refresh(dto *request.RefreshDto) (*r.LoginResponseDto, error) {
+func (c *AuthService) Refresh(dto *request.RefreshDto) (*response.LoginResponseDto, error) {
 	var claim t.RefreshClaim
 	token, err := jwt.ParseWithClaims(dto.RefreshToken, &claim, func(t *jwt.Token) (interface{}, error) {
 		return []byte(c.config.Jwt.RefreshSecret), nil
@@ -69,15 +69,15 @@ func (c *authService) Refresh(dto *request.RefreshDto) (*r.LoginResponseDto, err
 		c.redis.Del(ctx, claim.UID)
 	}()
 
-	var user *e.UserEntity
-	if c.db.Joins("Organization").Limit(1).Find(&user, "uuid = ? AND status = ?", user_id, types.Active); user == nil {
+	var users []e.UserEntity
+	if c.db.Joins("Organization").Limit(1).Find(&users, "uuid = ? AND status = ?", user_id, types.Active); len(users) == 0 {
 		return nil, fmt.Errorf("user not found")
 	}
 
-	return c.generate(user)
+	return c.generate(&users[0])
 }
 
-func (c *authService) generate(user *e.UserEntity) (*r.LoginResponseDto, error) {
+func (c *AuthService) generate(user *e.UserEntity) (*response.LoginResponseDto, error) {
 	access_id, refresh_id := uuid.New().String(), uuid.New().String()
 	access_exp, _ := time.ParseDuration(c.config.Jwt.AccessExpire)
 	refresh_exp, _ := time.ParseDuration(c.config.Jwt.RefreshExpire)
@@ -101,12 +101,9 @@ func (c *authService) generate(user *e.UserEntity) (*r.LoginResponseDto, error) 
 		c.redis.Set(ctx, refresh_id, user.UUID, refresh_exp)
 	}()
 
-	var res response.UserResponseDto
-	copier.Copy(&res, &user)
-
-	return &r.LoginResponseDto{
+	return &response.LoginResponseDto{
 		AccessToken:  access_token,
 		RefreshToken: refresh_token,
-		User:         res,
+		User:         common.NewResponse[u.UserResponseDto](user),
 	}, nil
 }

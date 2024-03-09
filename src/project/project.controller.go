@@ -11,150 +11,11 @@ import (
 )
 
 type projectController struct {
-	service *projectService
+	service *ProjectService
 }
 
-func NewProjectController(s *projectService) c.CommonController {
+func NewProjectController(s *ProjectService) c.CommonController {
 	return &projectController{service: s}
-}
-
-// @Tags Project
-// @Summary Create file by project id
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param model body m.ProjectDto true "Project Data"
-// @Success 201 {object} m.Success{result=[]m.Project}
-// @failure 400 {object} m.Error
-// @failure 401 {object} m.Error
-// @failure 422 {object} m.Error
-// @failure 429 {object} m.Error
-// @failure 500 {object} m.Error
-// @Router /project [post]
-func (o *projectController) Create(c *gin.Context) {
-	// var body m.ProjectDto
-	// if err := c.ShouldBind(&body); err != nil || !body.IsOK() {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t }", body.IsOK()))
-	// 	return
-	// }
-
-	// var models = m.Project{Name: body.Name, Title: body.Title, Flag: body.Flag, Desc: body.Desc, Note: body.Note}
-	// if err := o.service.Project.Create(&models); err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-
-	// // Parse Link body. if some field is missing then just skip that
-	// for _, item := range body.Links {
-	// 	if !item.IsOK() {
-	// 		continue
-	// 	}
-
-	// 	var model = m.Link{ProjectID: models.ID, Name: item.Name, Link: item.Link}
-	// 	if err := o.service.Link.Create(&model); err != nil {
-	// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 		return
-	// 	}
-
-	// 	models.Links = append(models.Links, model)
-	// }
-
-	// // Parse File body. if some field is missing then just skip that
-	// for _, item := range body.Files {
-	// 	if !item.IsOK() {
-	// 		continue
-	// 	}
-
-	// 	var model = m.File{ProjectID: models.ID, Name: item.Name, Path: item.Path, Type: item.Type, Role: item.Role}
-	// 	if err := o.service.File.Create(&model); err != nil {
-	// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 		return
-	// 	}
-
-	// 	models.Files = append(models.Files, model)
-	// }
-
-	// // TODO:
-	// // Parse Subscription body. if some field is missing then just skip that
-
-	// helper.ResHandler(c, http.StatusCreated, &m.Success{
-	// 	Status: "OK",
-	// 	Result: []m.Project{models},
-	// 	Items:  1,
-	// })
-}
-
-// @Tags Project
-// @Summary Create Project from list of objects
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param model body []m.ProjectDto true "List of Project Data"
-// @Success 201 {object} m.Success{result=[]m.Project}
-// @failure 400 {object} m.Error
-// @failure 401 {object} m.Error
-// @failure 422 {object} m.Error
-// @failure 429 {object} m.Error
-// @failure 500 {object} m.Error
-// @Router /project/list [post]
-func (o *projectController) CreateAll(c *gin.Context) {
-	// var body []m.ProjectDto
-	// if err := c.ShouldBind(&body); err != nil || len(body) == 0 {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t }", len(body) != 0))
-	// 	return
-	// }
-
-	// var models = []m.Project{}
-	// for _, project := range body {
-	// 	if !project.IsOK() {
-	// 		continue
-	// 	}
-
-	// 	var model = m.Project{Name: project.Name, Title: project.Title, Flag: project.Flag, Desc: project.Desc, Note: project.Note}
-	// 	if err := o.service.Project.Create(&model); err != nil {
-	// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 		return
-	// 	}
-
-	// 	// Parse Link body. if some field is missing then just skip that
-	// 	for _, item := range project.Links {
-	// 		if !item.IsOK() {
-	// 			var link = m.Link{ProjectID: model.ID, Name: item.Name, Link: item.Link}
-	// 			if err := o.service.Link.Create(&link); err != nil {
-	// 				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 				return
-	// 			}
-
-	// 			model.Links = append(model.Links, link)
-	// 		}
-	// 	}
-
-	// 	// Parse File body. if some field is missing then just skip that
-	// 	for _, item := range project.Files {
-	// 		if item.IsOK() {
-	// 			var file = m.File{ProjectID: model.ID, Name: item.Name, Path: item.Path, Type: item.Type, Role: item.Role}
-	// 			if err := o.service.File.Create(&file); err != nil {
-	// 				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 				return
-	// 			}
-
-	// 			model.Files = append(model.Files, file)
-	// 		}
-	// 	}
-
-	// 	// TODO:
-	// 	// Parse Subscription body. if some field is missing then just skip that
-
-	// 	models = append(models, model)
-	// }
-
-	// helper.ResHandler(c, http.StatusCreated, &m.Success{
-	// 	Status: "OK",
-	// 	Result: models,
-	// 	Items:  len(models),
-	// })
 }
 
 // @Tags Project
@@ -162,32 +23,14 @@ func (o *projectController) CreateAll(c *gin.Context) {
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
-// @Param id query int false "Type: '1'"
-// @Param name query string false "Name: 'CodeRain'"
-// @Param flag query string false "Flag: 'js'"
-// @Param created_from query string false "CreatedAt date >= start"
-// @Param created_to query string false "CreatedAt date <= end"
-// @Param page query int false "Page: '0'"
-// @Param limit query int false "Limit: '1'"
-// @Param link[id] query int false "Type: '1'"
-// @Param link[name] query string false "Type: 'Name: 'main'"
-// @Param link[page] query int false "Page: '0'"
-// @Param link[limit] query int false "Limit: '1'"
-// @Param file[id] query int false "Type: '1'"
-// @Param file[name] query string false "Type: 'index.js'"
-// @Param file[role] query string false "Role: 'src'"
-// @Param file[path] query string false "Path: '/test'"
-// @Param file[page] query int false "Page: '0'"
-// @Param file[limit] query int false "Limit: '1'"
-// @Success 200 {object} m.Success{result=[]m.Project}
-// @failure 429 {object} m.Error
-// @failure 400 {object} m.Error
-// @failure 500 {object} m.Error
-// @Router /project [get]
+// @Success 200 {object} response.PageResponseDto[[]response.ProjectBasicResponseDto]
+// @failure 429 {object} response.Error
+// @failure 400 {object} response.Error
+// @Router /projects [get]
 func (c *projectController) FindAll(ctx *gin.Context) {
 	user, _ := ctx.Get("user")
-
 	dto := request.NewProjectDto(user.(*entities.UserEntity))
+
 	if err := ctx.ShouldBindQuery(&dto); err != nil {
 		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
 		return
@@ -208,17 +51,54 @@ func (c *projectController) FindAll(ctx *gin.Context) {
 // @Produce application/json
 // @Produce application/xml
 // @Param id path string true "Project id"
-// @Success 200 {object} m.Success{result=[]m.Project}
+// @Success 200 {object} response.ProjectBasicResponseDto
 // @failure 422 {object} response.Error
-// @Router /project/{id} [get]
+// @Router /projects/{id} [get]
 func (c *projectController) FindOne(ctx *gin.Context) {
-	res, err := c.service.FindOne(ctx.Param("id"))
+	user, _ := ctx.Get("user")
+	dto := request.NewProjectDto(user.(*entities.UserEntity), &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}})
+	// dto.ProjectIds = []string{ctx.Param("id")}
+
+	res, err := c.service.FindOne(dto)
 	if err != nil {
 		response.ThrowErr(ctx, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
 
 	response.Build(ctx, http.StatusOK, res)
+}
+
+// @Tags Project
+// @Summary Create file by project id
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param model body m.ProjectDto true "Project Data"
+// @Success 201 {object} m.Success{result=[]m.Project}
+// @failure 400 {object} m.Error
+// @failure 401 {object} m.Error
+// @failure 422 {object} m.Error
+// @failure 429 {object} m.Error
+// @failure 500 {object} m.Error
+// @Router /projects [post]
+func (c *projectController) Create(ctx *gin.Context) {
+	user, _ := ctx.Get("user")
+	dto := request.NewProjectDto(user.(*entities.UserEntity))
+
+	var body request.ProjectCreateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	res, err := c.service.Create(dto, &body)
+	if err != nil {
+		response.ThrowErr(ctx, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	response.Build(ctx, http.StatusCreated, res)
 }
 
 // @Tags Project
@@ -247,51 +127,6 @@ func (o *projectController) Update(c *gin.Context) {
 	// }
 
 	// models, err := o.service.Project.Update(&m.ProjectQueryDto{Name: name}, &m.Project{Name: body.Name, Title: body.Title, Flag: body.Flag, Desc: body.Desc, Note: body.Note})
-	// if err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-
-	// helper.ResHandler(c, http.StatusCreated, &m.Success{
-	// 	Status: "OK",
-	// 	Result: models,
-	// 	Items:  len(models),
-	// })
-}
-
-// @Tags Project
-// @Summary Update Project by Query
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param id query int false "Type: '1'"
-// @Param name query string false "Name: 'CodeRain'"
-// @Param flag query string false "Flag: 'js'"
-// @Param created_from query string false "CreatedAt date >= start"
-// @Param created_to query string false "CreatedAt date <= end"
-// @Param model body m.ProjectDto true "Project without File Data"
-// @Success 200 {object} m.Success{result=[]m.File}
-// @failure 400 {object} m.Error
-// @failure 401 {object} m.Error
-// @failure 422 {object} m.Error
-// @failure 429 {object} m.Error
-// @failure 500 {object} m.Error
-// @Router /project [put]
-func (o *projectController) UpdateAll(c *gin.Context) {
-	// var query = m.ProjectQueryDto{Page: -1}
-	// if err := c.ShouldBindQuery(&query); err != nil {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
-	// 	return
-	// }
-
-	// var body m.ProjectDto
-	// if err := c.ShouldBind(&body); err != nil {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
-	// 	return
-	// }
-
-	// models, err := o.service.Project.Update(&query, &m.Project{Name: body.Name, Title: body.Title, Flag: body.Flag, Desc: body.Desc, Note: body.Note})
 	// if err != nil {
 	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
 	// 	return
@@ -343,67 +178,6 @@ func (o *projectController) Delete(c *gin.Context) {
 	// 	for _, item := range model {
 	// 		if err := o.service.Cron.Delete(&m.CronQueryDto{ID: item.CronID}); err == nil {
 	// 			o.service.Subscription.Delete(&m.SubscribeQueryDto{ProjectID: item.ID})
-	// 		}
-	// 	}
-	// }
-
-	// items, err := o.service.Project.Delete(&query)
-	// if err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-
-	// helper.ResHandler(c, http.StatusOK, &m.Success{
-	// 	Status: "OK",
-	// 	Result: []string{},
-	// 	Items:  items,
-	// })
-}
-
-// @Tags Project
-// @Summary Delete Project by Query and Files with the same project_id
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param id query int false "Type: '1'"
-// @Param name query string false "Name: 'CodeRain'"
-// @Param flag query string false "Flag: 'js'"
-// @Param created_from query string false "CreatedAt date >= start"
-// @Param created_to query string false "CreatedAt date <= end"
-// @Param page query int false "Page: '0'"
-// @Param limit query int false "Limit: '1'"
-// @Success 200 {object} m.Success{result=[]string{}}
-// @failure 400 {object} m.Error
-// @failure 401 {object} m.Error
-// @failure 416 {object} m.Error
-// @failure 422 {object} m.Error
-// @failure 429 {object} m.Error
-// @failure 500 {object} m.Error
-// @Router /project [delete]
-func (o *projectController) DeleteAll(c *gin.Context) {
-	// var query = m.ProjectQueryDto{Page: -1}
-	// if err := c.ShouldBindQuery(&query); err != nil {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
-	// 	return
-	// }
-
-	// models, err := o.service.Project.Read(&query)
-	// if err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-
-	// for _, item := range models {
-	// 	o.service.Link.Delete(&m.LinkQueryDto{ProjectID: item.ID, Page: -1})
-	// 	o.service.File.Delete(&m.FileQueryDto{ProjectID: item.ID, Page: -1})
-	// 	o.service.Metrics.Delete(&m.MetricsQueryDto{ProjectID: item.ID, Page: -1})
-
-	// 	// NOTE: Delete subscription at two places at the same time
-	// 	model, _ := o.service.Subscription.Read(&m.SubscribeQueryDto{ProjectID: item.ID, Page: -1})
-	// 	for _, item := range model {
-	// 		if err := o.service.Cron.Delete(&m.CronQueryDto{ID: item.CronID}); err == nil {
-	// 			o.service.Subscription.Delete(&m.SubscribeQueryDto{ProjectID: item.ID, Page: -1})
 	// 		}
 	// 	}
 	// }

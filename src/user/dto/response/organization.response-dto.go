@@ -7,7 +7,3 @@ import (
 type OrganizationResponseDto struct {
 	r.UuidResponseDto
 }
-
-// func NewOrganizationResponseDto() *OrganizationResponseDto {
-// 	return &OrganizationResponseDto{&r.UuidResponseDto{}}
-// }

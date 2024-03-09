@@ -2,16 +2,21 @@ package project
 
 import (
 	"fmt"
+	req "grape/src/common/dto/request"
+	common "grape/src/common/dto/response"
 	"grape/src/common/service"
 	"grape/src/project/dto/request"
+	"grape/src/project/dto/response"
 	e "grape/src/project/entities"
 	repo "grape/src/project/repositories"
+	"grape/src/project/types"
 
 	"github.com/google/uuid"
 )
 
-type projectService struct {
-	Repository repo.ProjectRepository
+type ProjectService struct {
+	Repository *repo.ProjectRepositoryT
+
 	// Link         i.Default[m.Link, m.LinkQueryDto]
 	// File         i.Default[m.File, m.FileQueryDto]
 	// Project      i.Default[m.Project, m.ProjectQueryDto]
@@ -20,11 +25,11 @@ type projectService struct {
 	// Metrics      i.Default[m.Metrics, m.MetricsQueryDto]
 }
 
-func NewProjectService(s *service.CommonService) *projectService {
+func NewProjectService(s *service.CommonService) *ProjectService {
 
 	// (&repo.ProjectRepository{}).GetAll()
-	return &projectService{
-		Repository: *repo.NewProjectRepository(s.DB),
+	return &ProjectService{
+		Repository: repo.NewProjectRepository(s.DB),
 		// Link:         NewLinkService(db, client),
 		// File:         NewFileService(db, client),
 		// Project:      NewProjectService(db, client),
@@ -34,50 +39,53 @@ func NewProjectService(s *service.CommonService) *projectService {
 	}
 }
 
-// type ProjectService struct {
-// 	key string
+func (c *ProjectService) FindOne(dto *request.ProjectDto) (*response.ProjectBasicResponseDto, error) {
+	options := req.NewRequest(dto, &request.ProjectDto{
+		Statuses: []string{types.Active.String()},
+	})
 
-// 	db     *gorm.DB
-// 	client *redis.Client
-// }
+	project, err := c.ValidateProjectExistence(options)
+	if err != nil {
+		return nil, err
+	}
 
-// func NewProjectService(db *gorm.DB, client *redis.Client) i.Default[m.Project, m.ProjectQueryDto] {
-// 	return &ProjectService{key: "PROJECT", db: db, client: client}
-// }
-
-func (c *projectService) FindOne(project_id string) (interface{}, error) {
-	// err, rows := helper.Getcache(c.db.Where("name = ?", model.Name), c.client, c.key, fmt.Sprintf("NAME=%s", model.Name), model)
-	// return err != nil || rows != 0
-	c.ValidateProjectExistence(project_id)
-
-	return nil, nil
+	return common.NewResponse[*response.ProjectBasicResponseDto](project), nil
 }
 
-func (c *projectService) FindAll(dto *request.ProjectDto) (interface{}, error) {
-	// err, rows := helper.Getcache(c.db.Where("name = ?", model.Name), c.client, c.key, fmt.Sprintf("NAME=%s", model.Name), model)
-	// return err != nil || rows != 0
+func (c *ProjectService) FindAll(dto *request.ProjectDto) (common.PageResponseDto[[]response.ProjectBasicResponseDto], error) {
+	options := req.NewRequest(dto, &request.ProjectDto{
+		Statuses: []string{types.Active.String()},
+	})
 
-	return nil, nil
+	total, projects := c.Repository.GetAllPage(*options)
+	return common.PageResponseDto[[]response.ProjectBasicResponseDto]{
+		Page:    options.Page,
+		PerPage: options.Take,
+		Total:   total,
+		Result:  common.NewResponseMany[response.ProjectBasicResponseDto](projects),
+	}, nil
 }
 
-func (c *projectService) ValidateProjectExistence(project_id string, relations ...repo.ProjectRelation) (*e.ProjectEntity, error) {
-	if uuid.Validate(project_id) != nil {
+func (c *ProjectService) Create(dto *request.ProjectDto, body *request.ProjectCreateDto) (*common.UuidResponseDto, error) {
+	entity, err := c.Repository.Create(dto, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return common.NewResponse[*common.UuidResponseDto](entity), nil
+}
+
+func (c *ProjectService) ValidateProjectExistence(dto *request.ProjectDto, relations ...repo.ProjectRelation) (*e.ProjectEntity, error) {
+	if uuid.Validate(dto.ProjectIds[0]) != nil {
 		return nil, fmt.Errorf("project id is invalid")
 	}
 
-	// TODO: Add dto creation
-	if project := c.Repository.GetOne(nil, relations...); project != nil {
+	if project := c.Repository.GetOne(dto, relations...); project != nil {
 		return project, nil
 	}
 
 	return nil, fmt.Errorf("project not found")
 }
-
-// func (c *ProjectService) Create(model *m.Project) error {
-// 	// Check if such project name exists
-// 	if c.isExist(model) {
-// 		return fmt.Errorf("Requested project with name=%s has already existed", model.Name)
-// 	}
 
 // 	// FIXME:
 // 	// 	* Some strange error with page
