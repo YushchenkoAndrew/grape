@@ -8,17 +8,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type AuthT interface {
-	Login(c *gin.Context)
-	Refresh(c *gin.Context)
-}
-
-type authController struct {
+type AuthController struct {
 	service *AuthService
 }
 
-func NewAuthController(s *AuthService) AuthT {
-	return &authController{service: s}
+func NewAuthController(s *AuthService) *AuthController {
+	return &AuthController{service: s}
 }
 
 // @Summary Login
@@ -30,7 +25,7 @@ func NewAuthController(s *AuthService) AuthT {
 // @failure 400 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /login [post]
-func (c *authController) Login(ctx *gin.Context) {
+func (c *AuthController) Login(ctx *gin.Context) {
 	var body request.LoginDto
 	if err := ctx.ShouldBind(&body); err != nil {
 		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
@@ -55,7 +50,7 @@ func (c *authController) Login(ctx *gin.Context) {
 // @failure 400 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /refresh [post]
-func (c *authController) Refresh(ctx *gin.Context) {
+func (c *AuthController) Refresh(ctx *gin.Context) {
 	var body request.RefreshDto
 	if err := ctx.ShouldBind(&body); err != nil {
 		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())

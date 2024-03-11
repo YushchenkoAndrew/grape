@@ -1,8 +1,6 @@
 package response
 
-import r "grape/src/common/dto/response"
-
-type UserResponseDto struct {
-	r.UuidResponseDto
+type UserAdvancedResponseDto struct {
+	UserBasicResponseDto
 	Organization OrganizationResponseDto `json:"organization" xml:"organization"`
 }

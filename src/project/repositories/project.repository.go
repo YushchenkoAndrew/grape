@@ -35,6 +35,7 @@ func (c *projectRepository) Build(dto *r.ProjectDto, relations ...ProjectRelatio
 	var required []ProjectRelation
 	c.applyFilter(tx, dto, required)
 	c.attachRelations(tx, dto, append(relations, required...))
+	c.sortBy(tx, dto, append(relations, required...))
 
 	return tx
 }
@@ -73,19 +74,45 @@ func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relati
 	}
 }
 
-func (c *projectRepository) Create(dto *r.ProjectDto, entity *e.ProjectEntity) *gorm.DB {
-	tx := c.db.Model(c.Model())
+func (c *projectRepository) sortBy(tx *gorm.DB, dto *r.ProjectDto, _ []ProjectRelation) {
+	switch dto.SortBy {
+	case "name":
+	case "order":
+	case "created_at":
+		tx.Order(repositories.NewSortBy(c.Model().TableName(), dto.SortBy, dto.Direction))
 
-	var result struct{ order int }
-	c.Build(dto).Select("MAX(projects.order) AS order").Scan(&result)
+	default:
+		tx.Order(repositories.NewSortBy(c.Model().TableName(), "id", dto.Direction))
+	}
 
-	entity.Order = result.order + 1
+}
+
+func (c *projectRepository) Create(dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
+	var order int64
+	c.Build(dto).Select(`MAX(projects.order) AS "order"`).Group("projects.id").Scan(&order)
+
+	entity.Order = int(order) + 1
 	entity.OwnerID = dto.CurrentUser.ID
 	entity.OrganizationID = dto.CurrentUser.Organization.ID
 
-	return tx.Create(entity)
+	entity.SetType(body.(*r.ProjectCreateDto).Type)
+	return c.db.Model(c.Model()).Create(entity)
+}
+
+func (c *projectRepository) Update(dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
+	options := body.(*r.ProjectUpdateDto)
+
+	entity.SetType(options.Type)
+	entity.SetStatus(options.Status)
+
+	return c.db.Model(entity).Updates(entity)
+}
+
+func (c *projectRepository) Delete(dto *r.ProjectDto, entity *e.ProjectEntity) *gorm.DB {
+	// TODO: Add transaction with recursive delete related entities
+	return c.db.Model(c.Model()).Delete(entity)
 }
 
 func NewProjectRepository(db *gorm.DB) *ProjectRepositoryT {
-	return repositories.NewRepository[e.ProjectEntity](&projectRepository{db})
+	return repositories.NewRepository(&projectRepository{db})
 }

@@ -25,6 +25,7 @@ func init() {
 }
 
 func TestLogin(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		body    request.LoginDto
@@ -33,7 +34,7 @@ func TestLogin(t *testing.T) {
 	}{
 		{
 			name:   "test correct login",
-			body:   request.LoginDto{Name: cfg.User.Name, Pass: cfg.User.Password},
+			body:   request.LoginDto{Username: cfg.User.Name, Password: cfg.User.Password},
 			status: http.StatusOK,
 			handler: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var res response.LoginResponseDto
@@ -45,13 +46,13 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name:    "test invalid password",
-			body:    request.LoginDto{Name: cfg.User.Name, Pass: "invalid"},
+			body:    request.LoginDto{Username: cfg.User.Name, Password: "invalid"},
 			status:  http.StatusUnprocessableEntity,
 			handler: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
 		{
 			name:    "test invalid username",
-			body:    request.LoginDto{Name: "invalid", Pass: "invalid"},
+			body:    request.LoginDto{Username: "invalid", Password: "invalid"},
 			status:  http.StatusUnprocessableEntity,
 			handler: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
@@ -73,34 +74,19 @@ func TestLogin(t *testing.T) {
 }
 
 func TestRefresh(t *testing.T) {
-
-	var res response.LoginResponseDto
-	t.Run("test correct login", func(t *testing.T) {
-		body, _ := json.Marshal(request.LoginDto{Name: cfg.User.Name, Pass: cfg.User.Password})
-
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", "/grape/login", bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-		router.ServeHTTP(w, req)
-
-		json.Unmarshal(w.Body.Bytes(), &res)
-
-		require.Equal(t, http.StatusOK, w.Code)
-		require.NotEmpty(t, res.AccessToken)
-		require.NotEmpty(t, res.RefreshToken)
-	})
+	_, token := test.GetToken(t, router, cfg)
 
 	tests := []struct {
-		name    string
-		body    request.RefreshDto
-		status  int
-		handler func(t *testing.T, w *httptest.ResponseRecorder)
+		name     string
+		body     request.RefreshDto
+		expected int
+		validate func(t *testing.T, w *httptest.ResponseRecorder)
 	}{
 		{
-			name:   "test correct refresh",
-			body:   request.RefreshDto{RefreshToken: res.RefreshToken},
-			status: http.StatusOK,
-			handler: func(t *testing.T, w *httptest.ResponseRecorder) {
+			name:     "test correct refresh",
+			body:     request.RefreshDto{RefreshToken: token},
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var res response.LoginResponseDto
 				json.Unmarshal(w.Body.Bytes(), &res)
 
@@ -109,10 +95,10 @@ func TestRefresh(t *testing.T) {
 			},
 		},
 		{
-			name:    "test invalid refresh",
-			body:    request.RefreshDto{RefreshToken: res.RefreshToken},
-			status:  http.StatusUnprocessableEntity,
-			handler: func(t *testing.T, w *httptest.ResponseRecorder) {},
+			name:     "test invalid refresh",
+			body:     request.RefreshDto{RefreshToken: token},
+			expected: http.StatusUnprocessableEntity,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
 	}
 
@@ -125,8 +111,8 @@ func TestRefresh(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			router.ServeHTTP(w, req)
 
-			require.Equal(t, test.status, w.Code)
-			test.handler(t, w)
+			require.Equal(t, test.expected, w.Code)
+			test.validate(t, w)
 		})
 	}
 }

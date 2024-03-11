@@ -33,12 +33,12 @@ func NewAuthService(s *service.CommonService) *AuthService {
 
 func (c *AuthService) Login(dto *request.LoginDto) (*response.LoginResponseDto, error) {
 	var users []e.UserEntity
-	if c.db.Joins("Organization").Limit(1).Find(&users, "name = ? AND status = ?", dto.Name, types.Active); len(users) == 0 {
-		return nil, fmt.Errorf("user '%s' not found", dto.Name)
+	if c.db.Joins("Organization").Limit(1).Find(&users, "users.name = ? AND users.status = ?", dto.Username, types.Active); len(users) == 0 {
+		return nil, fmt.Errorf("user '%s' not found", dto.Username)
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(dto.Pass)); err != nil {
-		return nil, fmt.Errorf("user '%s' not found", dto.Name)
+	if err := bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(dto.Password)); err != nil {
+		return nil, fmt.Errorf("user '%s' not found2", dto.Username)
 	}
 
 	return c.generate(&users[0])
@@ -70,7 +70,7 @@ func (c *AuthService) Refresh(dto *request.RefreshDto) (*response.LoginResponseD
 	}()
 
 	var users []e.UserEntity
-	if c.db.Joins("Organization").Limit(1).Find(&users, "uuid = ? AND status = ?", user_id, types.Active); len(users) == 0 {
+	if c.db.Joins("Organization").Limit(1).Find(&users, "users.uuid = ? AND users.status = ?", user_id, types.Active); len(users) == 0 {
 		return nil, fmt.Errorf("user not found")
 	}
 
@@ -97,13 +97,13 @@ func (c *AuthService) generate(user *e.UserEntity) (*response.LoginResponseDto, 
 
 	defer func() {
 		ctx := context.Background()
-		c.redis.Set(ctx, access_id, uuid.New().String(), access_exp)
+		c.redis.Set(ctx, access_id, user.UUID, access_exp)
 		c.redis.Set(ctx, refresh_id, user.UUID, refresh_exp)
 	}()
 
 	return &response.LoginResponseDto{
 		AccessToken:  access_token,
 		RefreshToken: refresh_token,
-		User:         common.NewResponse[u.UserResponseDto](user),
+		User:         *common.NewResponse[u.UserAdvancedResponseDto](user),
 	}, nil
 }

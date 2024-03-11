@@ -1,6 +1,8 @@
 package response
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
 )
@@ -17,29 +19,35 @@ type PageResponseDto[T any] struct {
 	Result  T   `json:"result" xml:"result"`
 }
 
-func Build(ctx *gin.Context, stat int, c interface{}) {
+func Build(ctx *gin.Context, status int, c interface{}) {
 	switch ctx.GetHeader("Accept") {
 	case "application/xml":
-		ctx.XML(stat, c)
+		ctx.XML(status, c)
 
 	default:
-		ctx.JSON(stat, c)
+		ctx.JSON(status, c)
 	}
 
 	ctx.Abort()
 }
 
-func NewResponse[Response any, Entity any](entity *Entity) Response {
+func Handler[T any](ctx *gin.Context, status int, res T, err error) {
+	if err != nil {
+		ThrowErr(ctx, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	Build(ctx, status, res)
+}
+
+func NewResponse[Response any, Entity any](entity *Entity) *Response {
 	var res Response
-	copier.Copy(&res, entity)
-	return res
+	copier.Copy(&res, &entity)
+	return &res
 }
 
 func NewResponseMany[Response any, Entity any](entities []Entity) []Response {
 	res := []Response{}
-	for _, e := range entities {
-		res = append(res, NewResponse[Response](&e))
-	}
-
+	copier.Copy(&res, &entities)
 	return res
 }

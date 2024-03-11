@@ -16,9 +16,9 @@ func NewFilterService(client *service.CommonService) *filterService {
 	return &filterService{db: client.DB}
 }
 
-func (c *filterService) TraceIP(ip string) ([]e.IpLocationEntity, error) {
+func (c *filterService) TraceIP(ip string) ([]e.LocationEntity, error) {
 	// var model []e.IpLocationEntity
 	// err, _ := helper.Getcache(c.db.Where("geoname_id IN (?)", c.db.Select("geoname_id").Where("network >>= ?::inet", ip).Model(&e.IpBlockEntity{})), c.client, "INDEX", fmt.Sprintf("BLOCK:%s", ip), &model)
 	// return model, err
-	return []e.IpLocationEntity{}, nil
+	return []e.LocationEntity{}, nil
 }

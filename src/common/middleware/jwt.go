@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	t "grape/src/auth/types"
 	"grape/src/common/dto/response"
 	e "grape/src/user/entities"
@@ -36,18 +37,19 @@ func (c *Middleware) Jwt() gin.HandlerFunc {
 			return
 		}
 
-		if _, err := c.redis.Get(ctx, claim.UID).Result(); err != nil {
+		user_id, err := c.redis.Get(context.Background(), claim.UID).Result()
+		if err != nil {
 			response.ThrowErr(ctx, http.StatusUnauthorized, "invalid token information")
 			return
 		}
 
-		var user *e.UserEntity
-		if c.db.Joins("Organization").Limit(1).Find(&user, "id = ? AND status = ?", claim.ID, types.Active); user == nil {
+		var users []e.UserEntity
+		if c.db.Joins("Organization").Limit(1).Find(&users, "users.id = ? AND users.uuid = ? AND users.status = ?", claim.UserId, user_id, types.Active); len(users) == 0 {
 			response.ThrowErr(ctx, http.StatusUnauthorized, "user not found")
 			return
 		}
 
-		ctx.Set("user", user)
+		ctx.Set("user", &users[0])
 		ctx.Next()
 	}
 }

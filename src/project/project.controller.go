@@ -1,7 +1,6 @@
 package project
 
 import (
-	c "grape/src/common/controller"
 	"grape/src/common/dto/response"
 	"grape/src/project/dto/request"
 	"grape/src/user/entities"
@@ -10,26 +9,31 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type projectController struct {
+type ProjectController struct {
 	service *ProjectService
 }
 
-func NewProjectController(s *ProjectService) c.CommonController {
-	return &projectController{service: s}
+func NewProjectController(s *ProjectService) *ProjectController {
+	return &ProjectController{service: s}
+}
+
+func (c *ProjectController) dto(ctx *gin.Context, init ...*request.ProjectDto) *request.ProjectDto {
+	user, _ := ctx.Get("user")
+	return request.NewProjectDto(user.(*entities.UserEntity), init...)
 }
 
 // @Tags Project
-// @Summary Read Project by Query
+// @Summary Find all project, paginated
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
+// @Param model query request.ProjectDto true "Project Data"
 // @Success 200 {object} response.PageResponseDto[[]response.ProjectBasicResponseDto]
-// @failure 429 {object} response.Error
 // @failure 400 {object} response.Error
+// @failure 422 {object} response.Error
 // @Router /projects [get]
-func (c *projectController) FindAll(ctx *gin.Context) {
-	user, _ := ctx.Get("user")
-	dto := request.NewProjectDto(user.(*entities.UserEntity))
+func (c *ProjectController) FindAll(ctx *gin.Context) {
+	dto := c.dto(ctx)
 
 	if err := ctx.ShouldBindQuery(&dto); err != nil {
 		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
@@ -37,16 +41,11 @@ func (c *projectController) FindAll(ctx *gin.Context) {
 	}
 
 	res, err := c.service.FindAll(dto)
-	if err != nil {
-		response.ThrowErr(ctx, http.StatusUnprocessableEntity, err.Error())
-		return
-	}
-
-	response.Build(ctx, http.StatusOK, res)
+	response.Handler(ctx, http.StatusOK, res, err)
 }
 
 // @Tags Project
-// @Summary Read Project by it's name
+// @Summary Find one project
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
@@ -54,143 +53,120 @@ func (c *projectController) FindAll(ctx *gin.Context) {
 // @Success 200 {object} response.ProjectBasicResponseDto
 // @failure 422 {object} response.Error
 // @Router /projects/{id} [get]
-func (c *projectController) FindOne(ctx *gin.Context) {
-	user, _ := ctx.Get("user")
-	dto := request.NewProjectDto(user.(*entities.UserEntity), &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}})
-	// dto.ProjectIds = []string{ctx.Param("id")}
+func (c *ProjectController) FindOne(ctx *gin.Context) {
+	res, err := c.service.FindOne(
+		c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}),
+	)
 
-	res, err := c.service.FindOne(dto)
-	if err != nil {
-		response.ThrowErr(ctx, http.StatusUnprocessableEntity, err.Error())
-		return
-	}
-
-	response.Build(ctx, http.StatusOK, res)
+	response.Handler(ctx, http.StatusOK, res, err)
 }
 
 // @Tags Project
-// @Summary Create file by project id
+// @Summary Find all project, paginated
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Param model query request.ProjectDto true "Project Data"
+// @Success 200 {object} response.PageResponseDto[[]response.ProjectAdvancedResponseDto]
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/projects [get]
+func (c *ProjectController) AdminFindAll(ctx *gin.Context) {
+	dto := c.dto(ctx)
+
+	if err := ctx.ShouldBindQuery(&dto); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	res, err := c.service.AdminFindAll(dto)
+	response.Handler(ctx, http.StatusOK, res, err)
+}
+
+// @Tags Project
+// @Summary Find one project
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Param id path string true "Project id"
+// @Success 200 {object} response.ProjectBasicResponseDto
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/projects/{id} [get]
+func (c *ProjectController) AdminFindOne(ctx *gin.Context) {
+	res, err := c.service.AdminFindOne(
+		c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}),
+	)
+
+	response.Handler(ctx, http.StatusOK, res, err)
+}
+
+// @Tags Project
+// @Summary Create project
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
-// @Param model body m.ProjectDto true "Project Data"
-// @Success 201 {object} m.Success{result=[]m.Project}
-// @failure 400 {object} m.Error
-// @failure 401 {object} m.Error
-// @failure 422 {object} m.Error
-// @failure 429 {object} m.Error
-// @failure 500 {object} m.Error
-// @Router /projects [post]
-func (c *projectController) Create(ctx *gin.Context) {
-	user, _ := ctx.Get("user")
-	dto := request.NewProjectDto(user.(*entities.UserEntity))
-
+// @Param model body request.ProjectCreateDto true "Project Data"
+// @Success 201 {object} response.UuidResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/projects [post]
+func (c *ProjectController) Create(ctx *gin.Context) {
 	var body request.ProjectCreateDto
 	if err := ctx.ShouldBind(&body); err != nil {
 		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	res, err := c.service.Create(dto, &body)
-	if err != nil {
-		response.ThrowErr(ctx, http.StatusUnprocessableEntity, err.Error())
+	res, err := c.service.Create(c.dto(ctx), &body)
+	response.Handler(ctx, http.StatusCreated, res, err)
+}
+
+// @Tags Project
+// @Summary Update Project
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Project id"
+// @Param model body m.ProjectDto true "Project without File Data"
+// @Success 200 {object} response.UuidResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/projects/{id} [put]
+func (c *ProjectController) Update(ctx *gin.Context) {
+	var body request.ProjectUpdateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	response.Build(ctx, http.StatusCreated, res)
+	res, err := c.service.Update(c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}), &body)
+	response.Handler(ctx, http.StatusOK, res, err)
 }
 
 // @Tags Project
-// @Summary Update Project by it's name
+// @Summary Delete Project
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
-// @Param name path string true "Project Name"
-// @Param model body m.ProjectDto true "Project without File Data"
-// @Success 200 {object} m.Success{result=[]m.Project}
-// @failure 400 {object} m.Error
-// @failure 401 {object} m.Error
-// @failure 416 {object} m.Error
-// @failure 422 {object} m.Error
-// @failure 429 {object} m.Error
-// @failure 500 {object} m.Error
-// @Router /project/{name} [put]
-func (o *projectController) Update(c *gin.Context) {
-	// var body m.ProjectDto
-	// var name = c.Param("name")
+// @Param id path string true "Project id"
+// @Success 200 {object} interface{}
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/projects/{id} [delete]
+func (c *ProjectController) Delete(ctx *gin.Context) {
+	var body request.ProjectUpdateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
-	// if err := c.ShouldBind(&body); err != nil || name == "" {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { name: %t }", name == ""))
-	// 	return
-	// }
-
-	// models, err := o.service.Project.Update(&m.ProjectQueryDto{Name: name}, &m.Project{Name: body.Name, Title: body.Title, Flag: body.Flag, Desc: body.Desc, Note: body.Note})
-	// if err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-
-	// helper.ResHandler(c, http.StatusCreated, &m.Success{
-	// 	Status: "OK",
-	// 	Result: models,
-	// 	Items:  len(models),
-	// })
-}
-
-// @Tags Project
-// @Summary Delete Project and Files by it's name
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param name path string true "Project Name"
-// @Success 200 {object} m.Success{result=[]string{}}
-// @failure 400 {object} m.Error
-// @failure 401 {object} m.Error
-// @failure 416 {object} m.Error
-// @failure 422 {object} m.Error
-// @failure 429 {object} m.Error
-// @failure 500 {object} m.Error
-// @Router /project/{name} [delete]
-func (o *projectController) Delete(c *gin.Context) {
-	// var name = c.Param("name")
-	// if name == "" {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { name: %t }", false))
-	// 	return
-	// }
-
-	// var query = m.ProjectQueryDto{Name: name}
-	// models, err := o.service.Project.Read(&query)
-	// if err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-
-	// for _, item := range models {
-	// 	o.service.Link.Delete(&m.LinkQueryDto{ProjectID: item.ID})
-	// 	o.service.File.Delete(&m.FileQueryDto{ProjectID: item.ID})
-	// 	o.service.Metrics.Delete(&m.MetricsQueryDto{ProjectID: item.ID})
-
-	// 	// NOTE: Delete subscription at two places at the same time
-	// 	model, _ := o.service.Subscription.Read(&m.SubscribeQueryDto{ProjectID: item.ID})
-	// 	for _, item := range model {
-	// 		if err := o.service.Cron.Delete(&m.CronQueryDto{ID: item.CronID}); err == nil {
-	// 			o.service.Subscription.Delete(&m.SubscribeQueryDto{ProjectID: item.ID})
-	// 		}
-	// 	}
-	// }
-
-	// items, err := o.service.Project.Delete(&query)
-	// if err != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-
-	// helper.ResHandler(c, http.StatusOK, &m.Success{
-	// 	Status: "OK",
-	// 	Result: []string{},
-	// 	Items:  items,
-	// })
+	res, err := c.service.Delete(c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}), &body)
+	response.Handler(ctx, http.StatusNoContent, res, err)
 }

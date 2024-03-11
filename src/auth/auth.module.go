@@ -8,12 +8,12 @@ import (
 )
 
 type authRouter struct {
-	*m.Module[AuthT]
+	*m.Module[*AuthController]
 }
 
 func NewAuthModule(route *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT {
 	return &authRouter{
-		Module: &m.Module[AuthT]{
+		Module: &m.Module[*AuthController]{
 			Route:      route,
 			Controller: NewAuthController(NewAuthService(s)),
 			Modules:    modules,

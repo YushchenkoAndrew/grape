@@ -1,6 +1,6 @@
 package request
 
 type LoginDto struct {
-	Name string `json:"name" xml:"name" binding:"required"`
-	Pass string `json:"pass" xml:"pass" binding:"required"`
+	Username string `json:"username" xml:"username" binding:"required"`
+	Password string `json:"password" xml:"password" binding:"required"`
 }

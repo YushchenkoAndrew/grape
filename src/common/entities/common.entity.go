@@ -6,8 +6,19 @@ import (
 	"github.com/google/uuid"
 )
 
+type BasicEntity struct {
+	ID int64 `gorm:"primaryKey" copier:"-"`
+}
+
+func (c *BasicEntity) Create() {}
+func (c *BasicEntity) Update() {}
+
+func NewBasicEntity() *BasicEntity {
+	return &BasicEntity{}
+}
+
 type IdEntity struct {
-	ID        int64     `gorm:"primaryKey" copier:"-"`
+	*BasicEntity
 	CreatedAt time.Time `gorm:"autoCreateTime;not null" copier:"-"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime;not null" copier:"-"`
 }
@@ -21,7 +32,7 @@ func (c *IdEntity) Update() {
 }
 
 func NewIdEntity() *IdEntity {
-	return &IdEntity{}
+	return &IdEntity{BasicEntity: NewBasicEntity()}
 }
 
 type UuidEntity struct {
