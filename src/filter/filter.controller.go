@@ -1,47 +1,42 @@
 package filter
 
 import (
+	"grape/src/common/dto/response"
+	"grape/src/filter/dto/request"
+	"grape/src/user/entities"
+	"net"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 )
 
-type FilterT interface {
-	TraceIp(c *gin.Context)
+type FilterController struct {
+	service *FilterService
 }
 
-type filterController struct {
-	service *filterService
+func NewFilterController(s *FilterService) *FilterController {
+	return &FilterController{service: s}
 }
 
-func NewFilterController(s *filterService) FilterT {
-	return &filterController{service: s}
-}
-
+// @Tags Filter
 // @Summary Trace Ip :ip
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
 // @Param ip path string true "Client IP"
-// @Success 200 {object} m.Success{result=[]m.GeoIpLocations}
-// @failure 429 {object} m.Error
-// @failure 400 {object} m.Error
-// @failure 500 {object} m.Error
+// @Success 200 {object} response.PageResponseDto[[]response.ProjectBasicResponseDto]
+// @failure 400 {object} response.Error
+// @failure 422 {object} response.Error
 // @Router /trace/{ip} [get]
-func (o *filterController) TraceIp(c *gin.Context) {
-	// var ip string
-	// if ip = c.Param("ip"); ip == "" {
-	// 	helper.CreateErr(c, http.StatusBadRequest, "Incorrect ip value")
-	// 	return
-	// }
+func (c *FilterController) TraceIp(ctx *gin.Context) {
+	ip := ctx.Param("ip")
+	user, _ := ctx.Get("user")
 
-	// models, err := o.service.TraceIP(ip)
-	// if err != nil {
-	// 	helper.CreateErr(c, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
+	if net.ParseIP(ip).To4() == nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, "invalid ip address")
+		return
+	}
 
-	// helper.ResHandler(c, http.StatusOK, &m.Success{
-	// 	Status: "OK",
-	// 	Result: models,
-	// 	Items:  len(models),
-	// })
+	res, err := c.service.TraceIP(request.NewLocationDto(user.(*entities.UserEntity), &request.LocationDto{IP: []string{ip}}))
+	response.Handler(ctx, http.StatusOK, res, err)
 }

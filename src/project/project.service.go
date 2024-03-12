@@ -69,7 +69,7 @@ func (c *ProjectService) FindAll(dto *request.ProjectDto) (*common.PageResponseD
 }
 
 func (c *ProjectService) AdminFindOne(dto *request.ProjectDto) (*response.ProjectAdvancedResponseDto, error) {
-	project, err := c.ValidateProjectExistence(dto)
+	project, err := c.ValidateProjectExistence(dto, repo.Owner, repo.Attachments)
 	if err != nil {
 		return nil, err
 	}

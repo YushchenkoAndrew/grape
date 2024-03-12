@@ -7,8 +7,8 @@ import (
 type NetworkEntity struct {
 	*e.BasicEntity
 
-	Network   string `gorm:"not null;type:cidr"`
-	GeonameId int64  `gorm:"not null"`
+	Network    string `gorm:"not null;type:cidr"`
+	LocationID int64  `gorm:"foreignKey:LocationID;not null"`
 }
 
 func (*NetworkEntity) TableName() string {

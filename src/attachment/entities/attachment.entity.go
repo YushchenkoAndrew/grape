@@ -1,7 +1,6 @@
 package entities
 
 import (
-	t "grape/src/attachment/types"
 	e "grape/src/common/entities"
 )
 
@@ -12,8 +11,8 @@ type AttachmentEntity struct {
 	Path string `gorm:"not null;default:'/'"`
 	Type string `gorm:"not null"`
 
-	AttachableID   int64                `gorm:"not null"`
-	AttachableType t.AttachableTypeEnum `gorm:"not null"`
+	AttachableID   int64  `gorm:"not null"`
+	AttachableType string `gorm:"not null"`
 }
 
 func (*AttachmentEntity) TableName() string {

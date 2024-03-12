@@ -9,6 +9,7 @@ import (
 	"grape/src/common/middleware"
 	m "grape/src/common/module"
 	"grape/src/common/service"
+	"grape/src/filter"
 	"grape/src/project"
 	"grape/src/swagger"
 
@@ -54,6 +55,7 @@ func main() {
 	module := src.NewIndexModule(rg, &[]m.ModuleT{
 		swagger.NewSwaggerRouter(rg),
 		auth.NewAuthModule(rg, &[]m.ModuleT{}, service),
+		filter.NewFilterModule(rg, &[]m.ModuleT{}, service),
 		project.NewProjectModule(rg, &[]m.ModuleT{}, service),
 		// routes.NewFileRouter(rg, db, redis),
 		// routes.NewLinkRouter(rg, db, redis),

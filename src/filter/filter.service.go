@@ -1,24 +1,26 @@
 package filter
 
 import (
+	common "grape/src/common/dto/response"
 	"grape/src/common/service"
-	e "grape/src/filter/entities"
-
-	"gorm.io/gorm"
+	"grape/src/filter/dto/request"
+	"grape/src/filter/dto/response"
+	repo "grape/src/filter/repositories"
 )
 
-type filterService struct {
-	db *gorm.DB
-	// client *redis.Client
+type FilterService struct {
+	Repository *repo.LocationRepositoryT
 }
 
-func NewFilterService(client *service.CommonService) *filterService {
-	return &filterService{db: client.DB}
+func NewFilterService(client *service.CommonService) *FilterService {
+	return &FilterService{Repository: repo.NewLocationRepository(client.DB)}
 }
 
-func (c *filterService) TraceIP(ip string) ([]e.LocationEntity, error) {
-	// var model []e.IpLocationEntity
-	// err, _ := helper.Getcache(c.db.Where("geoname_id IN (?)", c.db.Select("geoname_id").Where("network >>= ?::inet", ip).Model(&e.IpBlockEntity{})), c.client, "INDEX", fmt.Sprintf("BLOCK:%s", ip), &model)
-	// return model, err
-	return []e.LocationEntity{}, nil
+func (c *FilterService) TraceIP(dto *request.LocationDto) (*response.LocationResponseDto, error) {
+	res, err := c.Repository.GetOne(dto)
+	if err != nil {
+		return nil, err
+	}
+
+	return common.NewResponse[response.LocationResponseDto](res), nil
 }

@@ -8,12 +8,12 @@ import (
 )
 
 type filterModule struct {
-	*m.Module[FilterT]
+	*m.Module[*FilterController]
 }
 
 func NewFilterModule(rg *gin.RouterGroup, modules *[]m.ModuleT, client *service.CommonService) m.ModuleT {
 	return &filterModule{
-		Module: &m.Module[FilterT]{
+		Module: &m.Module[*FilterController]{
 			Route:      rg,
 			Controller: NewFilterController(NewFilterService(client)),
 			Modules:    modules,

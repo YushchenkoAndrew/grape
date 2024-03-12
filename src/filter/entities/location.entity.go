@@ -5,18 +5,21 @@ import (
 )
 
 type LocationEntity struct {
-	*e.BasicEntity
+	*e.UuidEntity
 
 	LocaleCode     string `gorm:"not null;size:2"`
 	ContinentCode  string `gorm:"not null;size:2"`
 	ContinentName  string `gorm:"not null"`
 	CountryIsoCode string `gorm:"not null;size:2"`
 	CountryName    string `gorm:"not null"`
-	GeonameId      int64  `gorm:"not null"`
 
-	IpBlock NetworkEntity `gorm:"-"`
+	Network NetworkEntity `gorm:"foreignKey:LocationID"`
 }
 
 func (*LocationEntity) TableName() string {
 	return "locations"
+}
+
+func NewLocationEntity() *LocationEntity {
+	return &LocationEntity{UuidEntity: e.NewUuidEntity()}
 }

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
 )
 
@@ -23,6 +24,9 @@ func upCreateLocations(ctx context.Context, tx *sql.Tx) error {
 	_, err := tx.Exec(`
 	CREATE TABLE IF NOT EXISTS locations (
 		id bigserial PRIMARY KEY NOT NULL,
+		uuid character varying NOT NULL,
+		created_at timestamp(6) without time zone NOT NULL,
+		updated_at timestamp(6) without time zone NOT NULL,
 		locale_code character varying NOT NULL,
 		continent_code character varying(2) NOT NULL,
 		continent_name character varying NOT NULL,
@@ -67,7 +71,7 @@ func upCreateLocations(ctx context.Context, tx *sql.Tx) error {
 	scanner := bufio.NewScanner(file)
 	insert := func(chunk []string) error {
 		_, err := tx.Exec(fmt.Sprintf(`
-			INSERT INTO locations(locale_code, continent_code, continent_name, country_iso_code, country_name, geoname_id)
+			INSERT INTO locations(uuid, created_at, updated_at, locale_code, continent_code, continent_name, country_iso_code, country_name, geoname_id)
 				VALUES %s;
 			`, strings.Join(chunk, ", ")))
 
@@ -84,7 +88,7 @@ func upCreateLocations(ctx context.Context, tx *sql.Tx) error {
 
 		s := strings.Split(scanner.Text(), ",")
 		id, _ := strconv.ParseInt(s[GEONAME_ID], 10, 64)
-		chunk = append(chunk, fmt.Sprintf(`('%s', '%s', '%s', '%s', '%s', %d)`, s[LOCALE_CODE], s[CONTINENT_CODE], s[CONTINENT_NAME], s[COUNTRY_ISO_CODE], s[CONTINENT_NAME], id))
+		chunk = append(chunk, fmt.Sprintf(`('%s', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', %d)`, uuid.New().String(), s[LOCALE_CODE], s[CONTINENT_CODE], s[CONTINENT_NAME], s[COUNTRY_ISO_CODE], s[COUNTRY_NAME], id))
 
 		if len(chunk) == 500 {
 			if err := insert(chunk); err != nil {

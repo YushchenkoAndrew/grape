@@ -24,8 +24,8 @@ type ProjectEntity struct {
 	OrganizationID int64                  `gorm:"not null" copier:"-"`
 	Organization   org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID" copier:"-"`
 
-	Links       []ln.LinkEntity        `gorm:"-;foreignKey:ProjectID" copier:"-"`
-	Attachments []att.AttachmentEntity `gorm:"-" copier:"-"`
+	Links       []ln.LinkEntity        `gorm:"foreignKey:ProjectID" copier:"-"`
+	Attachments []att.AttachmentEntity `gorm:"polymorphic:Attachable" copier:"-"`
 
 	// Metrics      []Metrics      `gorm:"foreignKey:ProjectID" json:"metrics" xml:"metrics"`
 	// Subscription []Subscription `gorm:"foreignKey:ProjectID" json:"subscription" xml:"subscription"`

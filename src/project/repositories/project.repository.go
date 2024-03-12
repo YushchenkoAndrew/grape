@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	att "grape/src/attachment/types"
 	"grape/src/common/repositories"
 	r "grape/src/project/dto/request"
 	e "grape/src/project/entities"
@@ -32,15 +31,14 @@ func (c *projectRepository) Model() *e.ProjectEntity {
 func (c *projectRepository) Build(dto *r.ProjectDto, relations ...ProjectRelation) *gorm.DB {
 	tx := c.db.Model(c.Model()).Where(`projects.organization_id = ?`, dto.CurrentUser.Organization.ID)
 
-	var required []ProjectRelation
-	c.applyFilter(tx, dto, required)
+	required := c.applyFilter(tx, dto, []ProjectRelation{})
 	c.attachRelations(tx, dto, append(relations, required...))
 	c.sortBy(tx, dto, append(relations, required...))
 
 	return tx
 }
 
-func (c *projectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, _ []ProjectRelation) {
+func (c *projectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, relations []ProjectRelation) []ProjectRelation {
 	if len(dto.ProjectIds) != 0 {
 		tx.Where(`projects.uuid IN ?`, dto.ProjectIds)
 	}
@@ -60,13 +58,13 @@ func (c *projectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, _ []Proj
 			return types.Html.Value(str)
 		}))
 	}
+
+	return relations
 }
 
 func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relations []ProjectRelation) {
 	for _, r := range relations {
 		switch r {
-		case Attachments:
-			tx.Joins(`LEFT JOIN attachments ON attachments.attachable_type = ? AND attachments.attachable_id = projects.id`, att.Project)
 
 		default:
 			tx.Joins(string(r))
@@ -92,7 +90,7 @@ func (c *projectRepository) Create(dto *r.ProjectDto, body interface{}, entity *
 	c.Build(dto).Select(`MAX(projects.order) AS "order"`).Group("projects.id").Scan(&order)
 
 	entity.Order = int(order) + 1
-	entity.OwnerID = dto.CurrentUser.ID
+	// entity.OwnerID = dto.CurrentUser.ID
 	entity.OrganizationID = dto.CurrentUser.Organization.ID
 
 	entity.SetType(body.(*r.ProjectCreateDto).Type)

@@ -24,6 +24,7 @@ func upCreateNetworks(ctx context.Context, tx *sql.Tx) error {
 	CREATE TABLE IF NOT EXISTS networks (
 		id bigserial PRIMARY KEY NOT NULL,
 		network cidr NOT NULL,
+		location_id bigint NOT NULL,
 		geoname_id bigint NOT NULL
 	);
 	`)
@@ -64,7 +65,7 @@ func upCreateNetworks(ctx context.Context, tx *sql.Tx) error {
 	scanner := bufio.NewScanner(file)
 	insert := func(chunk []string) error {
 		_, err := tx.Exec(fmt.Sprintf(`
-			INSERT INTO networks(network, geoname_id)
+			INSERT INTO networks(network, location_id, geoname_id)
 				VALUES %s;
 			`, strings.Join(chunk, ", ")))
 
@@ -80,8 +81,8 @@ func upCreateNetworks(ctx context.Context, tx *sql.Tx) error {
 		}
 
 		s := strings.Split(scanner.Text(), ",")
-		id, _ := strconv.ParseInt(s[GEONAME_ID], 10, 64)
-		chunk = append(chunk, fmt.Sprintf(`('%s', %d)`, s[NETWORK], id))
+		geoname_id, _ := strconv.ParseInt(s[GEONAME_ID], 10, 64)
+		chunk = append(chunk, fmt.Sprintf(`('%s', %d, %d)`, s[NETWORK], 0, geoname_id))
 
 		if len(chunk) == 500 {
 			if err := insert(chunk); err != nil {
@@ -94,6 +95,21 @@ func upCreateNetworks(ctx context.Context, tx *sql.Tx) error {
 	}
 
 	if err := insert(chunk); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if _, err = tx.Exec(`UPDATE networks n SET location_id = l.id FROM locations l WHERE l.geoname_id = n.geoname_id;`); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if _, err = tx.Exec(`DELETE FROM networks WHERE location_id = 0;`); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if _, err = tx.Exec(`ALTER TABLE networks ADD CONSTRAINT networks_location_id_fkey FOREIGN KEY (location_id) REFERENCES locations(id);`); err != nil {
 		tx.Rollback()
 		return err
 	}
