@@ -1,5 +1,22 @@
 package attachment
 
+import (
+	"fmt"
+	"grape/src/attachment/dto/request"
+	"grape/src/attachment/entities"
+	"grape/src/attachment/repositories"
+	common "grape/src/common/dto/response"
+	"grape/src/common/service"
+	"grape/src/void"
+	"mime/multipart"
+	"path/filepath"
+
+	project "grape/src/project/dto/request"
+	pr "grape/src/project/repositories"
+
+	"gorm.io/gorm"
+)
+
 // import (
 // 	"grape/config"
 // 	"grape/helper"
@@ -15,12 +32,57 @@ package attachment
 // 	"gorm.io/gorm"
 // )
 
-// type FileService struct {
-// 	key string
+type AttachmentService struct {
+	Repository        *repositories.AttachmentRepositoryT
+	ProjectRepository *pr.ProjectRepositoryT
 
-// 	db     *gorm.DB
-// 	client *redis.Client
-// }
+	VoidService *void.VoidService
+}
+
+func NewAttachmentService(s *service.CommonService) *AttachmentService {
+	return &AttachmentService{
+		Repository:        repositories.NewAttachmentRepository(s.DB),
+		ProjectRepository: pr.NewProjectRepository(s.DB),
+
+		VoidService: void.NewVoidService(s),
+	}
+}
+
+func (c *AttachmentService) FindOne(dto *request.AttachmentDto) (interface{}, error) {
+	attachment, err := c.Repository.ValidateEntityExistence(dto)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.VoidService.Get(attachment.Path)
+}
+
+func (c *AttachmentService) Create(dto *request.AttachmentDto, body *request.AttachmentCreateDto, file *multipart.FileHeader) (*common.UuidResponseDto, error) {
+	entity := entities.NewAttachmentEntity()
+	entity.Name, entity.Path, entity.Size, entity.Type = file.Filename, body.Path, file.Size, filepath.Ext(file.Filename)
+	entity.Create()
+
+	switch body.AttachableType {
+	case c.ProjectRepository.TableName():
+		project, err := c.ProjectRepository.ValidateEntityExistence(project.NewProjectDto(dto.CurrentUser, &project.ProjectDto{ProjectIds: []string{body.AttachableID}}))
+		if err != nil {
+			return nil, err
+		}
+
+		err = c.ProjectRepository.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Model(project).Association("Attachments").Append(entity); err != nil {
+				return err
+			}
+
+			return c.VoidService.Save(file, body.Path)
+		})
+
+		return common.NewResponse[common.UuidResponseDto](entity), err
+
+	}
+
+	return nil, fmt.Errorf("attachable_type '%s' is not supported", body.AttachableType)
+}
 
 // func NewFileService(db *gorm.DB, client *redis.Client) i.Default[m.File, m.FileQueryDto] {
 // 	return &FileService{key: "FILE", db: db, client: client}
@@ -252,32 +314,6 @@ package attachment
 // 	}
 
 // 	return client, strings.Join(suffix, "#")
-// }
-
-// func (c *FileService) Create(model *m.File) error {
-// 	// Check if such project_id exists
-// 	if err, rows := helper.Getcache(c.db.Where("id = ?", model.ProjectID), c.client, "PROJECT", fmt.Sprintf("ID=%d", model.ProjectID), &[]m.Project{}); err != nil || rows == 0 {
-// 		return fmt.Errorf("Requested project_id=%d do not exist", model.ProjectID)
-// 	}
-
-// 	var res *gorm.DB
-// 	var existed = model.Copy()
-
-// 	if c.isExist(existed) {
-// 		if res = c.db.Model(&m.File{}).Where("id = ?", existed.ID).Updates(model); res.Error == nil {
-// 			c.recache(existed.Copy().Fill(model), c.keys(existed), false)
-// 			c.recache(existed.Fill(model), c.keys(existed), false)
-// 		}
-// 	} else if res = c.db.Create(model); res.Error == nil {
-// 		c.precache(model, c.keys(model))
-// 	}
-
-// 	if res.Error != nil {
-// 		go logs.DefaultLog("/controllers/link.go", res.Error)
-// 		return fmt.Errorf("Something unexpected happend: %v", res.Error)
-// 	}
-
-// 	return nil
 // }
 
 // func (c *FileService) Read(query *m.FileQueryDto) ([]m.File, error) {

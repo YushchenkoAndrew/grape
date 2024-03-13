@@ -8,7 +8,7 @@ import (
 type LocationDto struct {
 	*request.CurrentUserDto
 
-	IP []string
+	IP []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 }
 
 func NewLocationDto(user *entities.UserEntity, init ...*LocationDto) *LocationDto {

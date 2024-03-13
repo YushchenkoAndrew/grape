@@ -1,41 +1,33 @@
 package attachment
 
-// import (
-// 	c "grape/controllers"
-// 	"grape/interfaces"
-// 	i "grape/interfaces/controller"
-// 	m "grape/middleware"
-// 	s "grape/service"
+import (
+	h "grape/src/common/middleware"
+	m "grape/src/common/module"
+	"grape/src/common/service"
 
-// 	"github.com/gin-gonic/gin"
-// 	"github.com/go-redis/redis/v8"
-// 	"gorm.io/gorm"
-// )
+	"github.com/gin-gonic/gin"
+)
 
-// type fileRouter struct {
-// 	route *gin.RouterGroup
-// 	auth  *gin.RouterGroup
-// 	file  i.Default
-// }
+type attachmentModule struct {
+	*m.Module[*AttachmentController]
+}
 
-// func NewFileRouter(rg *gin.RouterGroup, db *gorm.DB, client *redis.Client) interfaces.Router {
-// 	return &fileRouter{
-// 		route: rg.Group("/file"),
-// 		auth:  rg.Group("/file", m.GetMiddleware().Auth()),
-// 		file:  c.NewFileController(s.NewFileService(db, client)),
-// 	}
-// }
+func NewAttachmentModule(rg *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT {
+	return &attachmentModule{
+		Module: &m.Module[*AttachmentController]{
+			Route:      rg.Group("/attachments"),
+			Auth:       rg.Group("/admin/attachments", h.GetMiddleware(nil).Jwt()),
+			Controller: NewAttachmentController(NewAttachmentService(s)),
+		},
+	}
+}
 
-// func (c *fileRouter) Init() {
-// 	c.auth.POST("/list/:id", c.file.CreateAll)
-// 	c.auth.POST("/:id", c.file.CreateOne)
+func (c *attachmentModule) Init() {
+	c.Route.GET("/:id", c.Controller.FindOne)
 
-// 	c.route.GET("/:id", c.file.ReadOne)
-// 	c.route.GET("", c.file.ReadAll)
+	c.Auth.POST("", c.Controller.Create)
+	c.Auth.PUT("/:id", c.Controller.Update)
+	c.Auth.DELETE("/:id", c.Controller.Delete)
 
-// 	c.auth.PUT("/:id", c.file.UpdateOne)
-// 	c.auth.PUT("", c.file.UpdateAll)
-
-// 	c.auth.DELETE("/:id", c.file.DeleteOne)
-// 	c.auth.DELETE("", c.file.DeleteAll)
-// }
+	c.Module.Init()
+}

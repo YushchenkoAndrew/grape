@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"grape/src"
+	"grape/src/attachment"
 	"grape/src/auth"
 	"grape/src/common/client"
 	"grape/src/common/config"
@@ -57,7 +58,7 @@ func main() {
 		auth.NewAuthModule(rg, &[]m.ModuleT{}, service),
 		filter.NewFilterModule(rg, &[]m.ModuleT{}, service),
 		project.NewProjectModule(rg, &[]m.ModuleT{}, service),
-		// routes.NewFileRouter(rg, db, redis),
+		attachment.NewAttachmentModule(rg, &[]m.ModuleT{}, service),
 		// routes.NewLinkRouter(rg, db, redis),
 		// routes.NewBotRouter(rg, db, redis),
 		// routes.NewPatternRouter(rg, db, redis),

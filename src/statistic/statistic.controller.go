@@ -66,21 +66,21 @@ func NewStatisticController() interface{} {
 // 	}
 // }
 
-// @Tags Info
-// @Summary Create one instace of Info
-// @Description 'CreatedAt' setted automatically
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param model body models.InfoDto true "Info Data"
-// @Success 201 {object} models.Success{result=[]models.Info}
-// @failure 400 {object} models.Error
-// @failure 401 {object} models.Error
-// @failure 422 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /info [post]
+// // @Tags Info
+// // @Summary Create one instace of Info
+// // @Description 'CreatedAt' setted automatically
+// // @Accept json
+// // @Produce application/json
+// // @Produce application/xml
+// // @Security BearerAuth
+// // @Param model body models.InfoDto true "Info Data"
+// // @Success 201 {object} models.Success{result=[]models.Info}
+// // @failure 400 {object} models.Error
+// // @failure 401 {object} models.Error
+// // @failure 422 {object} models.Error
+// // @failure 429 {object} models.Error
+// // @failure 500 {object} models.Error
+// // @Router /info [post]
 func (o *statisticController) Create(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
@@ -119,21 +119,21 @@ func (o *statisticController) Create(c *gin.Context) {
 	// })
 }
 
-// @Tags Info
-// @Summary Create/Update Info
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param date path string true "Created at instance"
-// @Param model body models.InfoDto true "Info Data"
-// @Success 201 {object} models.Success{result=[]models.Info}
-// @failure 400 {object} models.Error
-// @failure 401 {object} models.Error
-// @failure 422 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /info/{date} [post]
+// // @Tags Info
+// // @Summary Create/Update Info
+// // @Accept json
+// // @Produce application/json
+// // @Produce application/xml
+// // @Security BearerAuth
+// // @Param date path string true "Created at instance"
+// // @Param model body models.InfoDto true "Info Data"
+// // @Success 201 {object} models.Success{result=[]models.Info}
+// // @failure 400 {object} models.Error
+// // @failure 401 {object} models.Error
+// // @failure 422 {object} models.Error
+// // @failure 429 {object} models.Error
+// // @failure 500 {object} models.Error
+// // @Router /info/{date} [post]
 func (o *statisticController) CreateOne(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
@@ -204,20 +204,20 @@ func (o *statisticController) CreateOne(c *gin.Context) {
 	// })
 }
 
-// @Tags Info
-// @Summary Create Info from list of objects
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param model body []models.InfoDto true "List of Info Data"
-// @Success 201 {object} models.Success{result=[]models.Info}
-// @failure 400 {object} models.Error
-// @failure 401 {object} models.Error
-// @failure 422 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /info/list [post]
+// // @Tags Info
+// // @Summary Create Info from list of objects
+// // @Accept json
+// // @Produce application/json
+// // @Produce application/xml
+// // @Security BearerAuth
+// // @Param model body []models.InfoDto true "List of Info Data"
+// // @Success 201 {object} models.Success{result=[]models.Info}
+// // @failure 400 {object} models.Error
+// // @failure 401 {object} models.Error
+// // @failure 422 {object} models.Error
+// // @failure 429 {object} models.Error
+// // @failure 500 {object} models.Error
+// // @Router /info/list [post]
 func (o *statisticController) CreateAll(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
@@ -263,17 +263,17 @@ func (o *statisticController) CreateAll(c *gin.Context) {
 	// })
 }
 
-// @Tags Info
-// @Summary Read Info by :id
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Param id path int true "Instance id"
-// @Success 200 {object} models.Success{result=[]models.Info}
-// @failure 429 {object} models.Error
-// @failure 400 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /info/{id} [get]
+// // @Tags Info
+// // @Summary Read Info by :id
+// // @Accept json
+// // @Produce application/json
+// // @Produce application/xml
+// // @Param id path int true "Instance id"
+// // @Success 200 {object} models.Success{result=[]models.Info}
+// // @failure 429 {object} models.Error
+// // @failure 400 {object} models.Error
+// // @failure 500 {object} models.Error
+// // @Router /info/{id} [get]
 func (o *statisticController) ReadOne(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
@@ -308,21 +308,21 @@ func (o *statisticController) ReadOne(c *gin.Context) {
 	// })
 }
 
-// @Tags Info
-// @Summary Read All Info
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Param id query int false "Instance :id"
-// @Param created_at query string false "CreatedAt date"
-// @Param countries query string false "Countries: 'UK,US'"
-// @Param page query int false "Page: '0'"
-// @Param limit query int false "Limit: '1'"
-// @Success 200 {object} models.Success{result=[]models.Info}
-// @failure 429 {object} models.Error
-// @failure 400 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /info [get]
+// // @Tags Info
+// // @Summary Read All Info
+// // @Accept json
+// // @Produce application/json
+// // @Produce application/xml
+// // @Param id query int false "Instance :id"
+// // @Param created_at query string false "CreatedAt date"
+// // @Param countries query string false "Countries: 'UK,US'"
+// // @Param page query int false "Page: '0'"
+// // @Param limit query int false "Limit: '1'"
+// // @Success 200 {object} models.Success{result=[]models.Info}
+// // @failure 429 {object} models.Error
+// // @failure 400 {object} models.Error
+// // @failure 500 {object} models.Error
+// // @Router /info [get]
 func (o *statisticController) ReadAll(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
@@ -353,21 +353,21 @@ func (o *statisticController) ReadAll(c *gin.Context) {
 	// })
 }
 
-// @Tags Info
-// @Summary Update Info by :id
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param id path int true "Instance id"
-// @Param model body models.InfoDto true "Info Data"
-// @Success 200 {object} models.Success{result=[]models.Info}
-// @failure 400 {object} models.Error
-// @failure 401 {object} models.Error
-// @failure 422 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /info/{id} [put]
+// // @Tags Info
+// // @Summary Update Info by :id
+// // @Accept json
+// // @Produce application/json
+// // @Produce application/xml
+// // @Security BearerAuth
+// // @Param id path int true "Instance id"
+// // @Param model body models.InfoDto true "Info Data"
+// // @Success 200 {object} models.Success{result=[]models.Info}
+// // @failure 400 {object} models.Error
+// // @failure 401 {object} models.Error
+// // @failure 422 {object} models.Error
+// // @failure 429 {object} models.Error
+// // @failure 500 {object} models.Error
+// // @Router /info/{id} [put]
 func (o *statisticController) UpdateOne(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
@@ -411,23 +411,23 @@ func (o *statisticController) UpdateOne(c *gin.Context) {
 	// })
 }
 
-// @Tags Info
-// @Summary Update Info by Query
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param id query int false "Instance :id"
-// @Param created_at query string false "CreatedAt date"
-// @Param countries query string false "Countries: 'UK,US'"
-// @Param model body models.InfoDto true "Info Data"
-// @Success 200 {object} models.Success{result=[]models.Info}
-// @failure 400 {object} models.Error
-// @failure 401 {object} models.Error
-// @failure 422 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /info [put]
+// // @Tags Info
+// // @Summary Update Info by Query
+// // @Accept json
+// // @Produce application/json
+// // @Produce application/xml
+// // @Security BearerAuth
+// // @Param id query int false "Instance :id"
+// // @Param created_at query string false "CreatedAt date"
+// // @Param countries query string false "Countries: 'UK,US'"
+// // @Param model body models.InfoDto true "Info Data"
+// // @Success 200 {object} models.Success{result=[]models.Info}
+// // @failure 400 {object} models.Error
+// // @failure 401 {object} models.Error
+// // @failure 422 {object} models.Error
+// // @failure 429 {object} models.Error
+// // @failure 500 {object} models.Error
+// // @Router /info [put]
 func (o *statisticController) UpdateAll(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
@@ -474,20 +474,20 @@ func (o *statisticController) UpdateAll(c *gin.Context) {
 	// })
 }
 
-// @Tags Info
-// @Summary Delete Info by :id
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param id path int true "Instance id"
-// @Success 200 {object} models.Success{result=[]string{}}
-// @failure 400 {object} models.Error
-// @failure 401 {object} models.Error
-// @failure 422 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /info/{id} [delete]
+// // @Tags Info
+// // @Summary Delete Info by :id
+// // @Accept json
+// // @Produce application/json
+// // @Produce application/xml
+// // @Security BearerAuth
+// // @Param id path int true "Instance id"
+// // @Success 200 {object} models.Success{result=[]string{}}
+// // @failure 400 {object} models.Error
+// // @failure 401 {object} models.Error
+// // @failure 422 {object} models.Error
+// // @failure 429 {object} models.Error
+// // @failure 500 {object} models.Error
+// // @Router /info/{id} [delete]
 func (o *statisticController) DeleteOne(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
@@ -534,22 +534,22 @@ func (o *statisticController) DeleteOne(c *gin.Context) {
 	// })
 }
 
-// @Tags Info
-// @Summary Delete Info by Query
-// @Accept json
-// @Produce application/json
-// @Produce application/xml
-// @Security BearerAuth
-// @Param id query int false "Instance :id"
-// @Param created_at query string false "CreatedAt date"
-// @Param countries query string false "Countries: 'UK,US'"
-// @Success 200 {object} models.Success{result=[]string{}}
-// @failure 400 {object} models.Error
-// @failure 401 {object} models.Error
-// @failure 422 {object} models.Error
-// @failure 429 {object} models.Error
-// @failure 500 {object} models.Error
-// @Router /info [delete]
+// // @Tags Info
+// // @Summary Delete Info by Query
+// // @Accept json
+// // @Produce application/json
+// // @Produce application/xml
+// // @Security BearerAuth
+// // @Param id query int false "Instance :id"
+// // @Param created_at query string false "CreatedAt date"
+// // @Param countries query string false "Countries: 'UK,US'"
+// // @Success 200 {object} models.Success{result=[]string{}}
+// // @failure 400 {object} models.Error
+// // @failure 401 {object} models.Error
+// // @failure 422 {object} models.Error
+// // @failure 429 {object} models.Error
+// // @failure 500 {object} models.Error
+// // @Router /info [delete]
 func (o *statisticController) DeleteAll(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 

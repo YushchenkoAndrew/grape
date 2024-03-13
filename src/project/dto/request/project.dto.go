@@ -10,9 +10,13 @@ type ProjectDto struct {
 
 	Query string `form:"query,omitempty" example:"test"`
 
-	ProjectIds []string
-	Statuses   []string
-	Types      []string
+	ProjectIds []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
+	Statuses   []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
+	Types      []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
+}
+
+func (c *ProjectDto) UUID() string {
+	return c.ProjectIds[0]
 }
 
 func NewProjectDto(user *entities.UserEntity, init ...*ProjectDto) *ProjectDto {

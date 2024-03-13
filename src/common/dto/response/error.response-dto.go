@@ -16,8 +16,8 @@ func (c *Error) Value() interface{} {
 	return c
 }
 
-func ThrowErr(c *gin.Context, status int, message string) {
-	Build(c, status, &Error{
+func ThrowErr(ctx *gin.Context, status int, message string) {
+	Build(ctx, status, &Error{
 		Status:  status,
 		Message: message,
 		Error:   http.StatusText(status),

@@ -111,6 +111,13 @@ func TestProjectModule(t *testing.T) {
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
 		{
+			name:     "Project find one should return 422",
+			method:   "GET",
+			url:      func() string { return fmt.Sprintf("/projects/%s", "1e4c2daf-d2fc-41a6-9b6c-58642f2aff46") },
+			expected: http.StatusUnprocessableEntity,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
 			name:     "Project find all without filter",
 			method:   "GET",
 			url:      func() string { return "/projects" },

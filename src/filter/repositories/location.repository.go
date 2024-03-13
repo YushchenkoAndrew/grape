@@ -15,7 +15,7 @@ const (
 	Network LocationRelation = "Network"
 )
 
-type LocationRepositoryT = repositories.CommonRepository[e.LocationEntity, r.LocationDto, LocationRelation]
+type LocationRepositoryT = repositories.CommonRepository[*e.LocationEntity, *r.LocationDto, LocationRelation]
 
 type locationRepository struct {
 	db *gorm.DB
@@ -23,6 +23,10 @@ type locationRepository struct {
 
 func (c *locationRepository) Model() *e.LocationEntity {
 	return e.NewLocationEntity()
+}
+
+func (c *locationRepository) Transaction(_ func(*gorm.DB) error) error {
+	return nil
 }
 
 func (c *locationRepository) Build(dto *r.LocationDto, relations ...LocationRelation) *gorm.DB {

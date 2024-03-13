@@ -1,4 +1,4 @@
-.PHONY: dev migrate test cover
+.PHONY: dev migrate test cover swagger
 
 dev: 
 	go run main.go
@@ -15,6 +15,9 @@ test:
 migrate:
 	read -p "Migration name: " DESC; \
 	goose -dir ./migrations create $$DESC go
+
+swagger:
+	swag init -g ./main.go --parseDependency
 
 cover:
 	go test ./... -coverprofile=testprofile.out

@@ -7,7 +7,7 @@ import (
 )
 
 type CurrentUserDto struct {
-	CurrentUser *entities.UserEntity
+	CurrentUser *entities.UserEntity `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 }
 
 func (*CurrentUserDto) Offset() int {
@@ -16,6 +16,10 @@ func (*CurrentUserDto) Offset() int {
 
 func (*CurrentUserDto) Limit() int {
 	return 0
+}
+
+func (*CurrentUserDto) UUID() string {
+	return ""
 }
 
 func NewCurrentUserDto(user *entities.UserEntity) *CurrentUserDto {

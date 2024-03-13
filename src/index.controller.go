@@ -21,8 +21,7 @@ func NewIndexController(s *indexService) IndexT {
 // @Summary Ping/Pong
 // @Accept json
 // @Produce application/json
-// @Success 200 {object} m.Ping
-// @failure 429 {object} m.Error
+// @Success 200 {object} interface{}
 // @Router /ping [get]
 func (*indexController) Ping(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "pong"})

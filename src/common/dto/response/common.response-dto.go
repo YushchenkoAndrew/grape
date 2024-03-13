@@ -8,7 +8,7 @@ import (
 )
 
 type UuidResponseDto struct {
-	Id   string `copier:"UUID" json:"id" xml:"id" example:"uuid"`
+	Id   string `copier:"UUID" json:"id" xml:"id" example:"a3c94c88-944d-4636-86d1-c233bdfaf70e"`
 	Name string `json:"name" xml:"name" example:"root"`
 }
 
@@ -20,6 +20,8 @@ type PageResponseDto[T any] struct {
 }
 
 func Build(ctx *gin.Context, status int, c interface{}) {
+	defer ctx.Abort()
+
 	switch ctx.GetHeader("Accept") {
 	case "application/xml":
 		ctx.XML(status, c)
@@ -27,8 +29,6 @@ func Build(ctx *gin.Context, status int, c interface{}) {
 	default:
 		ctx.JSON(status, c)
 	}
-
-	ctx.Abort()
 }
 
 func Handler[T any](ctx *gin.Context, status int, res T, err error) {

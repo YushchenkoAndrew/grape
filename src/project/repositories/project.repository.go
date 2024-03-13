@@ -15,10 +15,11 @@ type ProjectRelation string
 const (
 	Organization ProjectRelation = "Organization"
 	Attachments  ProjectRelation = "Attachments"
+	Links        ProjectRelation = "Links"
 	Owner        ProjectRelation = "Owner"
 )
 
-type ProjectRepositoryT = repositories.CommonRepository[e.ProjectEntity, r.ProjectDto, ProjectRelation]
+type ProjectRepositoryT = repositories.CommonRepository[*e.ProjectEntity, *r.ProjectDto, ProjectRelation]
 
 type projectRepository struct {
 	db *gorm.DB
@@ -26,6 +27,12 @@ type projectRepository struct {
 
 func (c *projectRepository) Model() *e.ProjectEntity {
 	return e.NewProjectEntity()
+}
+
+func (c *projectRepository) Transaction(fc func(*gorm.DB) error) error {
+	return c.db.Transaction(func(tx *gorm.DB) error {
+		return fc(tx.Model(c.Model()))
+	})
 }
 
 func (c *projectRepository) Build(dto *r.ProjectDto, relations ...ProjectRelation) *gorm.DB {
@@ -65,6 +72,9 @@ func (c *projectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, relation
 func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relations []ProjectRelation) {
 	for _, r := range relations {
 		switch r {
+		case Links:
+		case Attachments:
+			tx.Preload(string(r))
 
 		default:
 			tx.Joins(string(r))
@@ -90,11 +100,11 @@ func (c *projectRepository) Create(dto *r.ProjectDto, body interface{}, entity *
 	c.Build(dto).Select(`MAX(projects.order) AS "order"`).Group("projects.id").Scan(&order)
 
 	entity.Order = int(order) + 1
-	// entity.OwnerID = dto.CurrentUser.ID
-	entity.OrganizationID = dto.CurrentUser.Organization.ID
+	entity.Owner = *dto.CurrentUser
+	entity.Organization = dto.CurrentUser.Organization
 
 	entity.SetType(body.(*r.ProjectCreateDto).Type)
-	return c.db.Model(c.Model()).Create(entity)
+	return c.db.Create(entity)
 }
 
 func (c *projectRepository) Update(dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {

@@ -66,6 +66,7 @@ func (c *ProjectController) FindOne(ctx *gin.Context) {
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
+// @Security BearerAuth
 // @Param model query request.ProjectDto true "Project Data"
 // @Success 200 {object} response.PageResponseDto[[]response.ProjectAdvancedResponseDto]
 // @failure 400 {object} response.Error
@@ -89,8 +90,9 @@ func (c *ProjectController) AdminFindAll(ctx *gin.Context) {
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
+// @Security BearerAuth
 // @Param id path string true "Project id"
-// @Success 200 {object} response.ProjectBasicResponseDto
+// @Success 200 {object} response.ProjectAdvancedResponseDto
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /admin/projects/{id} [get]
@@ -108,7 +110,7 @@ func (c *ProjectController) AdminFindOne(ctx *gin.Context) {
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
-// @Param model body request.ProjectCreateDto true "Project Data"
+// @Param model body request.ProjectCreateDto true "Project body"
 // @Success 201 {object} response.UuidResponseDto
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
@@ -132,7 +134,7 @@ func (c *ProjectController) Create(ctx *gin.Context) {
 // @Produce application/xml
 // @Security BearerAuth
 // @Param id path string true "Project id"
-// @Param model body m.ProjectDto true "Project without File Data"
+// @Param model body request.ProjectUpdateDto true "Project body"
 // @Success 200 {object} response.UuidResponseDto
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
@@ -156,7 +158,7 @@ func (c *ProjectController) Update(ctx *gin.Context) {
 // @Produce application/xml
 // @Security BearerAuth
 // @Param id path string true "Project id"
-// @Success 200 {object} interface{}
+// @Success 204
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /admin/projects/{id} [delete]

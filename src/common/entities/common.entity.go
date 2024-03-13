@@ -10,8 +10,8 @@ type BasicEntity struct {
 	ID int64 `gorm:"primaryKey" copier:"-"`
 }
 
-func (c *BasicEntity) Create() {}
-func (c *BasicEntity) Update() {}
+func (*BasicEntity) Create() {}
+func (*BasicEntity) Update() {}
 
 func NewBasicEntity() *BasicEntity {
 	return &BasicEntity{}
@@ -23,13 +23,11 @@ type IdEntity struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime;not null" copier:"-"`
 }
 
-func (c *IdEntity) Create() {
-	c.CreatedAt, c.UpdatedAt = time.Now(), time.Now()
-}
+func (c *IdEntity) Create() { c.CreatedAt, c.UpdatedAt = time.Now(), time.Now() }
+func (c *IdEntity) Update() { c.UpdatedAt = time.Now() }
 
-func (c *IdEntity) Update() {
-	c.UpdatedAt = time.Now()
-}
+func (c *IdEntity) CreatedAtISO() string { return c.CreatedAt.Format(time.RFC3339) }
+func (c *IdEntity) UpdatedAtISO() string { return c.UpdatedAt.Format(time.RFC3339) }
 
 func NewIdEntity() *IdEntity {
 	return &IdEntity{BasicEntity: NewBasicEntity()}

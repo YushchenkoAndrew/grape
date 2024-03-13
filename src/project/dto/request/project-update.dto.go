@@ -6,4 +6,6 @@ type ProjectUpdateDto struct {
 	Type        string `json:"type" xml:"type" binding:"omitempty,oneof=html markdown link k3s"`
 	Status      string `json:"status" xml:"status" binding:"omitempty,oneof=active inactive"`
 	Footer      string `json:"footer" xml:"footer" binding:"omitempty"`
+
+	// Attachments *
 }
