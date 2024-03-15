@@ -72,7 +72,7 @@ func (c *ProjectService) AdminFindAll(dto *request.ProjectDto) (*common.PageResp
 }
 
 func (c *ProjectService) Create(dto *request.ProjectDto, body *request.ProjectCreateDto) (*common.UuidResponseDto, error) {
-	entity, err := c.Repository.Create(dto, body)
+	entity, err := c.Repository.Create(nil, dto, body)
 
 	return common.NewResponse[common.UuidResponseDto](entity), err
 }
@@ -83,7 +83,7 @@ func (c *ProjectService) Update(dto *request.ProjectDto, body *request.ProjectUp
 		return nil, err
 	}
 
-	entity, err := c.Repository.Update(dto, body, project)
+	entity, err := c.Repository.Update(nil, dto, body, project)
 	return common.NewResponse[common.UuidResponseDto](entity), err
 }
 
@@ -93,5 +93,5 @@ func (c *ProjectService) Delete(dto *request.ProjectDto, body *request.ProjectUp
 		return nil, err
 	}
 
-	return nil, c.Repository.Delete(dto, project)
+	return nil, c.Repository.Delete(nil, dto, project)
 }

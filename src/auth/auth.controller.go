@@ -16,6 +16,7 @@ func NewAuthController(s *AuthService) *AuthController {
 	return &AuthController{service: s}
 }
 
+// @Tags Auth
 // @Summary Login
 // @Accept json
 // @Produce application/json
@@ -41,6 +42,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	response.Build(ctx, http.StatusOK, res)
 }
 
+// @Tags Auth
 // @Summary Refresh access token
 // @Accept json
 // @Produce application/json

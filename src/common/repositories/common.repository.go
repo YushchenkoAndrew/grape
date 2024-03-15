@@ -27,10 +27,10 @@ type CommonRepositoryT[Dto CommonDtoT, Entity CommonEntity, Relations any] inter
 	Model() Entity
 	Transaction(func(*gorm.DB) error) error
 
-	Build(Dto, ...Relations) *gorm.DB
-	Create(Dto, interface{}, Entity) *gorm.DB
-	Update(Dto, interface{}, Entity) *gorm.DB
-	Delete(Dto, Entity) *gorm.DB
+	Build(*gorm.DB, Dto, ...Relations) *gorm.DB
+	Create(*gorm.DB, Dto, interface{}, Entity) *gorm.DB
+	Update(*gorm.DB, Dto, interface{}, Entity) *gorm.DB
+	Delete(*gorm.DB, Dto, Entity) *gorm.DB
 }
 
 type CommonRepository[Entity CommonEntity, Dto CommonDtoT, Relations any] struct {
@@ -43,7 +43,7 @@ func (c *CommonRepository[Entity, Dto, Relations]) TableName() string {
 
 func (c *CommonRepository[Entity, Dto, Relations]) GetOne(dto Dto, relations ...Relations) (Entity, error) {
 	var result []Entity
-	if tx := c.handler.Build(dto, relations...).Limit(1).Find(&result); tx.Error != nil {
+	if tx := c.handler.Build(nil, dto, relations...).Limit(1).Find(&result); tx.Error != nil {
 		var e Entity
 		return e, tx.Error
 	}
@@ -58,7 +58,7 @@ func (c *CommonRepository[Entity, Dto, Relations]) GetOne(dto Dto, relations ...
 
 func (c *CommonRepository[Entity, Dto, Relations]) GetAll(dto Dto, relations ...Relations) ([]Entity, error) {
 	var result []Entity
-	if tx := c.handler.Build(dto, relations...).Find(&result); tx.Error != nil {
+	if tx := c.handler.Build(nil, dto, relations...).Find(&result); tx.Error != nil {
 		return nil, tx.Error
 	}
 
@@ -73,11 +73,11 @@ func (c *CommonRepository[Entity, Dto, Relations]) GetAllPage(dto Dto, relations
 		return 0, result, nil
 	}
 
-	if tx := c.handler.Build(dto, relations...).Count(&cnt); tx.Error != nil {
+	if tx := c.handler.Build(nil, dto, relations...).Count(&cnt); tx.Error != nil {
 		return 0, nil, tx.Error
 	}
 
-	if tx := c.handler.Build(dto, relations...).Offset(dto.Offset()).Limit(dto.Limit()).Find(&result); tx.Error != nil {
+	if tx := c.handler.Build(nil, dto, relations...).Offset(dto.Offset()).Limit(dto.Limit()).Find(&result); tx.Error != nil {
 		return 0, nil, tx.Error
 	}
 
@@ -98,23 +98,23 @@ func (c *CommonRepository[Entity, Dto, Relations]) ValidateEntityExistence(dto D
 	return e, fmt.Errorf("%s not found", c.TableName())
 }
 
-func (c *CommonRepository[Entity, Dto, Relations]) Create(dto Dto, body interface{}) (*Entity, error) {
+func (c *CommonRepository[Entity, Dto, Relations]) Create(tx *gorm.DB, dto Dto, body interface{}) (*Entity, error) {
 	entity := c.handler.Model()
 	copier.Copy(&entity, body)
 	entity.Create()
 
-	if tx := c.handler.Create(dto, body, entity); tx.Error != nil {
+	if tx := c.handler.Create(tx, dto, body, entity); tx.Error != nil {
 		return nil, tx.Error
 	}
 
 	return &entity, nil
 }
 
-func (c *CommonRepository[Entity, Dto, Relations]) Update(dto Dto, body interface{}, entity Entity) (Entity, error) {
+func (c *CommonRepository[Entity, Dto, Relations]) Update(tx *gorm.DB, dto Dto, body interface{}, entity Entity) (Entity, error) {
 	copier.CopyWithOption(&entity, body, copier.Option{IgnoreEmpty: true})
 	entity.Update()
 
-	if tx := c.handler.Update(dto, body, entity); tx.Error != nil {
+	if tx := c.handler.Update(tx, dto, body, entity); tx.Error != nil {
 		var e Entity
 		return e, tx.Error
 	}
@@ -122,8 +122,8 @@ func (c *CommonRepository[Entity, Dto, Relations]) Update(dto Dto, body interfac
 	return entity, nil
 }
 
-func (c *CommonRepository[Entity, Dto, Relations]) Delete(dto Dto, entity Entity) error {
-	if tx := c.handler.Delete(dto, entity); tx.Error != nil {
+func (c *CommonRepository[Entity, Dto, Relations]) Delete(tx *gorm.DB, dto Dto, entity Entity) error {
+	if tx := c.handler.Delete(tx, dto, entity); tx.Error != nil {
 		return tx.Error
 	}
 

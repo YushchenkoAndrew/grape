@@ -17,7 +17,7 @@ import (
 )
 
 func ConnPsql(cfg *config.Config) *gorm.DB {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s port=%d dbname=%s sslmode=disable", cfg.Psql.Host, cfg.Psql.User, cfg.Psql.Pass, cfg.Psql.Port, cfg.Psql.Name)
+	dsn := fmt.Sprintf("host=%s user=%s password=%s port=%d dbname=%s sslmode=disable", cfg.Psql.Host, cfg.Psql.Username, cfg.Psql.Password, cfg.Psql.Port, cfg.Psql.Name)
 
 	var config gorm.Config
 	if cfg.Psql.Logger {
@@ -56,9 +56,9 @@ func ConnPsql(cfg *config.Config) *gorm.DB {
 
 		var path string
 		if value, ok := os.LookupEnv(c.CONFIG_ARG); ok {
-			path = filepath.Join(value, cfg.Server.Migration)
+			path = filepath.Join(value, cfg.Server.Migrations)
 		} else {
-			path = filepath.Join(value, cfg.Server.Migration)
+			path = filepath.Join(value, cfg.Server.Migrations)
 		}
 
 		if err = goose.Up(db, path); err != nil {

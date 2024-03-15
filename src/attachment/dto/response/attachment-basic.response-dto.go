@@ -6,5 +6,5 @@ type AttachmentBasicResponseDto struct {
 	r.UuidResponseDto
 
 	Type string `json:"type" xml:"type" example:".png"`
-	Path string `copier:"GetPath" json:"path" xml:"path" example:"/test"`
+	Path string `copier:"GetAttachment" json:"path" xml:"path" example:"/test"`
 }

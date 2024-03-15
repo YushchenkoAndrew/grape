@@ -11,6 +11,10 @@ type AttachmentDto struct {
 	AttachmentIds []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 }
 
+func (c *AttachmentDto) UUID() string {
+	return c.AttachmentIds[0]
+}
+
 func NewAttachmentDto(user *entities.UserEntity, init ...*AttachmentDto) *AttachmentDto {
 	return request.NewRequest(&AttachmentDto{CurrentUserDto: request.NewCurrentUserDto(user)}, init...)
 }

@@ -3,6 +3,7 @@ package attachment
 import (
 	"fmt"
 	"grape/src/attachment/dto/request"
+	"grape/src/attachment/dto/response"
 	"grape/src/attachment/entities"
 	"grape/src/attachment/repositories"
 	common "grape/src/common/dto/response"
@@ -16,21 +17,6 @@ import (
 
 	"gorm.io/gorm"
 )
-
-// import (
-// 	"grape/config"
-// 	"grape/helper"
-// 	i "grape/interfaces/service"
-// 	"grape/logs"
-// 	m "grape/models"
-// 	"encoding/json"
-// 	"fmt"
-// 	"strconv"
-// 	"strings"
-
-// 	"github.com/go-redis/redis/v8"
-// 	"gorm.io/gorm"
-// )
 
 type AttachmentService struct {
 	Repository        *repositories.AttachmentRepositoryT
@@ -48,18 +34,19 @@ func NewAttachmentService(s *service.CommonService) *AttachmentService {
 	}
 }
 
-func (c *AttachmentService) FindOne(dto *request.AttachmentDto) (interface{}, error) {
+func (c *AttachmentService) FindOne(dto *request.AttachmentDto) (string, []byte, error) {
 	attachment, err := c.Repository.ValidateEntityExistence(dto)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
-	return c.VoidService.Get(attachment.Path)
+	return c.VoidService.Get(attachment.GetFile())
 }
 
-func (c *AttachmentService) Create(dto *request.AttachmentDto, body *request.AttachmentCreateDto, file *multipart.FileHeader) (*common.UuidResponseDto, error) {
+func (c *AttachmentService) Create(dto *request.AttachmentDto, body *request.AttachmentCreateDto, file *multipart.FileHeader) (*response.AttachmentAdvancedResponseDto, error) {
 	entity := entities.NewAttachmentEntity()
 	entity.Name, entity.Path, entity.Size, entity.Type = file.Filename, body.Path, file.Size, filepath.Ext(file.Filename)
+
 	entity.Create()
 
 	switch body.AttachableType {
@@ -69,308 +56,84 @@ func (c *AttachmentService) Create(dto *request.AttachmentDto, body *request.Att
 			return nil, err
 		}
 
+		entity.Home = filepath.Join("/", body.AttachableType, project.UUID)
 		err = c.ProjectRepository.Transaction(func(tx *gorm.DB) error {
 			if err := tx.Model(project).Association("Attachments").Append(entity); err != nil {
 				return err
 			}
 
-			return c.VoidService.Save(file, body.Path)
+			f, err := file.Open()
+			if err != nil {
+				return err
+			}
+
+			defer f.Close()
+			return c.VoidService.Save(entity.GetPath(), file.Filename, f)
 		})
 
-		return common.NewResponse[common.UuidResponseDto](entity), err
+		return common.NewResponse[response.AttachmentAdvancedResponseDto](entity), err
 
 	}
 
 	return nil, fmt.Errorf("attachable_type '%s' is not supported", body.AttachableType)
 }
 
-// func NewFileService(db *gorm.DB, client *redis.Client) i.Default[m.File, m.FileQueryDto] {
-// 	return &FileService{key: "FILE", db: db, client: client}
-// }
+func (c *AttachmentService) Update(dto *request.AttachmentDto, body *request.AttachmentUpdateDto, file *multipart.FileHeader) (*response.AttachmentAdvancedResponseDto, error) {
+	entity, err := c.Repository.ValidateEntityExistence(dto)
+	if err != nil {
+		return nil, err
+	}
 
-// func (c *FileService) keys(model *m.File) []string {
-// 	return []string{fmt.Sprintf("NAME=%s*", model.Name), fmt.Sprintf("PATH=%s*", model.Path), fmt.Sprintf("ROLE=%s*", model.Role), fmt.Sprintf("PROJECT_ID=%d*", model.ProjectID), "", "PAGE=*", "LIMIT=*"}
-// }
+	err = c.Repository.Transaction(func(tx *gorm.DB) error {
+		path := entity.GetFile()
 
-// func (c *FileService) isExist(model *m.File) bool {
-// 	res := c.db.Where("project_id = ? AND name = ? AND role = ? AND path = ? AND type = ?", model.ProjectID, model.Name, model.Role, model.Path, model.Type).Find(&model)
-// 	return res.Error != nil || res.RowsAffected != 0
-// }
+		if file == nil {
+			if _, err := c.Repository.Update(tx, dto, body, entity); err != nil {
+				return err
+			}
 
-// func (c *FileService) precache(model *m.File, keys []string) {
-// 	helper.Precache(c.client, c.key, fmt.Sprintf("ID=%d", model.ID), model)
+			return c.VoidService.Rename(path, entity.GetPath(), entity.Name)
+		}
 
-// 	for _, key := range keys {
-// 		helper.Recache(c.client, c.key, key, func(str string, k string) interface{} {
-// 			var data []m.File
-// 			if !strings.HasPrefix(str, "[") {
-// 				data = make([]m.File, 1)
-// 				json.Unmarshal([]byte(str), &data[0])
-// 			} else {
-// 				json.Unmarshal([]byte(str), &data)
-// 			}
+		e := entities.AttachmentEntity{}
+		e.Name, e.Path, e.Size, e.Type = file.Filename, body.Path, file.Size, filepath.Ext(file.Filename)
 
-// 			for _, item := range strings.Split(k, "#") {
-// 				var res = strings.Split(item, "=")
+		if _, err := c.Repository.Update(tx, dto, e, entity); err != nil {
+			return err
+		}
 
-// 				switch res[0] {
-// 				case "ID":
-// 					if id, _ := strconv.Atoi(res[1]); model.ID != uint32(id) {
-// 						return data
-// 					}
+		f, err := file.Open()
+		if err != nil {
+			return err
+		}
 
-// 				case "NAME":
-// 					if model.Name != res[1] {
-// 						return data
-// 					}
+		defer f.Close()
+		if err := c.VoidService.Save(entity.GetPath(), file.Filename, f); err != nil {
+			return err
+		}
 
-// 				case "ROLE":
-// 					if model.Role != res[1] {
-// 						return data
-// 					}
+		_, err = c.VoidService.Delete(path)
+		return err
+	})
 
-// 				case "PATH":
-// 					if model.Path != res[1] {
-// 						return data
-// 					}
+	return common.NewResponse[response.AttachmentAdvancedResponseDto](entity), err
+}
 
-// 				case "PROJECT_ID":
-// 					if id, _ := strconv.Atoi(res[1]); model.ProjectID != uint32(id) {
-// 						return data
-// 					}
+func (c *AttachmentService) Delete(dto *request.AttachmentDto) (*common.UuidResponseDto, error) {
+	entity, err := c.Repository.ValidateEntityExistence(dto)
+	if err != nil {
+		return nil, err
+	}
 
-// 				case "LIMIT":
-// 					if limit, _ := strconv.Atoi(res[1]); limit <= len(data) {
-// 						return data
-// 					}
-// 				}
-// 			}
+	err = c.Repository.Transaction(func(tx *gorm.DB) error {
+		if err := c.Repository.Delete(tx, dto, entity); err != nil {
+			return err
+		}
 
-// 			return append(data, *model)
-// 		})
-// 	}
-// }
+		_, err = c.VoidService.Delete(entity.GetFile())
+		return err
 
-// func (c *FileService) deepcache(models []m.File, key string) interface{} {
-// 	var suffix []string
-// 	for _, item := range strings.Split(key, "#") {
-// 		var res = strings.Split(item, "=")
+	})
 
-// 		switch res[0] {
-// 		case "LIMIT":
-// 			if limit, _ := strconv.Atoi(res[1]); limit != len(models)+1 {
-// 				if len(models) != 0 {
-// 					return models
-// 				}
-// 				return nil
-// 			}
-
-// 		case "PAGE":
-// 			page, _ := strconv.Atoi(res[1])
-// 			suffix = append(suffix, fmt.Sprintf("PAGE=%d", page+1))
-// 			continue
-// 		}
-
-// 		suffix = append(suffix, item)
-// 	}
-
-// 	var items []m.File
-// 	if err := helper.Popcache(c.client, c.key, strings.Join(suffix, "#"), &items); err == nil {
-// 		if len(items) < 1 {
-// 			return nil
-// 		}
-
-// 		go c.deepcache(items[1:], strings.Join(suffix, "#"))
-// 		return append(models, items[0])
-// 	}
-
-// 	if len(models) != 0 {
-// 		return models
-// 	}
-// 	return nil
-// }
-
-// func (c *FileService) postfilter(data []m.File, suffix string) []m.File {
-// 	var result = []m.File{}
-
-// ITEM:
-// 	for _, item := range data {
-// 		for _, key := range strings.Split(suffix, "#") {
-// 			var res = strings.Split(key, "=")
-
-// 			switch res[0] {
-// 			case "ID":
-// 				if id, _ := strconv.Atoi(res[1]); item.ID != uint32(id) {
-// 					continue ITEM
-// 				}
-
-// 			case "NAME":
-// 				if item.Name != res[1] {
-// 					continue ITEM
-// 				}
-
-// 			case "ROLE":
-// 				if item.Role != res[1] {
-// 					continue ITEM
-// 				}
-
-// 			case "PATH":
-// 				if item.Path != res[1] {
-// 					continue ITEM
-// 				}
-
-// 			case "PROJECT_ID":
-// 				if id, _ := strconv.Atoi(res[1]); item.ProjectID != uint32(id) {
-// 					continue ITEM
-// 				}
-
-// 			}
-// 		}
-
-// 		result = append(result, item)
-// 	}
-
-// 	return result
-// }
-
-// func (c *FileService) recache(model *m.File, keys []string, delete bool) {
-// 	helper.Delcache(c.client, c.key, fmt.Sprintf("ID=%d*", model.ID))
-
-// 	for _, key := range keys {
-// 		helper.Recache(c.client, c.key, key, func(str string, suffix string) interface{} {
-// 			if !strings.HasPrefix(str, "[") {
-// 				str = fmt.Sprintf("[%s]", str)
-// 			}
-
-// 			var data []m.File
-// 			var result []m.File
-
-// 			json.Unmarshal([]byte(str), &data)
-// 			for _, item := range data {
-// 				if item.ID != model.ID {
-// 					result = append(result, item)
-// 				} else if !delete {
-// 					result = append(result, *model)
-// 				}
-// 			}
-
-// 			// Postfilter elements with cache query
-// 			result = c.postfilter(result, suffix)
-
-// 			// Check if size of an array was changed
-// 			if delete {
-// 				return c.deepcache(result, suffix)
-// 			}
-
-// 			if len(result) != 0 {
-// 				return result
-// 			}
-
-// 			return nil
-// 		})
-// 	}
-// }
-
-// func (c *FileService) query(dto *m.FileQueryDto, client *gorm.DB) (*gorm.DB, string) {
-// 	var suffix []string
-
-// 	if dto.ID > 0 {
-// 		suffix = append(suffix, fmt.Sprintf("ID=%d", dto.ID))
-// 		client = client.Where("id = ?", dto.ID)
-// 	}
-
-// 	if dto.ProjectID > 0 {
-// 		suffix = append(suffix, fmt.Sprintf("PROJECT_ID=%d", dto.ProjectID))
-// 		client = client.Where("project_id = ?", dto.ProjectID)
-// 	}
-
-// 	if len(dto.Name) > 0 {
-// 		suffix = append(suffix, fmt.Sprintf("NAME=%s", dto.Name))
-// 		client = client.Where("name = ?", dto.Name)
-// 	}
-
-// 	if len(dto.Role) > 0 {
-// 		suffix = append(suffix, fmt.Sprintf("ROLE=%s", dto.Role))
-// 		client = client.Where("role = ?", dto.Role)
-// 	}
-
-// 	if len(dto.Path) > 0 {
-// 		suffix = append(suffix, fmt.Sprintf("PATH=%s", dto.Path))
-// 		client = client.Where("path = ?", dto.Path)
-// 	}
-
-// 	if dto.Page >= 0 {
-// 		var limit = config.ENV.Items
-// 		if dto.Limit > 0 {
-// 			limit = dto.Limit
-// 		}
-
-// 		suffix = append(suffix, fmt.Sprintf("PAGE=%d", dto.Page))
-// 		client = client.Offset(dto.Page * limit)
-
-// 		suffix = append(suffix, fmt.Sprintf("LIMIT=%d", limit))
-// 		client = client.Limit(limit)
-
-// 	}
-
-// 	return client, strings.Join(suffix, "#")
-// }
-
-// func (c *FileService) Read(query *m.FileQueryDto) ([]m.File, error) {
-// 	var model []m.File
-// 	client, suffix := c.query(query, c.db)
-
-// 	err, _ := helper.Getcache(client.Order("updated_at DESC"), c.client, c.key, suffix, &model)
-// 	return model, err
-// }
-
-// func (c *FileService) Update(query *m.FileQueryDto, model *m.File) ([]m.File, error) {
-// 	var res *gorm.DB
-// 	client, suffix := c.query(query, c.db)
-
-// 	var models = []m.File{}
-// 	if err, rows := helper.Getcache(client, c.client, c.key, suffix, &models); err != nil || rows == 0 {
-// 		return nil, fmt.Errorf("Requested model do not exist")
-// 	}
-
-// 	client, _ = c.query(query, c.db.Model(&m.File{}))
-// 	if res = client.Updates(model); res.Error != nil {
-// 		go logs.DefaultLog("/controllers/file.go", res.Error)
-// 		return nil, fmt.Errorf("Something unexpected happend: %v", res.Error)
-// 	}
-
-// 	for _, existed := range models {
-// 		c.recache(existed.Copy().Fill(model), c.keys(&existed), false)
-// 		c.recache(existed.Fill(model), c.keys(&existed), false)
-// 	}
-
-// 	if query.IsOK(model) {
-// 		return c.Read(query)
-// 	}
-
-// 	var result = []m.File{}
-// 	for _, item := range models {
-// 		var model, err = c.Read(&m.FileQueryDto{ID: item.ID})
-// 		if err != nil {
-// 			return nil, err
-// 		}
-
-// 		result = append(result, model...)
-// 	}
-// 	return result, nil
-// }
-
-// func (c *FileService) Delete(query *m.FileQueryDto) (int, error) {
-// 	var models []m.File
-// 	client, suffix := c.query(query, c.db)
-
-// 	if err, _ := helper.Getcache(client, c.client, c.key, suffix, &models); err != nil {
-// 		return 0, err
-// 	}
-
-// 	for _, model := range models {
-// 		c.recache(&model, c.keys(&model), true)
-// 	}
-
-// 	return len(models), client.Delete(&m.File{}).Error
-// }
+	return common.NewResponse[common.UuidResponseDto](entity), err
+}

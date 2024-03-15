@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"grape/src"
 	"grape/src/attachment"
 	"grape/src/auth"
@@ -34,8 +33,7 @@ import (
 // @in header
 // @name Authorization
 
-// @host mortis-grimreaper.ddns.net
-// @BasePath /api
+// @BasePath /grape
 func main() {
 	// config.NewConfigs([]func() config.ConfigT{
 	// 	config.NewEnvConfig("./", ""),
@@ -83,5 +81,5 @@ func main() {
 	}, service)
 
 	module.Init()
-	r.Run(fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port))
+	r.Run(cfg.Server.Address)
 }

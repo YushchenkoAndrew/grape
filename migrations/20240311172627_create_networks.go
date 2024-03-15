@@ -43,9 +43,9 @@ func upCreateNetworks(ctx context.Context, tx *sql.Tx) error {
 
 	var path string
 	if value, ok := os.LookupEnv(config.CONFIG_ARG); ok {
-		path = filepath.Join(value, cfg.Server.Migration)
+		path = filepath.Join(value, cfg.Server.Migrations)
 	} else {
-		path = filepath.Join(value, cfg.Server.Migration)
+		path = filepath.Join(value, cfg.Server.Migrations)
 	}
 
 	file, err := os.Open(filepath.Join(path, "tmp", "GeoLite2-Country-Blocks.csv"))

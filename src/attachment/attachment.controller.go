@@ -6,6 +6,7 @@ import (
 	"grape/src/common/dto/response"
 	"grape/src/user/entities"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,15 +30,20 @@ func (c *AttachmentController) dto(ctx *gin.Context, init ...*request.Attachment
 // @Produce application/json
 // @Produce application/xml
 // @Param id path string true "Attachment id"
-// @Success 200 {object} response.ProjectAdvancedResponseDto
+// @Success 200 {file} file
 // @failure 422 {object} response.Error
 // @Router /attachments/{id} [get]
 func (c *AttachmentController) FindOne(ctx *gin.Context) {
-	res, err := c.service.FindOne(
+	content, res, err := c.service.FindOne(
 		c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}}),
 	)
 
-	response.Handler(ctx, http.StatusOK, res, err)
+	if err != nil {
+		response.ThrowErr(ctx, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	ctx.Data(http.StatusOK, content, res)
 }
 
 // @Tags Attachment
@@ -48,7 +54,7 @@ func (c *AttachmentController) FindOne(ctx *gin.Context) {
 // @Security BearerAuth
 // @Param model formData request.AttachmentCreateDto true "File descriptions"
 // @Param file formData file true "File"
-// @Success 201 {object} response.UuidResponseDto
+// @Success 201 {object} response.AttachmentAdvancedResponseDto
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
@@ -66,78 +72,60 @@ func (c *AttachmentController) Create(ctx *gin.Context) {
 		return
 	}
 
+	if strings.Contains(file.Filename, " ") {
+		response.ThrowErr(ctx, http.StatusBadRequest, "Invalid filename")
+		return
+	}
+
 	res, err := c.service.Create(c.dto(ctx), &body, file)
 	response.Handler(ctx, http.StatusCreated, res, err)
 }
 
-// // @Tags File
-// // @Summary Update File by :id
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param id path int true "Instance id"
-// // @Param model body m.FileDto true "File Data"
-// // @Success 200 {object} m.Success{result=[]m.File}
-// // @failure 400 {object} m.Error
-// // @failure 401 {object} m.Error
-// // @failure 422 {object} m.Error
-// // @failure 429 {object} m.Error
-// // @failure 500 {object} m.Error
-// // @Router /file/{id} [put]
+// @Tags Attachment
+// @Summary Update attachment
+// @Accept multipart/form-data
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Attachment id"
+// @Param model formData request.AttachmentUpdateDto true "File descriptions"
+// @Param file formData file true "File"
+// @Success 200 {object} response.AttachmentAdvancedResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/attachments/{id} [put]
 func (c *AttachmentController) Update(ctx *gin.Context) {
-	// 	var body m.FileDto
-	// 	var id = helper.GetID(c, "id")
+	var body request.AttachmentUpdateDto
+	if err := ctx.Bind(&body); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
-	// 	if err := c.ShouldBind(&body); err != nil || id == 0 {
-	// 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
-	// 		return
-	// 	}
+	file, _ := ctx.FormFile(constant.FORM_DATA_FILE_FILE)
+	if file != nil && strings.Contains(file.Filename, " ") {
+		response.ThrowErr(ctx, http.StatusBadRequest, "Invalid filename")
+		return
+	}
 
-	// 	models, err := o.service.Update(&m.FileQueryDto{ID: uint32(id)}, &m.File{Name: body.Name, Path: body.Path, Type: body.Type, Role: body.Role})
-	// 	if err != nil {
-	// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 		return
-	// 	}
-
-	//	helper.ResHandler(c, http.StatusCreated, &m.Success{
-	//		Status: "OK",
-	//		Result: models,
-	//		Items:  len(models),
-	//	})
+	dto := c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}})
+	res, err := c.service.Update(dto, &body, file)
+	response.Handler(ctx, http.StatusOK, res, err)
 }
 
-// // @Tags File
-// // @Summary Delete File by :id
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param id path int true "Instance id"
-// // @Success 200 {object} m.Success{result=[]string{}}
-// // @failure 400 {object} m.Error
-// // @failure 401 {object} m.Error
-// // @failure 422 {object} m.Error
-// // @failure 429 {object} m.Error
-// // @failure 500 {object} m.Error
-// // @Router /file/{id} [delete]
+// @Tags Attachment
+// @Summary Delete attachment
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Param id path string true "Attachment id"
+// @Success 200 {file} file
+// @failure 422 {object} response.Error
+// @Router /attachments/{id} [delete]
 func (c *AttachmentController) Delete(ctx *gin.Context) {
-	// 	var id = helper.GetID(c, "id")
+	res, err := c.service.Delete(
+		c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}}),
+	)
 
-	// 	if id == 0 {
-	// 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
-	// 		return
-	// 	}
-
-	// 	items, err := o.service.Delete(&m.FileQueryDto{ID: uint32(id)})
-	// 	if err != nil {
-	// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-	// 		return
-	// 	}
-
-	//	helper.ResHandler(c, http.StatusOK, &m.Success{
-	//		Status: "OK",
-	//		Result: []string{},
-	//		Items:  items,
-	//	})
+	response.Handler(ctx, http.StatusOK, res, err)
 }

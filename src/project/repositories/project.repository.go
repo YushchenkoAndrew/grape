@@ -25,6 +25,14 @@ type projectRepository struct {
 	db *gorm.DB
 }
 
+func (c *projectRepository) conn(tx *gorm.DB) *gorm.DB {
+	if tx != nil {
+		return tx
+	}
+
+	return c.db
+}
+
 func (c *projectRepository) Model() *e.ProjectEntity {
 	return e.NewProjectEntity()
 }
@@ -35,8 +43,8 @@ func (c *projectRepository) Transaction(fc func(*gorm.DB) error) error {
 	})
 }
 
-func (c *projectRepository) Build(dto *r.ProjectDto, relations ...ProjectRelation) *gorm.DB {
-	tx := c.db.Model(c.Model()).Where(`projects.organization_id = ?`, dto.CurrentUser.Organization.ID)
+func (c *projectRepository) Build(db *gorm.DB, dto *r.ProjectDto, relations ...ProjectRelation) *gorm.DB {
+	tx := c.conn(db).Model(c.Model()).Where(`projects.organization_id = ?`, dto.CurrentUser.Organization.ID)
 
 	required := c.applyFilter(tx, dto, []ProjectRelation{})
 	c.attachRelations(tx, dto, append(relations, required...))
@@ -95,30 +103,30 @@ func (c *projectRepository) sortBy(tx *gorm.DB, dto *r.ProjectDto, _ []ProjectRe
 
 }
 
-func (c *projectRepository) Create(dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
+func (c *projectRepository) Create(tx *gorm.DB, dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
 	var order int64
-	c.Build(dto).Select(`MAX(projects.order) AS "order"`).Group("projects.id").Scan(&order)
+	c.Build(tx, dto).Select(`MAX(projects.order) AS "order"`).Group("projects.id").Scan(&order)
 
 	entity.Order = int(order) + 1
 	entity.Owner = *dto.CurrentUser
 	entity.Organization = dto.CurrentUser.Organization
 
 	entity.SetType(body.(*r.ProjectCreateDto).Type)
-	return c.db.Create(entity)
+	return c.conn(tx).Create(entity)
 }
 
-func (c *projectRepository) Update(dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
+func (c *projectRepository) Update(tx *gorm.DB, dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
 	options := body.(*r.ProjectUpdateDto)
 
 	entity.SetType(options.Type)
 	entity.SetStatus(options.Status)
 
-	return c.db.Model(entity).Updates(entity)
+	return c.conn(tx).Model(entity).Updates(entity)
 }
 
-func (c *projectRepository) Delete(dto *r.ProjectDto, entity *e.ProjectEntity) *gorm.DB {
+func (c *projectRepository) Delete(tx *gorm.DB, dto *r.ProjectDto, entity *e.ProjectEntity) *gorm.DB {
 	// TODO: Add transaction with recursive delete related entities
-	return c.db.Model(c.Model()).Delete(entity)
+	return c.conn(tx).Model(c.Model()).Delete(entity)
 }
 
 func NewProjectRepository(db *gorm.DB) *ProjectRepositoryT {

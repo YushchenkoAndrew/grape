@@ -21,6 +21,14 @@ type locationRepository struct {
 	db *gorm.DB
 }
 
+func (c *locationRepository) conn(tx *gorm.DB) *gorm.DB {
+	if tx != nil {
+		return tx
+	}
+
+	return c.db
+}
+
 func (c *locationRepository) Model() *e.LocationEntity {
 	return e.NewLocationEntity()
 }
@@ -29,8 +37,8 @@ func (c *locationRepository) Transaction(_ func(*gorm.DB) error) error {
 	return nil
 }
 
-func (c *locationRepository) Build(dto *r.LocationDto, relations ...LocationRelation) *gorm.DB {
-	tx := c.db.Model(c.Model())
+func (c *locationRepository) Build(db *gorm.DB, dto *r.LocationDto, relations ...LocationRelation) *gorm.DB {
+	tx := c.conn(db).Model(c.Model())
 
 	required := c.applyFilter(tx, dto, []LocationRelation{})
 	c.attachRelations(tx, dto, append(relations, required...))
@@ -63,15 +71,15 @@ func (c *locationRepository) attachRelations(tx *gorm.DB, _ *r.LocationDto, rela
 func (c *locationRepository) sortBy(tx *gorm.DB, dto *r.LocationDto, _ []LocationRelation) {
 }
 
-func (c *locationRepository) Create(dto *r.LocationDto, body interface{}, entity *e.LocationEntity) *gorm.DB {
+func (c *locationRepository) Create(tx *gorm.DB, dto *r.LocationDto, body interface{}, entity *e.LocationEntity) *gorm.DB {
 	return nil
 }
 
-func (c *locationRepository) Update(dto *r.LocationDto, body interface{}, entity *e.LocationEntity) *gorm.DB {
+func (c *locationRepository) Update(tx *gorm.DB, dto *r.LocationDto, body interface{}, entity *e.LocationEntity) *gorm.DB {
 	return nil
 }
 
-func (c *locationRepository) Delete(dto *r.LocationDto, entity *e.LocationEntity) *gorm.DB {
+func (c *locationRepository) Delete(tx *gorm.DB, dto *r.LocationDto, entity *e.LocationEntity) *gorm.DB {
 	return nil
 }
 
