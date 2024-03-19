@@ -8,22 +8,20 @@ import (
 )
 
 func init() {
-	goose.AddMigrationContext(upCreateLinks, downCreateLinks)
+	goose.AddMigrationContext(upCreateStatistics, downCreateStatistics)
 }
 
-func upCreateLinks(ctx context.Context, tx *sql.Tx) error {
+func upCreateStatistics(ctx context.Context, tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
-
 	_, err := tx.Exec(`
-	CREATE TABLE IF NOT EXISTS links (
+	CREATE TABLE IF NOT EXISTS statistics (
 		id bigserial PRIMARY KEY NOT NULL,
 		uuid character varying NOT NULL,
 		created_at timestamp(6) without time zone NOT NULL,
 		updated_at timestamp(6) without time zone NOT NULL,
-		name character varying NOT NULL,
-		link character varying NOT NULL,
-		type character varying NOT NULL,
-		project_id bigint NOT NULL REFERENCES projects(id)
+		views integer NOT NULL DEFAULT 0,
+		clicks integer NOT NULL DEFAULT 0,
+		media integer NOT NULL DEFAULT 0
 	);
 	`)
 
@@ -31,10 +29,11 @@ func upCreateLinks(ctx context.Context, tx *sql.Tx) error {
 		tx.Rollback()
 		return err
 	}
+
 	return nil
 }
 
-func downCreateLinks(ctx context.Context, tx *sql.Tx) error {
+func downCreateStatistics(ctx context.Context, tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	return nil
 }

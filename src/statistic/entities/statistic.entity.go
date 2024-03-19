@@ -5,15 +5,17 @@ import (
 )
 
 type StatisticEntity struct {
-	e.UuidEntity
+	*e.UuidEntity
 
-	// Countries string    `json:"countries" xml:"contries" example:"UK,US"`
-	Views    uint16 `gorm:"default:0" json:"views" xml:"views" example:"1"`
-	Clicks   uint16 `gorm:"default:0" json:"clicks" xml:"clicks" example:"2"`
-	Media    uint16 `gorm:"default:0" json:"media" xml:"media" example:"3"`
-	Visitors uint16 `gorm:"default:0" json:"visitors" xml:"visitors" example:"4"`
+	Views  int `gorm:"default:0"`
+	Clicks int `gorm:"default:0"`
+	Media  int `gorm:"default:0"`
 }
 
 func (*StatisticEntity) TableName() string {
 	return "statistics"
+}
+
+func NewStatisticEntity() *StatisticEntity {
+	return &StatisticEntity{UuidEntity: e.NewUuidEntity()}
 }

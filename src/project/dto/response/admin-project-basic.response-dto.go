@@ -4,8 +4,8 @@ import (
 	user "grape/src/user/dto/response"
 )
 
-type ProjectAdvancedResponseDto struct {
-	ProjectDetailedResponseDto
+type AdminProjectBasicResponseDto struct {
+	ProjectBasicResponseDto
 
 	CreatedAt string `copier:"CreatedAtISO" json:"created_at" xml:"created_at"`
 	Order     int    `json:"order" xml:"order" example:"0"`

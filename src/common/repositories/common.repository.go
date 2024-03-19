@@ -25,7 +25,6 @@ type CommonEntity interface {
 
 type CommonRepositoryT[Dto CommonDtoT, Entity CommonEntity, Relations any] interface {
 	Model() Entity
-	Transaction(func(*gorm.DB) error) error
 
 	Build(*gorm.DB, Dto, ...Relations) *gorm.DB
 	Create(*gorm.DB, Dto, interface{}, Entity) *gorm.DB
@@ -34,16 +33,31 @@ type CommonRepositoryT[Dto CommonDtoT, Entity CommonEntity, Relations any] inter
 }
 
 type CommonRepository[Entity CommonEntity, Dto CommonDtoT, Relations any] struct {
+	db      *gorm.DB
 	handler CommonRepositoryT[Dto, Entity, Relations]
+}
+
+func (c *CommonRepository[Entity, Dto, Relations]) connection(tx *gorm.DB) *gorm.DB {
+	if tx != nil {
+		return tx
+	}
+
+	return c.db
 }
 
 func (c *CommonRepository[Entity, Dto, Relations]) TableName() string {
 	return c.handler.Model().TableName()
 }
 
+func (c *CommonRepository[Entity, Dto, Relations]) Transaction(fc func(tx *gorm.DB) error) error {
+	return c.db.Transaction(func(tx *gorm.DB) error {
+		return fc(tx)
+	})
+}
+
 func (c *CommonRepository[Entity, Dto, Relations]) GetOne(dto Dto, relations ...Relations) (Entity, error) {
 	var result []Entity
-	if tx := c.handler.Build(nil, dto, relations...).Limit(1).Find(&result); tx.Error != nil {
+	if tx := c.handler.Build(c.db, dto, relations...).Limit(1).Find(&result); tx.Error != nil {
 		var e Entity
 		return e, tx.Error
 	}
@@ -58,7 +72,7 @@ func (c *CommonRepository[Entity, Dto, Relations]) GetOne(dto Dto, relations ...
 
 func (c *CommonRepository[Entity, Dto, Relations]) GetAll(dto Dto, relations ...Relations) ([]Entity, error) {
 	var result []Entity
-	if tx := c.handler.Build(nil, dto, relations...).Find(&result); tx.Error != nil {
+	if tx := c.handler.Build(c.db, dto, relations...).Find(&result); tx.Error != nil {
 		return nil, tx.Error
 	}
 
@@ -73,11 +87,11 @@ func (c *CommonRepository[Entity, Dto, Relations]) GetAllPage(dto Dto, relations
 		return 0, result, nil
 	}
 
-	if tx := c.handler.Build(nil, dto, relations...).Count(&cnt); tx.Error != nil {
+	if tx := c.handler.Build(c.db, dto, relations...).Count(&cnt); tx.Error != nil {
 		return 0, nil, tx.Error
 	}
 
-	if tx := c.handler.Build(nil, dto, relations...).Offset(dto.Offset()).Limit(dto.Limit()).Find(&result); tx.Error != nil {
+	if tx := c.handler.Build(c.db, dto, relations...).Offset(dto.Offset()).Limit(dto.Limit()).Find(&result); tx.Error != nil {
 		return 0, nil, tx.Error
 	}
 
@@ -98,23 +112,12 @@ func (c *CommonRepository[Entity, Dto, Relations]) ValidateEntityExistence(dto D
 	return e, fmt.Errorf("%s not found", c.TableName())
 }
 
-func (c *CommonRepository[Entity, Dto, Relations]) Create(tx *gorm.DB, dto Dto, body interface{}) (*Entity, error) {
+func (c *CommonRepository[Entity, Dto, Relations]) Create(db *gorm.DB, dto Dto, body interface{}) (Entity, error) {
 	entity := c.handler.Model()
 	copier.Copy(&entity, body)
 	entity.Create()
 
-	if tx := c.handler.Create(tx, dto, body, entity); tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return &entity, nil
-}
-
-func (c *CommonRepository[Entity, Dto, Relations]) Update(tx *gorm.DB, dto Dto, body interface{}, entity Entity) (Entity, error) {
-	copier.CopyWithOption(&entity, body, copier.Option{IgnoreEmpty: true})
-	entity.Update()
-
-	if tx := c.handler.Update(tx, dto, body, entity); tx.Error != nil {
+	if tx := c.handler.Create(c.connection(db), dto, body, entity); tx.Error != nil {
 		var e Entity
 		return e, tx.Error
 	}
@@ -122,22 +125,30 @@ func (c *CommonRepository[Entity, Dto, Relations]) Update(tx *gorm.DB, dto Dto, 
 	return entity, nil
 }
 
-func (c *CommonRepository[Entity, Dto, Relations]) Delete(tx *gorm.DB, dto Dto, entity Entity) error {
-	if tx := c.handler.Delete(tx, dto, entity); tx.Error != nil {
+func (c *CommonRepository[Entity, Dto, Relations]) Update(db *gorm.DB, dto Dto, body interface{}, entity Entity) (Entity, error) {
+	copier.CopyWithOption(&entity, body, copier.Option{IgnoreEmpty: true})
+	entity.Update()
+
+	if tx := c.handler.Update(c.connection(db), dto, body, entity); tx.Error != nil {
+		var e Entity
+		return e, tx.Error
+	}
+
+	return entity, nil
+}
+
+func (c *CommonRepository[Entity, Dto, Relations]) Delete(db *gorm.DB, dto Dto, entity Entity) error {
+	if tx := c.handler.Delete(c.connection(db), dto, entity); tx.Error != nil {
 		return tx.Error
 	}
 
 	return nil
 }
 
-func (c *CommonRepository[Entity, Dto, Relations]) Transaction(fc func(tx *gorm.DB) error) error {
-	return c.handler.Transaction(fc)
-}
-
 func NewSortBy(alias, column string, direction string) clause.OrderByColumn {
 	return clause.OrderByColumn{Column: clause.Column{Name: column, Table: alias}, Desc: types.Asc.Value(direction).Bool()}
 }
 
-func NewRepository[Entity CommonEntity, Dto CommonDtoT, Relations any](handler CommonRepositoryT[Dto, Entity, Relations]) *CommonRepository[Entity, Dto, Relations] {
-	return &CommonRepository[Entity, Dto, Relations]{handler}
+func NewRepository[Entity CommonEntity, Dto CommonDtoT, Relations any](db *gorm.DB, handler CommonRepositoryT[Dto, Entity, Relations]) *CommonRepository[Entity, Dto, Relations] {
+	return &CommonRepository[Entity, Dto, Relations]{db, handler}
 }

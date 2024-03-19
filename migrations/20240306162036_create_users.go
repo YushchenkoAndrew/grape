@@ -19,7 +19,7 @@ func upCreateUsers(ctx context.Context, tx *sql.Tx) error {
 		uuid character varying NOT NULL,
 		created_at timestamp(6) without time zone NOT NULL,
 		updated_at timestamp(6) without time zone NOT NULL,
-		organization_id bigint REFERENCES organizations(id),
+		organization_id bigint NOT NULL REFERENCES organizations(id),
 		name character varying NOT NULL,
 		password character varying NOT NULL,
 		status integer NOT NULL DEFAULT 0

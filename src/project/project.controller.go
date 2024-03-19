@@ -163,12 +163,9 @@ func (c *ProjectController) Update(ctx *gin.Context) {
 // @failure 422 {object} response.Error
 // @Router /admin/projects/{id} [delete]
 func (c *ProjectController) Delete(ctx *gin.Context) {
-	var body request.ProjectUpdateDto
-	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
-		return
-	}
+	res, err := c.service.Delete(
+		c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}),
+	)
 
-	res, err := c.service.Delete(c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}), &body)
 	response.Handler(ctx, http.StatusNoContent, res, err)
 }

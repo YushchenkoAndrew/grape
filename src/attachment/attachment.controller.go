@@ -119,13 +119,13 @@ func (c *AttachmentController) Update(ctx *gin.Context) {
 // @Produce application/json
 // @Produce application/xml
 // @Param id path string true "Attachment id"
-// @Success 200 {file} file
+// @Success 204
 // @failure 422 {object} response.Error
-// @Router /attachments/{id} [delete]
+// @Router /admin/attachments/{id} [delete]
 func (c *AttachmentController) Delete(ctx *gin.Context) {
 	res, err := c.service.Delete(
 		c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}}),
 	)
 
-	response.Handler(ctx, http.StatusOK, res, err)
+	response.Handler(ctx, http.StatusNoContent, res, err)
 }

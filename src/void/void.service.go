@@ -10,6 +10,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -79,17 +81,18 @@ func (c *VoidService) Delete(path string) (*response.VoidApiResponseDto, error) 
 	return c.response(res.Body)
 }
 
-func (c *VoidService) Rename(src, dst, filename string) error {
-	res, err := c.http("GET", src, "application/json", nil)
+func (c *VoidService) Rename(src, dst string, copy bool) error {
+	body := url.Values{}
+	body.Set("path", dst)
+	body.Set("replace", strconv.FormatBool(!copy))
+
+	res, err := c.http("PUT", src, "application/x-www-form-urlencoded", strings.NewReader(body.Encode()))
 	if err != nil {
 		return err
 	}
 
-	if _, err := c.Delete(src); err != nil {
-		return err
-	}
-
-	return c.Save(dst, filename, res.Body)
+	_, err = c.response(res.Body)
+	return err
 }
 
 func (c *VoidService) response(body io.Reader) (*response.VoidApiResponseDto, error) {

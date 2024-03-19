@@ -5,6 +5,7 @@ import (
 	r "grape/src/project/dto/request"
 	e "grape/src/project/entities"
 	"grape/src/project/types"
+	st "grape/src/statistic/entities"
 
 	"github.com/samber/lo"
 	"gorm.io/gorm"
@@ -17,34 +18,22 @@ const (
 	Attachments  ProjectRelation = "Attachments"
 	Links        ProjectRelation = "Links"
 	Owner        ProjectRelation = "Owner"
+	ColorPalette ProjectRelation = "ColorPalette"
+	SvgPattern   ProjectRelation = "SvgPattern"
+	Statistic    ProjectRelation = "Statistic"
 )
 
 type ProjectRepositoryT = repositories.CommonRepository[*e.ProjectEntity, *r.ProjectDto, ProjectRelation]
 
 type projectRepository struct {
-	db *gorm.DB
-}
-
-func (c *projectRepository) conn(tx *gorm.DB) *gorm.DB {
-	if tx != nil {
-		return tx
-	}
-
-	return c.db
 }
 
 func (c *projectRepository) Model() *e.ProjectEntity {
 	return e.NewProjectEntity()
 }
 
-func (c *projectRepository) Transaction(fc func(*gorm.DB) error) error {
-	return c.db.Transaction(func(tx *gorm.DB) error {
-		return fc(tx.Model(c.Model()))
-	})
-}
-
 func (c *projectRepository) Build(db *gorm.DB, dto *r.ProjectDto, relations ...ProjectRelation) *gorm.DB {
-	tx := c.conn(db).Model(c.Model()).Where(`projects.organization_id = ?`, dto.CurrentUser.Organization.ID)
+	tx := db.Model(c.Model()).Where(`projects.organization_id = ?`, dto.CurrentUser.Organization.ID)
 
 	required := c.applyFilter(tx, dto, []ProjectRelation{})
 	c.attachRelations(tx, dto, append(relations, required...))
@@ -103,32 +92,42 @@ func (c *projectRepository) sortBy(tx *gorm.DB, dto *r.ProjectDto, _ []ProjectRe
 
 }
 
-func (c *projectRepository) Create(tx *gorm.DB, dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
+func (c *projectRepository) Create(db *gorm.DB, dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
 	var order int64
-	c.Build(tx, dto).Select(`MAX(projects.order) AS "order"`).Group("projects.id").Scan(&order)
+	c.Build(db, dto).Select(`MAX(projects.order) AS "order"`).Group("projects.id").Scan(&order)
+
+	db.First(&entity.SvgPattern)
+	db.First(&entity.ColorPalette)
 
 	entity.Order = int(order) + 1
-	entity.Owner = *dto.CurrentUser
-	entity.Organization = dto.CurrentUser.Organization
+	entity.Owner = dto.CurrentUser
+	entity.Organization = &dto.CurrentUser.Organization
+	entity.Statistic = st.NewStatisticEntity()
 
 	entity.SetType(body.(*r.ProjectCreateDto).Type)
-	return c.conn(tx).Create(entity)
+	return db.Create(entity)
 }
 
-func (c *projectRepository) Update(tx *gorm.DB, dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
+func (c *projectRepository) Update(db *gorm.DB, dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
 	options := body.(*r.ProjectUpdateDto)
 
 	entity.SetType(options.Type)
 	entity.SetStatus(options.Status)
 
-	return c.conn(tx).Model(entity).Updates(entity)
+	return db.Model(entity).Updates(entity)
 }
 
-func (c *projectRepository) Delete(tx *gorm.DB, dto *r.ProjectDto, entity *e.ProjectEntity) *gorm.DB {
+func (c *projectRepository) Delete(db *gorm.DB, dto *r.ProjectDto, entity *e.ProjectEntity) *gorm.DB {
 	// TODO: Add transaction with recursive delete related entities
-	return c.conn(tx).Model(c.Model()).Delete(entity)
+	return db.Model(c.Model()).Delete(entity)
 }
+
+var repository *projectRepository
 
 func NewProjectRepository(db *gorm.DB) *ProjectRepositoryT {
-	return repositories.NewRepository(&projectRepository{db})
+	if repository == nil {
+		repository = &projectRepository{}
+	}
+
+	return repositories.NewRepository(db, repository)
 }

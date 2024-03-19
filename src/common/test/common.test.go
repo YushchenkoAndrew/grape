@@ -21,6 +21,7 @@ import (
 )
 
 func SetUpRouter(module func(route *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT) *gin.Engine {
+	gin.SetMode(gin.TestMode)
 	cfg := config.NewConfig("configs/", "config_test", "yaml")
 
 	service := &service.CommonService{
@@ -29,7 +30,8 @@ func SetUpRouter(module func(route *gin.RouterGroup, modules *[]m.ModuleT, s *se
 		Config: cfg,
 	}
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
 	rg := r.Group(cfg.Server.Prefix, middleware.GetMiddleware(service).Default())
 	module(rg, &[]m.ModuleT{}, service).Init()
 	return r

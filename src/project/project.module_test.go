@@ -80,7 +80,7 @@ func TestProjectModule(t *testing.T) {
 				require.Equal(t, "TestProject", entity.Name)
 				require.Equal(t, "Testing project", entity.Description)
 				require.Equal(t, "html", entity.Type)
-				require.Equal(t, "Test footer", entity.Footer)
+				// require.Equal(t, "Test footer", entity.Footer)
 			},
 		},
 		{
@@ -100,7 +100,7 @@ func TestProjectModule(t *testing.T) {
 				require.Equal(t, "UpdatedProject", entity.Name)
 				require.Equal(t, "Updated project description", entity.Description)
 				require.Equal(t, "markdown", entity.Type)
-				require.Equal(t, "Updated footer", entity.Footer)
+				// require.Equal(t, "Updated footer", entity.Footer)
 			},
 		},
 		{

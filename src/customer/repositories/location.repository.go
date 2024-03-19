@@ -2,8 +2,8 @@ package repositories
 
 import (
 	"grape/src/common/repositories"
-	r "grape/src/filter/dto/request"
-	e "grape/src/filter/entities"
+	r "grape/src/customer/dto/request"
+	e "grape/src/customer/entities"
 
 	"github.com/samber/lo"
 	"gorm.io/gorm"
@@ -18,27 +18,14 @@ const (
 type LocationRepositoryT = repositories.CommonRepository[*e.LocationEntity, *r.LocationDto, LocationRelation]
 
 type locationRepository struct {
-	db *gorm.DB
-}
-
-func (c *locationRepository) conn(tx *gorm.DB) *gorm.DB {
-	if tx != nil {
-		return tx
-	}
-
-	return c.db
 }
 
 func (c *locationRepository) Model() *e.LocationEntity {
 	return e.NewLocationEntity()
 }
 
-func (c *locationRepository) Transaction(_ func(*gorm.DB) error) error {
-	return nil
-}
-
 func (c *locationRepository) Build(db *gorm.DB, dto *r.LocationDto, relations ...LocationRelation) *gorm.DB {
-	tx := c.conn(db).Model(c.Model())
+	tx := db.Model(c.Model())
 
 	required := c.applyFilter(tx, dto, []LocationRelation{})
 	c.attachRelations(tx, dto, append(relations, required...))
@@ -52,7 +39,7 @@ func (c *locationRepository) applyFilter(tx *gorm.DB, dto *r.LocationDto, relati
 		relations = append(relations, Network)
 		tx.Where(lo.Reduce(dto.IP, func(acc *gorm.DB, curr string, _ int) *gorm.DB {
 			return acc.Where(`network >>= ?::inet`, curr)
-		}, c.db))
+		}, tx))
 	}
 
 	return relations
@@ -83,6 +70,12 @@ func (c *locationRepository) Delete(tx *gorm.DB, dto *r.LocationDto, entity *e.L
 	return nil
 }
 
+var repository *locationRepository
+
 func NewLocationRepository(db *gorm.DB) *LocationRepositoryT {
-	return repositories.NewRepository(&locationRepository{db})
+	if repository == nil {
+		repository = &locationRepository{}
+	}
+
+	return repositories.NewRepository(db, repository)
 }

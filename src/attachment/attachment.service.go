@@ -8,6 +8,8 @@ import (
 	"grape/src/attachment/repositories"
 	common "grape/src/common/dto/response"
 	"grape/src/common/service"
+	pre "grape/src/project/entities"
+	prt "grape/src/project/types"
 	"grape/src/void"
 	"mime/multipart"
 	"path/filepath"
@@ -15,6 +17,7 @@ import (
 	project "grape/src/project/dto/request"
 	pr "grape/src/project/repositories"
 
+	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 )
 
@@ -56,7 +59,7 @@ func (c *AttachmentService) Create(dto *request.AttachmentDto, body *request.Att
 			return nil, err
 		}
 
-		entity.Home = filepath.Join("/", body.AttachableType, project.UUID)
+		entity.Home = project.GetPath()
 		err = c.ProjectRepository.Transaction(func(tx *gorm.DB) error {
 			if err := tx.Model(project).Association("Attachments").Append(entity); err != nil {
 				return err
@@ -92,11 +95,12 @@ func (c *AttachmentService) Update(dto *request.AttachmentDto, body *request.Att
 				return err
 			}
 
-			return c.VoidService.Rename(path, entity.GetPath(), entity.Name)
+			return c.VoidService.Rename(path, entity.GetFile(), false)
 		}
 
 		e := entities.AttachmentEntity{}
 		e.Name, e.Path, e.Size, e.Type = file.Filename, body.Path, file.Size, filepath.Ext(file.Filename)
+		copier.CopyWithOption(&e, body, copier.Option{IgnoreEmpty: true})
 
 		if _, err := c.Repository.Update(tx, dto, e, entity); err != nil {
 			return err
@@ -108,7 +112,7 @@ func (c *AttachmentService) Update(dto *request.AttachmentDto, body *request.Att
 		}
 
 		defer f.Close()
-		if err := c.VoidService.Save(entity.GetPath(), file.Filename, f); err != nil {
+		if err := c.VoidService.Save(entity.GetPath(), e.Name, f); err != nil {
 			return err
 		}
 
@@ -119,7 +123,7 @@ func (c *AttachmentService) Update(dto *request.AttachmentDto, body *request.Att
 	return common.NewResponse[response.AttachmentAdvancedResponseDto](entity), err
 }
 
-func (c *AttachmentService) Delete(dto *request.AttachmentDto) (*common.UuidResponseDto, error) {
+func (c *AttachmentService) Delete(dto *request.AttachmentDto) (interface{}, error) {
 	entity, err := c.Repository.ValidateEntityExistence(dto)
 	if err != nil {
 		return nil, err
@@ -135,5 +139,34 @@ func (c *AttachmentService) Delete(dto *request.AttachmentDto) (*common.UuidResp
 
 	})
 
-	return common.NewResponse[common.UuidResponseDto](entity), err
+	return nil, err
+}
+
+func (c *AttachmentService) InitProjectFromTemplate(project *pre.ProjectEntity) []entities.AttachmentEntity {
+	var attachments []entities.AttachmentEntity
+
+	entity := entities.NewAttachmentEntity()
+	entity.Home = project.GetPath()
+	entity.Create()
+
+	switch project.Type {
+	case prt.Html:
+		entity.Name, entity.Path, entity.Size, entity.Type = "index.html", "/", 0, ".html"
+		c.VoidService.Rename("/templates/html.template.html", entity.GetFile(), true)
+
+	case prt.Markdown:
+		entity.Name, entity.Path, entity.Size, entity.Type = "index.md", "/", 0, ".md"
+		c.VoidService.Rename("/templates/markdown.template.md", entity.GetFile(), true)
+
+	// TODO:
+	// case K3s:
+	default:
+		entity = nil
+	}
+
+	if entity != nil {
+		attachments = append(attachments, *entity)
+	}
+
+	return attachments
 }

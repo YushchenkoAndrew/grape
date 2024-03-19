@@ -19,14 +19,14 @@ func upCreateProjects(ctx context.Context, tx *sql.Tx) error {
 		uuid character varying NOT NULL,
 		created_at timestamp(6) without time zone NOT NULL,
 		updated_at timestamp(6) without time zone NOT NULL,
-		organization_id bigint REFERENCES organizations(id),
+		organization_id bigint NOT NULL REFERENCES organizations(id),
 		name character varying NOT NULL,
 		description character varying DEFAULT '',
 		type integer NOT NULL DEFAULT 0,
 		status integer NOT NULL DEFAULT 0,
 		footer character varying,
 		"order" integer NOT NULL DEFAULT 0,
-		owner_id bigint REFERENCES users(id)
+		owner_id bigint NOT NULL REFERENCES users(id)
 	);
 	`)
 

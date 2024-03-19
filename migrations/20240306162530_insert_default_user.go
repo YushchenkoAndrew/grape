@@ -3,7 +3,6 @@ package migrations
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
@@ -20,8 +19,6 @@ func upInsertDefaultUser(ctx context.Context, tx *sql.Tx) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("%s - %s\n", cfg.User.Name, cfg.User.Name)
 
 	_, err = tx.Exec(`
 	INSERT INTO users(uuid, created_at, updated_at, organization_id, name, password)

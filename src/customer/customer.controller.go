@@ -1,8 +1,8 @@
-package filter
+package customer
 
 import (
 	"grape/src/common/dto/response"
-	"grape/src/filter/dto/request"
+	"grape/src/customer/dto/request"
 	"grape/src/user/entities"
 	"net"
 	"net/http"
@@ -10,15 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type FilterController struct {
-	service *FilterService
+type CustomerController struct {
+	service *CustomerService
 }
 
-func NewFilterController(s *FilterService) *FilterController {
-	return &FilterController{service: s}
+func NewCustomerController(s *CustomerService) *CustomerController {
+	return &CustomerController{service: s}
 }
 
-// @Tags Filter
+// @Tags Customer
 // @Summary Trace Ip :ip
 // @Accept json
 // @Produce application/json
@@ -28,7 +28,7 @@ func NewFilterController(s *FilterService) *FilterController {
 // @failure 400 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /trace/{ip} [get]
-func (c *FilterController) TraceIp(ctx *gin.Context) {
+func (c *CustomerController) TraceIp(ctx *gin.Context) {
 	ip := ctx.Param("ip")
 	user, _ := ctx.Get("user")
 

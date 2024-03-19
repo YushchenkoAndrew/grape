@@ -42,7 +42,7 @@ func Handler[T any](ctx *gin.Context, status int, res T, err error) {
 
 func NewResponse[Response any, Entity any](entity *Entity) *Response {
 	var res Response
-	copier.Copy(&res, &entity)
+	copier.CopyWithOption(&res, &entity, copier.Option{DeepCopy: true})
 	return &res
 }
 
