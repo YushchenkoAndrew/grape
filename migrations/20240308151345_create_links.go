@@ -22,7 +22,6 @@ func upCreateLinks(ctx context.Context, tx *sql.Tx) error {
 		updated_at timestamp(6) without time zone NOT NULL,
 		name character varying NOT NULL,
 		link character varying NOT NULL,
-		type character varying NOT NULL,
 		project_id bigint NOT NULL REFERENCES projects(id)
 	);
 	`)

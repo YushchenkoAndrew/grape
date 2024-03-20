@@ -14,6 +14,7 @@ import (
 	"grape/src/project"
 	"grape/src/project/dto/request"
 	"grape/src/project/dto/response"
+	statistic "grape/src/statistic/dto/request"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -28,10 +29,10 @@ var cfg *config.DatabaseConfig
 func init() {
 	cfg = config.NewDatabaseConfig("configs/", "database", "yaml")
 	router = test.SetUpRouter(
-		func(route *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT {
-			return src.NewIndexModule(route, &[]m.ModuleT{
-				auth.NewAuthModule(route, &[]m.ModuleT{}, s),
-				project.NewProjectModule(route, &[]m.ModuleT{}, s),
+		func(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
+			return src.NewIndexModule(route, []m.ModuleT{
+				auth.NewAuthModule(route, []m.ModuleT{}, s),
+				project.NewProjectModule(route, []m.ModuleT{}, s),
 			}, s)
 		},
 	)
@@ -73,7 +74,7 @@ func TestProjectModule(t *testing.T) {
 				var res common.UuidResponseDto
 				json.Unmarshal(w.Body.Bytes(), &res)
 
-				var entity response.ProjectBasicResponseDto
+				var entity response.ProjectDetailedResponseDto
 				validate(res.Id, &entity)
 
 				project_id = res.Id
@@ -94,13 +95,60 @@ func TestProjectModule(t *testing.T) {
 				var res common.UuidResponseDto
 				json.Unmarshal(w.Body.Bytes(), &res)
 
-				var entity response.ProjectBasicResponseDto
+				var entity response.ProjectDetailedResponseDto
 				validate(res.Id, &entity)
 
 				require.Equal(t, "UpdatedProject", entity.Name)
 				require.Equal(t, "Updated project description", entity.Description)
 				require.Equal(t, "markdown", entity.Type)
 				// require.Equal(t, "Updated footer", entity.Footer)
+			},
+		},
+		{
+			name:     "Project update click statistic",
+			method:   "PUT",
+			url:      func() string { return fmt.Sprintf("/projects/%s/statistics", project_id) },
+			body:     statistic.StatisticUpdateDto{Kind: "click"},
+			expected: http.StatusNoContent,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
+			name:     "Project update click statistic",
+			method:   "PUT",
+			url:      func() string { return fmt.Sprintf("/projects/%s/statistics", project_id) },
+			body:     statistic.StatisticUpdateDto{Kind: "click"},
+			expected: http.StatusNoContent,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
+			name:     "Project update view statistic",
+			method:   "PUT",
+			url:      func() string { return fmt.Sprintf("/projects/%s/statistics", project_id) },
+			body:     statistic.StatisticUpdateDto{Kind: "view"},
+			expected: http.StatusNoContent,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
+			name:     "Project update media statistic",
+			method:   "PUT",
+			url:      func() string { return fmt.Sprintf("/projects/%s/statistics", project_id) },
+			body:     statistic.StatisticUpdateDto{Kind: "media"},
+			expected: http.StatusNoContent,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
+			name:     "Project validate statistic",
+			method:   "GET",
+			url:      func() string { return fmt.Sprintf("/admin/projects/%s", project_id) },
+			auth:     token,
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res response.AdminProjectDetailedResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				require.Equal(t, 1, res.Statistic.Views)
+				require.Equal(t, 2, res.Statistic.Clicks)
+				require.Equal(t, 1, res.Statistic.Media)
 			},
 		},
 		{

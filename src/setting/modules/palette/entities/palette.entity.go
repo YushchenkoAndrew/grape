@@ -7,7 +7,7 @@ import (
 	"github.com/lib/pq"
 )
 
-type ColorPaletteEntity struct {
+type PaletteEntity struct {
 	*entities.UuidEntity
 
 	OrganizationID int64                  `gorm:"not null" copier:"-"`
@@ -16,10 +16,10 @@ type ColorPaletteEntity struct {
 	Colors pq.StringArray `gorm:"type:character varying[]"`
 }
 
-func (*ColorPaletteEntity) TableName() string {
-	return "color_palettes"
+func (*PaletteEntity) TableName() string {
+	return "palettes"
 }
 
-func NewColorPaletteEntity() *ColorPaletteEntity {
-	return &ColorPaletteEntity{UuidEntity: entities.NewUuidEntity()}
+func NewPaletteEntity() *PaletteEntity {
+	return &PaletteEntity{UuidEntity: entities.NewUuidEntity()}
 }

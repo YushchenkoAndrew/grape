@@ -22,8 +22,8 @@ func upCreateProjects(ctx context.Context, tx *sql.Tx) error {
 		organization_id bigint NOT NULL REFERENCES organizations(id),
 		name character varying NOT NULL,
 		description character varying DEFAULT '',
-		type integer NOT NULL DEFAULT 0,
-		status integer NOT NULL DEFAULT 0,
+		type integer NOT NULL DEFAULT 1,
+		status integer NOT NULL DEFAULT 1,
 		footer character varying,
 		"order" integer NOT NULL DEFAULT 0,
 		owner_id bigint NOT NULL REFERENCES users(id)

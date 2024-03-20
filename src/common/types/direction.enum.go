@@ -3,7 +3,7 @@ package types
 type DirectionEnum int
 
 const (
-	Asc DirectionEnum = iota
+	Asc DirectionEnum = iota + 1
 	Desc
 )
 

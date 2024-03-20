@@ -11,7 +11,7 @@ type authRouter struct {
 	*m.Module[*AuthController]
 }
 
-func NewAuthModule(route *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT {
+func NewAuthModule(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
 	return &authRouter{
 		Module: &m.Module[*AuthController]{
 			Route:      route,

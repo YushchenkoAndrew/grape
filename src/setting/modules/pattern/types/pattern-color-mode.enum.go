@@ -1,14 +1,14 @@
 package types
 
-type ColorPaletteModeEnum int
+type PatternColorModeEnum int
 
 const (
-	Stroke ColorPaletteModeEnum = iota
+	Stroke PatternColorModeEnum = iota + 1
 	Fill
 	Join
 )
 
-func (c ColorPaletteModeEnum) String() string {
+func (c PatternColorModeEnum) String() string {
 	switch c {
 	case Stroke:
 		return "stroke"
@@ -23,7 +23,7 @@ func (c ColorPaletteModeEnum) String() string {
 	return ""
 }
 
-func (ColorPaletteModeEnum) Value(str string) ColorPaletteModeEnum {
+func (PatternColorModeEnum) Value(str string) PatternColorModeEnum {
 	switch str {
 	case "stroke":
 		return Stroke

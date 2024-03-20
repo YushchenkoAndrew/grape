@@ -22,7 +22,7 @@ func upCreateUsers(ctx context.Context, tx *sql.Tx) error {
 		organization_id bigint NOT NULL REFERENCES organizations(id),
 		name character varying NOT NULL,
 		password character varying NOT NULL,
-		status integer NOT NULL DEFAULT 0
+		status integer NOT NULL DEFAULT 1
 	);
 	`)
 

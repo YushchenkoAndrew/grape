@@ -11,7 +11,7 @@ type indexModule struct {
 	*m.Module[IndexT]
 }
 
-func NewIndexModule(route *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT {
+func NewIndexModule(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
 	return &indexModule{
 		Module: &m.Module[IndexT]{
 			Route:      route,

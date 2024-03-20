@@ -5,13 +5,19 @@ import (
 )
 
 type LinkEntity struct {
-	e.UuidEntity
+	*e.UuidEntity
 
-	Name      string `gorm:"not null"`
-	Link      string `gorm:"not null"`
-	ProjectID int64  `gorm:"foreignKey:ProjectID;not null"`
+	Name string `gorm:"not null"`
+	Link string `gorm:"not null"`
+
+	LinkableID   int64  `gorm:"not null" copier:"-"`
+	LinkableType string `gorm:"not null" copier:"-"`
 }
 
 func (*LinkEntity) TableName() string {
 	return "links"
+}
+
+func NewLinkEntity() *LinkEntity {
+	return &LinkEntity{UuidEntity: e.NewUuidEntity()}
 }

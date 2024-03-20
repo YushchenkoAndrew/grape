@@ -1,4 +1,4 @@
-package models
+package k3s
 
 // type K3sListQueryDto struct {
 // 	Kind       string `form:"kind,omitempty"`

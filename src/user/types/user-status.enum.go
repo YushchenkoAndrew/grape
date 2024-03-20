@@ -3,6 +3,6 @@ package types
 type UserStatusEnum int
 
 const (
-	Active UserStatusEnum = iota
+	Active UserStatusEnum = iota + 1
 	Inactive
 )

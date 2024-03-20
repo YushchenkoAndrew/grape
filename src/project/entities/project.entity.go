@@ -5,8 +5,9 @@ import (
 	e "grape/src/common/entities"
 	ln "grape/src/link/entities"
 	t "grape/src/project/types"
+	palette "grape/src/setting/modules/palette/entities"
+	pattern "grape/src/setting/modules/pattern/entities"
 	st "grape/src/statistic/entities"
-	style "grape/src/style/entities"
 	org "grape/src/user/entities"
 	"path/filepath"
 	"strings"
@@ -19,8 +20,8 @@ type ProjectEntity struct {
 
 	Name        string              `gorm:"not null"`
 	Description string              `gorm:"default:''"`
-	Type        t.ProjectTypeEnum   `gorm:"not null;default:0"`
-	Status      t.ProjectStatusEnum `gorm:"not null;default:0" copier:"-"`
+	Type        t.ProjectTypeEnum   `gorm:"not null;default:1"`
+	Status      t.ProjectStatusEnum `gorm:"not null;default:1"`
 	Footer      string              ``
 	Order       int                 `gorm:"not null;default:0" copier:"-"`
 
@@ -30,16 +31,16 @@ type ProjectEntity struct {
 	OrganizationID int64                   `gorm:"not null" copier:"-"`
 	Organization   *org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID" copier:"-"`
 
-	ColorPaletteID int64                     `gorm:"not null" copier:"-"`
-	ColorPalette   *style.ColorPaletteEntity `gorm:"foreignKey:ColorPaletteID;references:ID" copier:"-"`
+	PaletteID int64                  `gorm:"not null" copier:"-"`
+	Palette   *palette.PaletteEntity `gorm:"foreignKey:PaletteID;references:ID" copier:"-"`
 
 	StatisticID int64               `gorm:"not null" copier:"-"`
 	Statistic   *st.StatisticEntity `gorm:"foreignKey:StatisticID;references:ID" copier:"-"`
 
-	SvgPatternID int64                   `gorm:"not null" copier:"-"`
-	SvgPattern   *style.SvgPatternEntity `gorm:"foreignKey:SvgPatternID;references:ID" copier:"-"`
+	PatternID int64                  `gorm:"not null" copier:"-"`
+	Pattern   *pattern.PatternEntity `gorm:"foreignKey:PatternID;references:ID" copier:"-"`
 
-	Links       []ln.LinkEntity        `gorm:"foreignKey:ProjectID" copier:"-"`
+	Links       []ln.LinkEntity        `gorm:"polymorphic:Linkable" copier:"-"`
 	Attachments []att.AttachmentEntity `gorm:"polymorphic:Attachable" copier:"-"`
 
 	// Metrics      []Metrics      `gorm:"foreignKey:ProjectID" json:"metrics" xml:"metrics"`
@@ -55,7 +56,7 @@ func (c *ProjectEntity) GetStatus() string {
 }
 
 func (c *ProjectEntity) SetStatus(str string) {
-	if len(str) != 0 {
+	if str != "" {
 		c.Status = t.Active.Value(str)
 	}
 }
@@ -65,13 +66,9 @@ func (c *ProjectEntity) GetType() string {
 }
 
 func (c *ProjectEntity) SetType(str string) {
-	if len(str) != 0 {
+	if str != "" {
 		c.Type = t.Html.Value(str)
 	}
-}
-
-func (c *ProjectEntity) GetColors() []string {
-	return []string(c.ColorPalette.Colors)
 }
 
 func (c *ProjectEntity) GetThumbnail() *att.AttachmentEntity {

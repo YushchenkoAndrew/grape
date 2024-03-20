@@ -10,7 +10,9 @@ import (
 	m "grape/src/common/module"
 	"grape/src/common/service"
 	"grape/src/customer"
+	"grape/src/link"
 	"grape/src/project"
+	"grape/src/statistic"
 	"grape/src/swagger"
 
 	_ "grape/src/common/validator"
@@ -51,12 +53,14 @@ func main() {
 
 	r := gin.Default()
 	rg := r.Group(cfg.Server.Prefix, middleware.GetMiddleware(service).Default())
-	module := src.NewIndexModule(rg, &[]m.ModuleT{
+	module := src.NewIndexModule(rg, []m.ModuleT{
 		swagger.NewSwaggerRouter(rg),
-		auth.NewAuthModule(rg, &[]m.ModuleT{}, service),
-		customer.NewCustomerModule(rg, &[]m.ModuleT{}, service),
-		project.NewProjectModule(rg, &[]m.ModuleT{}, service),
-		attachment.NewAttachmentModule(rg, &[]m.ModuleT{}, service),
+		auth.NewAuthModule(rg, []m.ModuleT{}, service),
+		customer.NewCustomerModule(rg, []m.ModuleT{}, service),
+		project.NewProjectModule(rg, []m.ModuleT{}, service),
+		attachment.NewAttachmentModule(rg, []m.ModuleT{}, service),
+		link.NewLinkModule(rg, []m.ModuleT{}, service),
+		statistic.NewStatisticModule(rg, []m.ModuleT{}, service),
 		// routes.NewLinkRouter(rg, db, redis),
 		// routes.NewBotRouter(rg, db, redis),
 		// routes.NewPatternRouter(rg, db, redis),

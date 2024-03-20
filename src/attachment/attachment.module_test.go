@@ -9,12 +9,10 @@ import (
 	"grape/src/attachment/dto/response"
 	"grape/src/auth"
 	"grape/src/common/config"
-	common "grape/src/common/dto/response"
 	m "grape/src/common/module"
 	"grape/src/common/service"
 	"grape/src/common/test"
 	"grape/src/project"
-	pr_res "grape/src/project/dto/response"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -33,11 +31,11 @@ var cfg *config.DatabaseConfig
 func init() {
 	cfg = config.NewDatabaseConfig("configs/", "database", "yaml")
 	router = test.SetUpRouter(
-		func(route *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT {
-			return src.NewIndexModule(route, &[]m.ModuleT{
-				auth.NewAuthModule(route, &[]m.ModuleT{}, s),
-				project.NewProjectModule(route, &[]m.ModuleT{}, s),
-				attachment.NewAttachmentModule(route, &[]m.ModuleT{}, s),
+		func(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
+			return src.NewIndexModule(route, []m.ModuleT{
+				auth.NewAuthModule(route, []m.ModuleT{}, s),
+				project.NewProjectModule(route, []m.ModuleT{}, s),
+				attachment.NewAttachmentModule(route, []m.ModuleT{}, s),
 			}, s)
 		},
 	)
@@ -80,7 +78,7 @@ func TestAttachmentModule(t *testing.T) {
 				writer := multipart.NewWriter(body)
 
 				writer.WriteField("path", "/test/")
-				writer.WriteField("attachable_id", GetProject(t, token))
+				writer.WriteField("attachable_id", test.GetProject(t, router, token).Id)
 				writer.WriteField("attachable_type", "projects")
 
 				part, _ := writer.CreateFormFile("file", filepath.Base(file.Name()))
@@ -202,22 +200,4 @@ func TestAttachmentModule(t *testing.T) {
 			}
 		})
 	}
-}
-
-func GetProject(t *testing.T, token string) string {
-	req, _ := http.NewRequest("GET", "/grape/projects", nil)
-
-	w := httptest.NewRecorder()
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-
-	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusOK, w.Code)
-
-	var res *common.PageResponseDto[[]pr_res.ProjectBasicResponseDto]
-	json.Unmarshal(w.Body.Bytes(), &res)
-
-	require.Greater(t, res.Total, 0)
-	require.NotEmpty(t, res.Result[0].Id)
-	return res.Result[0].Id
 }

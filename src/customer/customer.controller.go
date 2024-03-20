@@ -24,7 +24,7 @@ func NewCustomerController(s *CustomerService) *CustomerController {
 // @Produce application/json
 // @Produce application/xml
 // @Param ip path string true "Client IP"
-// @Success 200 {object} response.PageResponseDto[[]response.ProjectBasicResponseDto]
+// @Success 200 {object} response.LocationResponseDto
 // @failure 400 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /trace/{ip} [get]

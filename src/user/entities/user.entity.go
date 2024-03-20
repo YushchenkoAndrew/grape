@@ -10,7 +10,7 @@ type UserEntity struct {
 
 	Name     string           `gorm:"not null"`
 	Password string           `gorm:"not null"`
-	Status   t.UserStatusEnum `gorm:"not null;default:0"`
+	Status   t.UserStatusEnum `gorm:"not null;default:1"`
 
 	OrganizationID int64              `gorm:"not null"`
 	Organization   OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID"`

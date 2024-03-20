@@ -3,17 +3,17 @@ package entities
 import (
 	"encoding/json"
 	"grape/src/common/entities"
-	t "grape/src/style/types"
+	t "grape/src/setting/modules/pattern/types"
 	org "grape/src/user/entities"
 )
 
-type SvgPatternEntity struct {
+type PatternEntity struct {
 	*entities.UuidEntity
 
 	OrganizationID int64                  `gorm:"not null" copier:"-"`
 	Organization   org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID" copier:"-"`
 
-	Mode   t.ColorPaletteModeEnum `gorm:"not null,default:0"`
+	Mode   t.PatternColorModeEnum `gorm:"not null,default:1"`
 	Colors int                    `gorm:"not null"`
 
 	Options string  `gorm:"not null"`
@@ -23,31 +23,31 @@ type SvgPatternEntity struct {
 	Path string `gorm:"not null"`
 }
 
-func (*SvgPatternEntity) TableName() string {
-	return "svg_patterns"
+func (*PatternEntity) TableName() string {
+	return "patterns"
 }
 
-func (c *SvgPatternEntity) GetOptions() *t.ColorPaletteOptionsType {
-	result := &t.ColorPaletteOptionsType{}
+func (c *PatternEntity) GetOptions() *t.PatternOptionsType {
+	result := &t.PatternOptionsType{}
 	json.Unmarshal([]byte(c.Options), result)
 	return result
 }
 
-func (c *SvgPatternEntity) SetOptions(data *t.ColorPaletteOptionsType) {
+func (c *PatternEntity) SetOptions(data *t.PatternOptionsType) {
 	json, _ := json.Marshal(data)
 	c.Options = string(json)
 }
 
-func (c *SvgPatternEntity) GetMode() string {
+func (c *PatternEntity) GetMode() string {
 	return c.Mode.String()
 }
 
-func (c *SvgPatternEntity) SetMode(str string) {
+func (c *PatternEntity) SetMode(str string) {
 	if len(str) != 0 {
 		c.Mode = t.Fill.Value(str)
 	}
 }
 
-func NewSvgPatternEntity() *SvgPatternEntity {
-	return &SvgPatternEntity{UuidEntity: entities.NewUuidEntity()}
+func NewSvgPatternEntity() *PatternEntity {
+	return &PatternEntity{UuidEntity: entities.NewUuidEntity()}
 }

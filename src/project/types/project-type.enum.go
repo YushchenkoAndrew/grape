@@ -3,7 +3,7 @@ package types
 type ProjectTypeEnum int
 
 const (
-	Html ProjectTypeEnum = iota
+	Html ProjectTypeEnum = iota + 1
 	Markdown
 	Link
 	K3s

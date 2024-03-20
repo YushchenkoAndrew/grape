@@ -7,5 +7,7 @@ type ProjectUpdateDto struct {
 	Status      string `json:"status" xml:"status" binding:"omitempty,oneof=active inactive"`
 	Footer      string `json:"footer" xml:"footer" binding:"omitempty"`
 
+	PaletteID string `json:"palette_id" xml:"palette_id" binding:"omitempty,uuid4"`
+	PatternID string `json:"pattern_id" xml:"pattern_id" binding:"omitempty,uuid4"`
 	// Attachments *
 }

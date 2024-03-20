@@ -12,12 +12,13 @@ type attachmentModule struct {
 	*m.Module[*AttachmentController]
 }
 
-func NewAttachmentModule(rg *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT {
+func NewAttachmentModule(rg *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
 	return &attachmentModule{
 		Module: &m.Module[*AttachmentController]{
 			Route:      rg.Group("/attachments"),
 			Auth:       rg.Group("/admin/attachments", h.GetMiddleware(nil).Jwt()),
 			Controller: NewAttachmentController(NewAttachmentService(s)),
+			Modules:    modules,
 		},
 	}
 }

@@ -3,7 +3,7 @@ package types
 type ProjectStatusEnum int
 
 const (
-	Active ProjectStatusEnum = iota
+	Active ProjectStatusEnum = iota + 1
 	Inactive
 )
 

@@ -23,7 +23,7 @@ func init() {
 func upCreateColorPalettes(ctx context.Context, tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	_, err := tx.Exec(`
-	CREATE TABLE IF NOT EXISTS color_palettes (
+	CREATE TABLE IF NOT EXISTS palettes (
 		id bigserial PRIMARY KEY NOT NULL,
 		uuid character varying NOT NULL,
 		created_at timestamp(6) without time zone NOT NULL,
@@ -63,7 +63,7 @@ func upCreateColorPalettes(ctx context.Context, tx *sql.Tx) error {
 	scanner := bufio.NewScanner(file)
 	insert := func(chunk []string, args []interface{}) error {
 		_, err := tx.Exec(fmt.Sprintf(`
-			INSERT INTO color_palettes(uuid, created_at, updated_at, organization_id, colors)
+			INSERT INTO palettes(uuid, created_at, updated_at, organization_id, colors)
 				VALUES %s;
 			`, strings.Join(chunk, ", ")), args...)
 

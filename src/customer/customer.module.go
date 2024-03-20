@@ -11,7 +11,7 @@ type customerModule struct {
 	*m.Module[*CustomerController]
 }
 
-func NewCustomerModule(rg *gin.RouterGroup, modules *[]m.ModuleT, client *service.CommonService) m.ModuleT {
+func NewCustomerModule(rg *gin.RouterGroup, modules []m.ModuleT, client *service.CommonService) m.ModuleT {
 	return &customerModule{
 		Module: &m.Module[*CustomerController]{
 			Route:      rg,

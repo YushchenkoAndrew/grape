@@ -12,7 +12,7 @@ type Module[T any] struct {
 	Route      *gin.RouterGroup
 	Auth       *gin.RouterGroup
 	Controller T
-	Modules    *[]ModuleT
+	Modules    []ModuleT
 }
 
 func (c *Module[T]) Init() {
@@ -20,7 +20,7 @@ func (c *Module[T]) Init() {
 		return
 	}
 
-	for _, route := range *c.Modules {
+	for _, route := range c.Modules {
 		route.Init()
 	}
 }

@@ -1,4 +1,6 @@
-package style
+package pattern
+
+import "grape/src/common/service"
 
 // import (
 // 	"grape/config"
@@ -15,16 +17,11 @@ package style
 // 	"gorm.io/gorm"
 // )
 
-// type PatternService struct {
-// 	key string
+type PatternService struct{}
 
-// 	db     *gorm.DB
-// 	client *redis.Client
-// }
-
-// func NewPatternService(db *gorm.DB, client *redis.Client) i.Default[m.Pattern, m.PatternQueryDto] {
-// 	return &PatternService{key: "PATTERN", db: db, client: client}
-// }
+func NewPatternService(s *service.CommonService) *PatternService {
+	return &PatternService{}
+}
 
 // func (c *PatternService) keys(model *m.Pattern) []string {
 // 	return []string{fmt.Sprintf("MODE=%s*", model.Mode), fmt.Sprintf("COLORS=%d*", model.Colors), "", "PAGE=*", "LIMIT=*"}

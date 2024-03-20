@@ -1,12 +1,12 @@
-package style
+package pattern
 
-// type patternController struct {
-// 	service service.Default[m.Pattern, m.PatternQueryDto]
-// }
+type PatternController struct {
+	service *PatternService
+}
 
-// func NewPatternController(s service.Default[m.Pattern, m.PatternQueryDto]) controller.Default {
-// 	return &patternController{service: s}
-// }
+func NewPatternController(s *PatternService) *PatternController {
+	return &PatternController{service: s}
+}
 
 // // @Tags Pattern
 // // @Summary Create Pattern by project id

@@ -18,8 +18,8 @@ const (
 	Attachments  ProjectRelation = "Attachments"
 	Links        ProjectRelation = "Links"
 	Owner        ProjectRelation = "Owner"
-	ColorPalette ProjectRelation = "ColorPalette"
-	SvgPattern   ProjectRelation = "SvgPattern"
+	Palette      ProjectRelation = "Palette"
+	Pattern      ProjectRelation = "Pattern"
 	Statistic    ProjectRelation = "Statistic"
 )
 
@@ -69,8 +69,7 @@ func (c *projectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, relation
 func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relations []ProjectRelation) {
 	for _, r := range relations {
 		switch r {
-		case Links:
-		case Attachments:
+		case Links, Attachments:
 			tx.Preload(string(r))
 
 		default:
@@ -81,9 +80,7 @@ func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relati
 
 func (c *projectRepository) sortBy(tx *gorm.DB, dto *r.ProjectDto, _ []ProjectRelation) {
 	switch dto.SortBy {
-	case "name":
-	case "order":
-	case "created_at":
+	case "name", "order", "created_at":
 		tx.Order(repositories.NewSortBy(c.Model().TableName(), dto.SortBy, dto.Direction))
 
 	default:
@@ -96,8 +93,8 @@ func (c *projectRepository) Create(db *gorm.DB, dto *r.ProjectDto, body interfac
 	var order int64
 	c.Build(db, dto).Select(`MAX(projects.order) AS "order"`).Group("projects.id").Scan(&order)
 
-	db.First(&entity.SvgPattern)
-	db.First(&entity.ColorPalette)
+	db.First(&entity.Pattern)
+	db.First(&entity.Palette)
 
 	entity.Order = int(order) + 1
 	entity.Owner = dto.CurrentUser
@@ -110,6 +107,14 @@ func (c *projectRepository) Create(db *gorm.DB, dto *r.ProjectDto, body interfac
 
 func (c *projectRepository) Update(db *gorm.DB, dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
 	options := body.(*r.ProjectUpdateDto)
+
+	if options.PaletteID != "" {
+		db.First(&entity.Palette, "uuid = ?", options.PaletteID)
+	}
+
+	if options.PatternID != "" {
+		db.First(&entity.Pattern, "uuid = ?", options.PatternID)
+	}
 
 	entity.SetType(options.Type)
 	entity.SetStatus(options.Status)

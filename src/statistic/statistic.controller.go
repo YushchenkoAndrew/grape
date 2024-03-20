@@ -6,11 +6,12 @@ import (
 
 type StatisticT interface{}
 
-type statisticController struct{}
+type StatisticController struct {
+	service *StatisticService
+}
 
-// func NewInfoController() interfaces.Info {
-func NewStatisticController() interface{} {
-	return &statisticController{}
+func NewStatisticController(s *StatisticService) *StatisticController {
+	return &StatisticController{service: s}
 }
 
 // func (*infoController) filterQuery(c *gin.Context) (*gorm.DB, string) {
@@ -67,59 +68,6 @@ func NewStatisticController() interface{} {
 // }
 
 // // @Tags Info
-// // @Summary Create one instace of Info
-// // @Description 'CreatedAt' setted automatically
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param model body models.InfoDto true "Info Data"
-// // @Success 201 {object} models.Success{result=[]models.Info}
-// // @failure 400 {object} models.Error
-// // @failure 401 {object} models.Error
-// // @failure 422 {object} models.Error
-// // @failure 429 {object} models.Error
-// // @failure 500 {object} models.Error
-// // @Router /info [post]
-func (o *statisticController) Create(c *gin.Context) {
-	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
-
-	// var model = make([]models.Info, 1)
-	// var body models.InfoDto
-	// if err := c.ShouldBind(&body); err != nil || body.Countries == "" {
-	// 	helper.ErrHandler(c, http.StatusBadRequest, "Incorrect body params or id parm")
-	// 	return
-	// }
-
-	// o.parseBody(&body, &model[0])
-	// result := db.DB.Create(&model)
-	// if result.Error != nil {
-	// 	helper.ErrHandler(c, http.StatusInternalServerError, "Server side error: Something went wrong")
-	// 	go logs.DefaultLog("/controllers/info.go", result.Error)
-	// 	return
-	// }
-
-	// go db.FlushValue("INFO")
-
-	// ctx := context.Background()
-	// db.Redis.Incr(ctx, "nINFO")
-	// items, err := db.Redis.Get(ctx, "nINFO").Int64()
-	// if err != nil {
-	// 	items = -1
-	// 	go (&models.Info{}).Redis(db.DB, db.Redis)
-	// 	go logs.DefaultLog("/controllers/info.go", err.Error())
-	// }
-
-	// go db.Redis.Del(ctx, "INFO:SUM")
-	// helper.ResHandler(c, http.StatusCreated, &models.Success{
-	// 	Status:     "OK",
-	// 	Result:     model,
-	// 	Items:      result.RowsAffected,
-	// 	TotalItems: items,
-	// })
-}
-
-// // @Tags Info
 // // @Summary Create/Update Info
 // // @Accept json
 // // @Produce application/json
@@ -134,7 +82,7 @@ func (o *statisticController) Create(c *gin.Context) {
 // // @failure 429 {object} models.Error
 // // @failure 500 {object} models.Error
 // // @Router /info/{date} [post]
-func (o *statisticController) CreateOne(c *gin.Context) {
+func (o *StatisticController) CreateOne(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var date = c.Param("date")
@@ -218,7 +166,7 @@ func (o *statisticController) CreateOne(c *gin.Context) {
 // // @failure 429 {object} models.Error
 // // @failure 500 {object} models.Error
 // // @Router /info/list [post]
-func (o *statisticController) CreateAll(c *gin.Context) {
+func (o *StatisticController) CreateAll(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var body []models.InfoDto
@@ -274,7 +222,7 @@ func (o *statisticController) CreateAll(c *gin.Context) {
 // // @failure 400 {object} models.Error
 // // @failure 500 {object} models.Error
 // // @Router /info/{id} [get]
-func (o *statisticController) ReadOne(c *gin.Context) {
+func (o *StatisticController) ReadOne(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var id int
@@ -323,7 +271,7 @@ func (o *statisticController) ReadOne(c *gin.Context) {
 // // @failure 400 {object} models.Error
 // // @failure 500 {object} models.Error
 // // @Router /info [get]
-func (o *statisticController) ReadAll(c *gin.Context) {
+func (o *StatisticController) ReadAll(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var model []models.Info
@@ -368,7 +316,7 @@ func (o *statisticController) ReadAll(c *gin.Context) {
 // // @failure 429 {object} models.Error
 // // @failure 500 {object} models.Error
 // // @Router /info/{id} [put]
-func (o *statisticController) UpdateOne(c *gin.Context) {
+func (o *StatisticController) UpdateOne(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var id int
@@ -428,7 +376,7 @@ func (o *statisticController) UpdateOne(c *gin.Context) {
 // // @failure 429 {object} models.Error
 // // @failure 500 {object} models.Error
 // // @Router /info [put]
-func (o *statisticController) UpdateAll(c *gin.Context) {
+func (o *StatisticController) UpdateAll(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var body models.InfoDto
@@ -488,7 +436,7 @@ func (o *statisticController) UpdateAll(c *gin.Context) {
 // // @failure 429 {object} models.Error
 // // @failure 500 {object} models.Error
 // // @Router /info/{id} [delete]
-func (o *statisticController) DeleteOne(c *gin.Context) {
+func (o *StatisticController) DeleteOne(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var id int
@@ -550,7 +498,7 @@ func (o *statisticController) DeleteOne(c *gin.Context) {
 // // @failure 429 {object} models.Error
 // // @failure 500 {object} models.Error
 // // @Router /info [delete]
-func (o *statisticController) DeleteAll(c *gin.Context) {
+func (o *StatisticController) DeleteAll(c *gin.Context) {
 	// helper.CreateErr(c, http.StatusInternalServerError, "Not implimented")
 
 	// var sKeys string

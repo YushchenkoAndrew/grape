@@ -3,12 +3,15 @@ package test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"grape/src/auth/dto/request"
 	"grape/src/auth/dto/response"
 	"grape/src/common/client"
 	"grape/src/common/config"
+	common "grape/src/common/dto/response"
 	"grape/src/common/middleware"
 	"grape/src/common/service"
+	pr "grape/src/project/dto/response"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func SetUpRouter(module func(route *gin.RouterGroup, modules *[]m.ModuleT, s *service.CommonService) m.ModuleT) *gin.Engine {
+func SetUpRouter(module func(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	cfg := config.NewConfig("configs/", "config_test", "yaml")
 
@@ -33,7 +36,7 @@ func SetUpRouter(module func(route *gin.RouterGroup, modules *[]m.ModuleT, s *se
 	r := gin.New()
 	r.Use(gin.Recovery())
 	rg := r.Group(cfg.Server.Prefix, middleware.GetMiddleware(service).Default())
-	module(rg, &[]m.ModuleT{}, service).Init()
+	module(rg, []m.ModuleT{}, service).Init()
 	return r
 }
 
@@ -53,4 +56,32 @@ func GetToken(t *testing.T, router *gin.Engine, cfg *config.DatabaseConfig) (str
 	require.NotEmpty(t, res.AccessToken)
 	require.NotEmpty(t, res.RefreshToken)
 	return res.AccessToken, res.RefreshToken
+}
+
+func GetProject(t *testing.T, router *gin.Engine, token string) *pr.AdminProjectDetailedResponseDto {
+	req, _ := http.NewRequest("GET", "/grape/projects", nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var res *common.PageResponseDto[[]pr.AdminProjectBasicResponseDto]
+	json.Unmarshal(w.Body.Bytes(), &res)
+
+	require.Greater(t, res.Total, 0)
+	require.NotEmpty(t, res.Result[0].Id)
+
+	req, _ = http.NewRequest("GET", fmt.Sprintf("/grape/admin/projects/%s", res.Result[0].Id), nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var project *pr.AdminProjectDetailedResponseDto
+	json.Unmarshal(w.Body.Bytes(), &project)
+	return project
 }

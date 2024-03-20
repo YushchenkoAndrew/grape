@@ -3,33 +3,27 @@ package statistic
 import (
 	"grape/src/common/middleware"
 	m "grape/src/common/module"
+	"grape/src/common/service"
 
 	"github.com/gin-gonic/gin"
 )
 
-type infoModule struct {
-	*m.Module[StatisticT]
+type statisticModule struct {
+	*m.Module[*StatisticController]
 }
 
-func NewInfoModule(rg *gin.RouterGroup, handlers []func(*gin.RouterGroup) m.ModuleT) m.ModuleT {
-	// var subRoutes []interfaces.Router
-	// for _, handler := range handlers {
-	// 	subRoutes = append(subRoutes, handler(route))
-	// }
-
-	// TODO:
-	return &infoModule{
-		Module: &m.Module[StatisticT]{
-			Route: rg.Group("/info"),
-			Auth:  rg.Group("/info", middleware.GetMiddleware(nil).Jwt()),
-			// info:      c.NewInfoController(),
-			// SubRoutes: subRoutes,
+func NewStatisticModule(rg *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
+	return &statisticModule{
+		Module: &m.Module[*StatisticController]{
+			Route:      rg.Group("/statistics"),
+			Auth:       rg.Group("/statistics", middleware.GetMiddleware(nil).Jwt()),
+			Controller: NewStatisticController(NewStatisticService(s)),
+			Modules:    modules,
 		},
 	}
 }
 
-// FIXME: !!!
-func (c *infoModule) Init() {
+func (c *statisticModule) Init() {
 	// c.auth.POST("", c.info.Create)
 	// c.auth.POST("/list", c.info.CreateAll)
 	// c.auth.POST("/:date", c.info.CreateOne)

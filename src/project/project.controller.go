@@ -3,6 +3,7 @@ package project
 import (
 	"grape/src/common/dto/response"
 	"grape/src/project/dto/request"
+	statistic "grape/src/statistic/dto/request"
 	"grape/src/user/entities"
 	"net/http"
 
@@ -167,5 +168,29 @@ func (c *ProjectController) Delete(ctx *gin.Context) {
 		c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}),
 	)
 
+	response.Handler(ctx, http.StatusNoContent, res, err)
+}
+
+// @Tags Project
+// @Summary Add 1 to appropriate project statistic
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Param id path string true "Attachment id"
+// @Param kind path string true "Attachment id"
+// @Param model body request.StatisticUpdateDto true "Statistic update"
+// @Success 204
+// @failure 400 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /projects/{id}/statistics [put]
+func (c *ProjectController) UpdateProjectStatistics(ctx *gin.Context) {
+	var body statistic.StatisticUpdateDto
+	if err := ctx.Bind(&body); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	dto := c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}})
+	res, err := c.service.UpdateProjectStatistics(dto, &body)
 	response.Handler(ctx, http.StatusNoContent, res, err)
 }

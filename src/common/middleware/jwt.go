@@ -54,38 +54,38 @@ func (c *Middleware) Jwt() gin.HandlerFunc {
 	}
 }
 
-func (o *Middleware) AuthToken(key string, model interface{}) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// valid := regexp.MustCompile("^[A-Za-z0-9]+$")
-		// bearToken := strings.Split(c.Request.Header.Get("Authorization"), " ")
+// func (o *Middleware) AuthToken(key string, model interface{}) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		valid := regexp.MustCompile("^[A-Za-z0-9]+$")
+// 		bearToken := strings.Split(c.Request.Header.Get("Authorization"), " ")
 
-		// if len(bearToken) != 2 || !valid.MatchString(bearToken[1]) {
-		// 	helper.ErrHandler(c, http.StatusUnauthorized, "Invalid token inforamation")
-		// 	go client.SendLogs(&client.Message{
-		// 		Stat:    "ERR",
-		// 		Name:    "grape",
-		// 		File:    "/middleware/auth.go",
-		// 		Message: "Ohhh nyo your token is inccorrect",
-		// 	})
-		// 	return
-		// }
+// 		if len(bearToken) != 2 || !valid.MatchString(bearToken[1]) {
+// 			helper.ErrHandler(c, http.StatusUnauthorized, "Invalid token inforamation")
+// 			go client.SendLogs(&client.Message{
+// 				Stat:    "ERR",
+// 				Name:    "grape",
+// 				File:    "/middleware/auth.go",
+// 				Message: "Ohhh nyo your token is inccorrect",
+// 			})
+// 			return
+// 		}
 
-		// if err, items := helper.Getcache(o.db.Where(fmt.Sprintf("MD5(CONCAT(SPLIT_PART(token, '$', 1), '%s', '%s')) = SPLIT_PART(token, '$', 2)", config.ENV.Pepper, bearToken[1])), o.client, key, fmt.Sprintf("TOKEN=%s", bearToken[1]), model); err != nil || items == 0 {
-		// 	helper.ErrHandler(c, http.StatusUnauthorized, err.Error())
-		// 	go client.SendLogs(&client.Message{
-		// 		Stat:    "ERR",
-		// 		Name:    "grape",
-		// 		File:    "/middleware/auth.go",
-		// 		Message: "Ohhh nyo your token is inccorrect",
-		// 	})
-		// 	return
-		// }
+// 		if err, items := helper.Getcache(o.db.Where(fmt.Sprintf("MD5(CONCAT(SPLIT_PART(token, '$', 1), '%s', '%s')) = SPLIT_PART(token, '$', 2)", config.ENV.Pepper, bearToken[1])), o.client, key, fmt.Sprintf("TOKEN=%s", bearToken[1]), model); err != nil || items == 0 {
+// 			helper.ErrHandler(c, http.StatusUnauthorized, err.Error())
+// 			go client.SendLogs(&client.Message{
+// 				Stat:    "ERR",
+// 				Name:    "grape",
+// 				File:    "/middleware/auth.go",
+// 				Message: "Ohhh nyo your token is inccorrect",
+// 			})
+// 			return
+// 		}
 
-		// // before request
+// 		// before request
 
-		// c.Next()
+// 		c.Next()
 
-		// // after request
+// 		// after request
 
-	}
-}
+// 	}
+// }

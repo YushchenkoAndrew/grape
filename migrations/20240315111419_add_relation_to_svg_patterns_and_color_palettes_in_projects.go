@@ -18,12 +18,12 @@ func upAddRelationToSvgPatternsAndColorPalettesInProjects(ctx context.Context, t
 		return err
 	}
 
-	if _, err := tx.Exec(`ALTER TABLE projects ADD COLUMN color_palette_id bigint NOT NULL REFERENCES color_palettes(id);`); err != nil {
+	if _, err := tx.Exec(`ALTER TABLE projects ADD COLUMN palette_id bigint NOT NULL REFERENCES palettes(id);`); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if _, err := tx.Exec(`ALTER TABLE projects ADD COLUMN svg_pattern_id bigint NOT NULL REFERENCES svg_patterns(id);`); err != nil {
+	if _, err := tx.Exec(`ALTER TABLE projects ADD COLUMN pattern_id bigint NOT NULL REFERENCES patterns(id);`); err != nil {
 		tx.Rollback()
 		return err
 	}

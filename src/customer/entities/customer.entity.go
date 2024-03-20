@@ -2,10 +2,14 @@ package entities
 
 import (
 	e "grape/src/common/entities"
+	user "grape/src/user/entities"
 )
 
 type CustomerEntity struct {
 	*e.UuidEntity
+
+	OrganizationID int64                   `gorm:"not null"`
+	Organization   user.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID"`
 
 	NetworkID int64          `gorm:"not null" copier:"-"`
 	Network   *NetworkEntity `gorm:"foreignKey:NetworkID;references:ID" copier:"-"`

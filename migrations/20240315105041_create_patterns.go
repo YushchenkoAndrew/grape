@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"grape/src/common/config"
-	"grape/src/style/types"
+	"grape/src/setting/modules/pattern/types"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -24,13 +24,13 @@ func init() {
 func upCreateSvgPatterns(ctx context.Context, tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	_, err := tx.Exec(`
-	CREATE TABLE IF NOT EXISTS svg_patterns (
+	CREATE TABLE IF NOT EXISTS patterns (
 		id bigserial PRIMARY KEY NOT NULL,
 		uuid character varying NOT NULL,
 		created_at timestamp(6) without time zone NOT NULL,
 		updated_at timestamp(6) without time zone NOT NULL,
 		organization_id bigint REFERENCES organizations(id),
-		mode integer NOT NULL DEFAULT 0,
+		mode integer NOT NULL DEFAULT 1,
 		colors integer NOT NULL,
 		options jsonb NOT NULL DEFAULT '{"max_stroke": 0, "max_scale": 0, "max_spacing_x": 0, "max_spacing_y": 0}'::jsonb,
 		width float NOT NULL DEFAULT 0,
@@ -77,7 +77,7 @@ func upCreateSvgPatterns(ctx context.Context, tx *sql.Tx) error {
 	scanner := bufio.NewScanner(file)
 	insert := func(chunk []string, args []interface{}) error {
 		_, err := tx.Exec(fmt.Sprintf(`
-			INSERT INTO svg_patterns(uuid, created_at, updated_at, organization_id, mode, colors, options, width, height, path)
+			INSERT INTO patterns(uuid, created_at, updated_at, organization_id, mode, colors, options, width, height, path)
 				VALUES %s;
 			`, strings.Join(chunk, ", ")), args...)
 
@@ -100,7 +100,7 @@ func upCreateSvgPatterns(ctx context.Context, tx *sql.Tx) error {
 		max_spacing_x, _ := strconv.ParseFloat(s[MAX_SPACING_X], 32)
 		max_spacing_y, _ := strconv.ParseFloat(s[MAX_SPACING_Y], 32)
 
-		data := &types.ColorPaletteOptionsType{MaxStroke: float32(max_stroke), MaxScale: int(max_scale), MaxSpacingX: float32(max_spacing_x), MaxSpacingY: float32(max_spacing_y)}
+		data := &types.PatternOptionsType{MaxStroke: float32(max_stroke), MaxScale: int(max_scale), MaxSpacingX: float32(max_spacing_x), MaxSpacingY: float32(max_spacing_y)}
 		json, _ := json.Marshal(data)
 
 		chunk = append(chunk, fmt.Sprintf(`('%s', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, %d, %s, '%s'::jsonb, %s, %s, $%d)`, uuid.New().String(), int(types.Fill.Value(s[MODE])), s[COLORS], string(json), s[WIDTH], s[HEIGHT], len(args)+1))
