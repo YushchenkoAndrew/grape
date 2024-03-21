@@ -10,8 +10,8 @@ import (
 type PatternEntity struct {
 	*entities.UuidEntity
 
-	OrganizationID int64                  `gorm:"not null" copier:"-"`
-	Organization   org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID" copier:"-"`
+	OrganizationID int64                   `gorm:"not null" copier:"-"`
+	Organization   *org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID" copier:"-"`
 
 	Mode   t.PatternColorModeEnum `gorm:"not null,default:1"`
 	Colors int                    `gorm:"not null"`
@@ -48,6 +48,6 @@ func (c *PatternEntity) SetMode(str string) {
 	}
 }
 
-func NewSvgPatternEntity() *PatternEntity {
+func NewPatternEntity() *PatternEntity {
 	return &PatternEntity{UuidEntity: entities.NewUuidEntity()}
 }

@@ -14,7 +14,7 @@ type module struct {
 func NewPatternModule(rg *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
 	return &module{
 		Module: &m.Module[*PatternController]{
-			Route:      rg.Group("/pattern"),
+			Route:      rg.Group("/patterns"),
 			Controller: NewPatternController(NewPatternService(s)),
 			Modules:    modules,
 		},
@@ -22,5 +22,12 @@ func NewPatternModule(rg *gin.RouterGroup, modules []m.ModuleT, s *service.Commo
 }
 
 func (c *module) Init() {
+	c.Route.GET("", c.Controller.FindAll)
+	c.Route.GET("/:id", c.Controller.FindOne)
+
+	c.Route.POST("", c.Controller.Create)
+	c.Route.PUT("/:id", c.Controller.Update)
+	c.Route.DELETE("/:id", c.Controller.Delete)
+
 	c.Module.Init()
 }

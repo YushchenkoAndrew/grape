@@ -17,7 +17,7 @@ func (c PatternColorModeEnum) String() string {
 		return "fill"
 
 	case Join:
-		return "Join"
+		return "join"
 	}
 
 	return ""

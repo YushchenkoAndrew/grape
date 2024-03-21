@@ -12,6 +12,7 @@ import (
 	"grape/src/customer"
 	"grape/src/link"
 	"grape/src/project"
+	"grape/src/setting"
 	"grape/src/statistic"
 	"grape/src/swagger"
 
@@ -61,6 +62,7 @@ func main() {
 		attachment.NewAttachmentModule(rg, []m.ModuleT{}, service),
 		link.NewLinkModule(rg, []m.ModuleT{}, service),
 		statistic.NewStatisticModule(rg, []m.ModuleT{}, service),
+		setting.NewSettingModule(rg, []m.ModuleT{}, service),
 		// routes.NewLinkRouter(rg, db, redis),
 		// routes.NewBotRouter(rg, db, redis),
 		// routes.NewPatternRouter(rg, db, redis),

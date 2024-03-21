@@ -1,5 +1,14 @@
 package pattern
 
+import (
+	"grape/src/common/dto/response"
+	"grape/src/setting/modules/pattern/dto/request"
+	"grape/src/user/entities"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
 type PatternController struct {
 	service *PatternService
 }
@@ -8,299 +17,116 @@ func NewPatternController(s *PatternService) *PatternController {
 	return &PatternController{service: s}
 }
 
-// // @Tags Pattern
-// // @Summary Create Pattern by project id
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param model body m.PatternDto true "Pattern info"
-// // @Success 201 {object} m.Success{result=[]m.Pattern}
-// // @failure 400 {object} m.Error
-// // @failure 401 {object} m.Error
-// // @failure 422 {object} m.Error
-// // @failure 429 {object} m.Error
-// // @failure 500 {object} m.Error
-// // @Router /pattern [post]
-// func (o *patternController) CreateOne(c *gin.Context) {
-// 	var body m.PatternDto
-// 	if err := c.ShouldBind(&body); err != nil || !body.IsOK() {
-// 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t }", body.IsOK()))
-// 		return
-// 	}
+func (c *PatternController) dto(ctx *gin.Context, init ...*request.PatternDto) *request.PatternDto {
+	user, _ := ctx.Get("user")
+	return request.NewPatternDto(user.(*entities.UserEntity), init...)
+}
 
-// 	var model = m.Pattern{Mode: body.Mode, Colors: body.Colors, MaxStroke: body.MaxStroke, MaxScale: body.MaxScale, MaxSpacingX: body.MaxSpacingX, MaxSpacingY: body.MaxSpacingY, Width: body.Width, Height: body.Height, Path: body.Path}
-// 	if err := o.service.Create(&model); err != nil {
-// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-// 		return
-// 	}
+// @Tags Pattern
+// @Summary Find all pattern, paginated
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param model query request.PatternDto true "Pattern Data"
+// @Success 200 {object} response.PageResponseDto[[]response.PatternBasicResponseDto]
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/settings/patterns [get]
+func (c *PatternController) FindAll(ctx *gin.Context) {
+	dto := c.dto(ctx)
 
-// 	helper.ResHandler(c, http.StatusCreated, &m.Success{
-// 		Status: "OK",
-// 		Result: []m.Pattern{model},
-// 		Items:  1,
-// 	})
-// }
+	if err := ctx.ShouldBindQuery(&dto); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
-// // @Tags Pattern
-// // @Summary Create Pattern list of objects
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param model body []m.PatternDto true "List of Patterns info"
-// // @Success 201 {object} m.Success{result=[]m.Pattern}
-// // @failure 400 {object} m.Error
-// // @failure 401 {object} m.Error
-// // @failure 422 {object} m.Error
-// // @failure 429 {object} m.Error
-// // @failure 500 {object} m.Error
-// // @Router /pattern/list [post]
-// func (o *patternController) CreateAll(c *gin.Context) {
-// 	var body []m.PatternDto
-// 	if err := c.ShouldBind(&body); err != nil || len(body) == 0 {
-// 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { body: %t }", len(body) != 0))
-// 		return
-// 	}
+	res, err := c.service.FindAll(dto)
+	response.Handler(ctx, http.StatusOK, res, err)
+}
 
-// 	var models = []m.Pattern{}
-// 	for _, item := range body {
-// 		if item.IsOK() {
+// @Tags Pattern
+// @Summary Find one project
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Project id"
+// @Success 200 {object} response.PatternBasicResponseDto
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/settings/patterns/{id} [get]
+func (c *PatternController) FindOne(ctx *gin.Context) {
+	res, err := c.service.FindOne(
+		c.dto(ctx, &request.PatternDto{PatternIds: []string{ctx.Param("id")}}),
+	)
 
-// 			var model = m.Pattern{Mode: item.Mode, Colors: item.Colors, MaxStroke: item.MaxStroke, MaxScale: item.MaxScale, MaxSpacingX: item.MaxSpacingX, MaxSpacingY: item.MaxSpacingY, Width: item.Width, Height: item.Height, Path: item.Path}
-// 			if err := o.service.Create(&model); err != nil {
-// 				helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-// 				return
-// 			}
+	response.Handler(ctx, http.StatusOK, res, err)
+}
 
-// 			models = append(models, model)
-// 		}
-// 	}
+// @Tags Pattern
+// @Summary Create Pattern
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param model body request.PatternCreateDto true "Project body"
+// @Success 201 {object} response.UuidResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/settings/patterns [post]
+func (c *PatternController) Create(ctx *gin.Context) {
+	var body request.PatternCreateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
-// 	helper.ResHandler(c, http.StatusCreated, &m.Success{
-// 		Status: "OK",
-// 		Result: models,
-// 		Items:  len(models),
-// 	})
-// }
+	res, err := c.service.Create(c.dto(ctx), &body)
+	response.Handler(ctx, http.StatusCreated, res, err)
+}
 
-// // @Tags Pattern
-// // @Summary Read Pattern by :id
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Param id path int true "Instance id"
-// // @Success 200 {object} m.Success{result=[]m.Pattern}
-// // @failure 429 {object} m.Error
-// // @failure 400 {object} m.Error
-// // @failure 500 {object} m.Error
-// // @Router /pattern/{id} [get]
-// func (o *patternController) ReadOne(c *gin.Context) {
-// 	var id = helper.GetID(c, "id")
+// @Tags Pattern
+// @Summary Update Pattern
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Pattern id"
+// @Param model body request.PatternUpdateDto true "Pattern body"
+// @Success 200 {object} response.UuidResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/settings/patterns/{id} [put]
+func (c *PatternController) Update(ctx *gin.Context) {
+	var body request.PatternUpdateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
-// 	if id == 0 {
-// 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
-// 		return
-// 	}
+	res, err := c.service.Update(c.dto(ctx, &request.PatternDto{PatternIds: []string{ctx.Param("id")}}), &body)
+	response.Handler(ctx, http.StatusOK, res, err)
+}
 
-// 	models, err := o.service.Read(&m.PatternQueryDto{ID: uint32(id)})
-// 	if err != nil {
-// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-// 		return
-// 	}
+// @Tags Pattern
+// @Summary Delete Pattern
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Pattern id"
+// @Success 204
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/settings/patterns/{id} [delete]
+func (c *PatternController) Delete(ctx *gin.Context) {
+	res, err := c.service.Delete(
+		c.dto(ctx, &request.PatternDto{PatternIds: []string{ctx.Param("id")}}),
+	)
 
-// 	helper.ResHandler(c, http.StatusOK, &m.Success{
-// 		Status: "OK",
-// 		Result: models,
-// 		Items:  len(models),
-// 	})
-// }
-
-// // @Tags Pattern
-// // @Summary Read Pattern by Query
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Param id query int false "Type: '1'"
-// // @Param mode query string false "Mode: 'fill'"
-// // @Param colors query int false "colors: '2'"
-// // @Param page query int false "Page: '0'"
-// // @Param limit query int false "Limit: '1'"
-// // @Success 200 {object} m.Success{result=[]m.Link}
-// // @failure 429 {object} m.Error
-// // @failure 400 {object} m.Error
-// // @failure 500 {object} m.Error
-// // @Router /pattern [get]
-// func (o *patternController) ReadAll(c *gin.Context) {
-// 	var query = m.PatternQueryDto{Page: -1}
-// 	if err := c.ShouldBindQuery(&query); err != nil {
-// 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
-// 		return
-// 	}
-
-// 	models, err := o.service.Read(&query)
-// 	if err != nil {
-// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-// 		return
-// 	}
-
-// 	helper.ResHandler(c, http.StatusOK, &m.Success{
-// 		Status: "OK",
-// 		Result: models,
-// 		Page:   query.Page,
-// 		Limit:  query.Limit,
-// 		Items:  len(models),
-// 	})
-// }
-
-// // @Tags Pattern
-// // @Summary Update Pattern by :id
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param id path int true "Instance id"
-// // @Param model body m.PatternDto true "Pattern Data"
-// // @Success 200 {object} m.Success{result=[]m.Pattern}
-// // @failure 400 {object} m.Error
-// // @failure 401 {object} m.Error
-// // @failure 422 {object} m.Error
-// // @failure 429 {object} m.Error
-// // @failure 500 {object} m.Error
-// // @Router /pattern/{id} [put]
-// func (o *patternController) UpdateOne(c *gin.Context) {
-// 	var body m.PatternDto
-// 	var id = helper.GetID(c, "id")
-
-// 	if err := c.ShouldBind(&body); err != nil || id == 0 {
-// 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t, err: %v }", id != 0, err))
-// 		return
-// 	}
-
-// 	models, err := o.service.Update(&m.PatternQueryDto{ID: uint32(id)}, &m.Pattern{Mode: body.Mode, Colors: body.Colors, MaxStroke: body.MaxStroke, MaxScale: body.MaxScale, MaxSpacingX: body.MaxSpacingX, MaxSpacingY: body.MaxSpacingY, Width: body.Width, Height: body.Height, Path: body.Path})
-// 	if err != nil {
-// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-// 		return
-// 	}
-
-// 	helper.ResHandler(c, http.StatusCreated, &m.Success{
-// 		Status: "OK",
-// 		Result: models,
-// 		Items:  len(models),
-// 	})
-// }
-
-// // @Tags Pattern
-// // @Summary Update Pattern by Query
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param id query int false "Type: '1'"
-// // @Param mode query string false "Mode: 'fill'"
-// // @Param colors query int false "colors: '2'"
-// // @Param project_id query string false "ProjectID: '1'"
-// // @Param model body m.PatternDto true "Pattern Data"
-// // @Success 200 {object} m.Success{result=[]m.Pattern}
-// // @failure 400 {object} m.Error
-// // @failure 401 {object} m.Error
-// // @failure 422 {object} m.Error
-// // @failure 429 {object} m.Error
-// // @failure 500 {object} m.Error
-// // @Router /pattern [put]
-// func (o *patternController) UpdateAll(c *gin.Context) {
-// 	var query = m.PatternQueryDto{Page: -1}
-// 	if err := c.ShouldBindQuery(&query); err != nil {
-// 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
-// 		return
-// 	}
-
-// 	var body m.PatternDto
-// 	if err := c.ShouldBind(&body); err != nil {
-// 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
-// 		return
-// 	}
-
-// 	models, err := o.service.Update(&query, &m.Pattern{Mode: body.Mode, Colors: body.Colors, MaxStroke: body.MaxStroke, MaxScale: body.MaxScale, MaxSpacingX: body.MaxSpacingX, MaxSpacingY: body.MaxSpacingY, Width: body.Width, Height: body.Height, Path: body.Path})
-// 	if err != nil {
-// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-// 		return
-// 	}
-
-// 	helper.ResHandler(c, http.StatusCreated, &m.Success{
-// 		Status: "OK",
-// 		Result: models,
-// 		Items:  len(models),
-// 	})
-// }
-
-// // @Tags Pattern
-// // @Summary Delete Link by :id
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param id path int true "Instance id"
-// // @Success 200 {object} m.Success{result=[]string{}}
-// // @failure 400 {object} m.Error
-// // @failure 401 {object} m.Error
-// // @failure 422 {object} m.Error
-// // @failure 429 {object} m.Error
-// // @failure 500 {object} m.Error
-// // @Router /pattern/{id} [delete]
-// func (o *patternController) DeleteOne(c *gin.Context) {
-// 	var id = helper.GetID(c, "id")
-
-// 	if id == 0 {
-// 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: { id: %t }", id != 0))
-// 		return
-// 	}
-
-// 	items, err := o.service.Delete(&m.PatternQueryDto{ID: uint32(id)})
-// 	if err != nil {
-// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-// 		return
-// 	}
-
-// 	helper.ResHandler(c, http.StatusOK, &m.Success{
-// 		Status: "OK",
-// 		Result: []string{},
-// 		Items:  items,
-// 	})
-// }
-
-// // @Tags Pattern
-// // @Summary Delete Pattern by Query
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param id query int false "Instance :id"
-// // @Param mode query string false "Mode: 'fill'"
-// // @Param colors query int false "colors: '2'"
-// // @Success 200 {object} m.Success{result=[]string{}}
-// // @failure 400 {object} m.Error
-// // @failure 401 {object} m.Error
-// // @failure 422 {object} m.Error
-// // @failure 429 {object} m.Error
-// // @failure 500 {object} m.Error
-// // @Router /pattern [delete]
-// func (o *patternController) DeleteAll(c *gin.Context) {
-// 	var query = m.PatternQueryDto{Page: -1}
-// 	if err := c.ShouldBindQuery(&query); err != nil {
-// 		helper.ErrHandler(c, http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
-// 		return
-// 	}
-
-// 	items, err := o.service.Delete(&query)
-// 	if err != nil {
-// 		helper.ErrHandler(c, http.StatusInternalServerError, err.Error())
-// 		return
-// 	}
-
-// 	helper.ResHandler(c, http.StatusOK, &m.Success{
-// 		Status: "OK",
-// 		Result: []string{},
-// 		Items:  items,
-// 	})
-// }
+	response.Handler(ctx, http.StatusNoContent, res, err)
+}
