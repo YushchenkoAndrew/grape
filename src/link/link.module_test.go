@@ -25,11 +25,12 @@ import (
 )
 
 var router *gin.Engine
-var cfg *config.DatabaseConfig
+var cfg *config.Config
+var db *config.DatabaseConfig
 
 func init() {
-	cfg = config.NewDatabaseConfig("configs/", "database", "yaml")
-	router = test.SetUpRouter(
+	db = config.NewDatabaseConfig("configs/", "database", "yaml")
+	router, cfg = test.SetUpRouter(
 		func(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
 			return src.NewIndexModule(route, []m.ModuleT{
 				auth.NewAuthModule(route, []m.ModuleT{}, s),
@@ -42,8 +43,8 @@ func init() {
 
 func TestLinkModule(t *testing.T) {
 	var link_id string
-	token, _ := test.GetToken(t, router, cfg)
-	project := test.GetProject(t, router, token)
+	token, _ := test.GetToken(t, router, cfg, db)
+	project := test.GetProject(t, router, cfg, token)
 
 	tests := []struct {
 		name     string
@@ -123,7 +124,7 @@ func TestLinkModule(t *testing.T) {
 			body, _ := json.Marshal(test.body)
 
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest(test.method, "/grape"+test.url(), bytes.NewBuffer(body))
+			req, _ := http.NewRequest(test.method, cfg.Server.Prefix+test.url(), bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", test.auth))
 
@@ -134,7 +135,7 @@ func TestLinkModule(t *testing.T) {
 
 			if test.auth != "" {
 				w := httptest.NewRecorder()
-				req, _ := http.NewRequest(test.method, "/grape"+test.url(), bytes.NewBuffer(body))
+				req, _ := http.NewRequest(test.method, cfg.Server.Prefix+test.url(), bytes.NewBuffer(body))
 				req.Header.Set("Content-Type", "application/json")
 
 				router.ServeHTTP(w, req)

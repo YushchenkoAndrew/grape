@@ -10,8 +10,8 @@ import (
 type PaletteEntity struct {
 	*entities.UuidEntity
 
-	OrganizationID int64                  `gorm:"not null" copier:"-"`
-	Organization   org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID" copier:"-"`
+	OrganizationID int64                   `gorm:"not null" copier:"-"`
+	Organization   *org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID" copier:"-"`
 
 	Colors pq.StringArray `gorm:"type:character varying[]"`
 }

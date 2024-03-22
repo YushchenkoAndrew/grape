@@ -62,7 +62,7 @@ func (c *patternRepository) attachRelations(tx *gorm.DB, _ *r.PatternDto, relati
 
 func (c *patternRepository) sortBy(tx *gorm.DB, dto *r.PatternDto, _ []PatternRelation) {
 	switch dto.SortBy {
-	case "name", "order", "created_at":
+	case "name", "created_at":
 		tx.Order(repositories.NewSortBy(c.Model().TableName(), dto.SortBy, dto.Direction))
 
 	default:
@@ -77,6 +77,7 @@ func (c *patternRepository) Create(db *gorm.DB, dto *r.PatternDto, body interfac
 	var data types.PatternOptionsType
 	copier.Copy(&data, options.Options)
 	entity.SetOptions(&data)
+	entity.SetMode(options.Mode)
 
 	entity.Organization = &dto.CurrentUser.Organization
 
@@ -91,6 +92,8 @@ func (c *patternRepository) Update(db *gorm.DB, dto *r.PatternDto, body interfac
 		copier.CopyWithOption(&data, options.Options, copier.Option{IgnoreEmpty: true})
 		entity.SetOptions(&data)
 	}
+
+	entity.SetMode(options.Mode)
 
 	return db.Model(entity).Updates(entity)
 }

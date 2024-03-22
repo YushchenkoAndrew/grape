@@ -4,6 +4,7 @@ import (
 	h "grape/src/common/middleware"
 	m "grape/src/common/module"
 	"grape/src/common/service"
+	"grape/src/setting/modules/palette"
 	"grape/src/setting/modules/pattern"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,7 @@ func NewSettingModule(rg *gin.RouterGroup, modules []m.ModuleT, s *service.Commo
 			Controller: NewSettingController(NewSettingService(s)),
 			Modules: append(modules,
 				pattern.NewPatternModule(group, []m.ModuleT{}, s),
+				palette.NewPaletteModule(group, []m.ModuleT{}, s),
 			),
 		},
 	}

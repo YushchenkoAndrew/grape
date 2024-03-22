@@ -5,19 +5,19 @@ import (
 	"grape/src/user/entities"
 )
 
-type PatternDto struct {
+type PaletteDto struct {
 	*request.PageDto
 
-	Modes  []string `form:"mode,omitempty,oneof=fill stroke join"`
-	Colors []int    `form:"colors,omitempty"`
+	// TODO: ?????
+	// Colors []string `form:"colors,omitempty,regexp=^#?([a-f0-9]{6}|[a-f0-9]{3})$"`
 
-	PatternIds []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
+	PaletteIds []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 }
 
-func (c *PatternDto) UUID() string {
-	return c.PatternIds[0]
+func (c *PaletteDto) UUID() string {
+	return c.PaletteIds[0]
 }
 
-func NewPatternDto(user *entities.UserEntity, init ...*PatternDto) *PatternDto {
-	return request.NewRequest(&PatternDto{PageDto: request.NewPageDto(user)}, init...)
+func NewPaletteDto(user *entities.UserEntity, init ...*PaletteDto) *PaletteDto {
+	return request.NewRequest(&PaletteDto{PageDto: request.NewPageDto(user)}, init...)
 }

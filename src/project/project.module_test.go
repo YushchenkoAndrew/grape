@@ -24,11 +24,12 @@ import (
 )
 
 var router *gin.Engine
-var cfg *config.DatabaseConfig
+var cfg *config.Config
+var db *config.DatabaseConfig
 
 func init() {
-	cfg = config.NewDatabaseConfig("configs/", "database", "yaml")
-	router = test.SetUpRouter(
+	db = config.NewDatabaseConfig("configs/", "database", "yaml")
+	router, cfg = test.SetUpRouter(
 		func(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
 			return src.NewIndexModule(route, []m.ModuleT{
 				auth.NewAuthModule(route, []m.ModuleT{}, s),
@@ -43,7 +44,7 @@ func TestProjectModule(t *testing.T) {
 		require.NotEmpty(t, id)
 
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", fmt.Sprintf("/grape/projects/%s", id), nil)
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/projects/%s", cfg.Server.Prefix, id), nil)
 		req.Header.Set("Content-Type", "application/json")
 		router.ServeHTTP(w, req)
 
@@ -51,7 +52,7 @@ func TestProjectModule(t *testing.T) {
 		json.Unmarshal(w.Body.Bytes(), &body)
 	}
 
-	token, _ := test.GetToken(t, router, cfg)
+	token, _ := test.GetToken(t, router, cfg, db)
 	var project_id string
 
 	tests := []struct {
@@ -202,7 +203,7 @@ func TestProjectModule(t *testing.T) {
 			body, _ := json.Marshal(test.body)
 
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest(test.method, "/grape"+test.url(), bytes.NewBuffer(body))
+			req, _ := http.NewRequest(test.method, cfg.Server.Prefix+test.url(), bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", test.auth))
 
@@ -213,7 +214,7 @@ func TestProjectModule(t *testing.T) {
 
 			if test.auth != "" {
 				w := httptest.NewRecorder()
-				req, _ := http.NewRequest(test.method, "/grape"+test.url(), bytes.NewBuffer(body))
+				req, _ := http.NewRequest(test.method, cfg.Server.Prefix+test.url(), bytes.NewBuffer(body))
 				req.Header.Set("Content-Type", "application/json")
 
 				router.ServeHTTP(w, req)

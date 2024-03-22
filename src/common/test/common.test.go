@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func SetUpRouter(module func(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT) *gin.Engine {
+func SetUpRouter(module func(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT) (*gin.Engine, *config.Config) {
 	gin.SetMode(gin.TestMode)
 	cfg := config.NewConfig("configs/", "config_test", "yaml")
 
@@ -37,12 +37,12 @@ func SetUpRouter(module func(route *gin.RouterGroup, modules []m.ModuleT, s *ser
 	r.Use(gin.Recovery())
 	rg := r.Group(cfg.Server.Prefix, middleware.GetMiddleware(service).Default())
 	module(rg, []m.ModuleT{}, service).Init()
-	return r
+	return r, cfg
 }
 
-func GetToken(t *testing.T, router *gin.Engine, cfg *config.DatabaseConfig) (string, string) {
-	body, _ := json.Marshal(request.LoginDto{Username: cfg.User.Name, Password: cfg.User.Password})
-	req, _ := http.NewRequest("POST", "/grape/login", bytes.NewBuffer(body))
+func GetToken(t *testing.T, router *gin.Engine, cfg *config.Config, db *config.DatabaseConfig) (string, string) {
+	body, _ := json.Marshal(request.LoginDto{Username: db.User.Name, Password: db.User.Password})
+	req, _ := http.NewRequest("POST", cfg.Server.Prefix+"/login", bytes.NewBuffer(body))
 
 	w := httptest.NewRecorder()
 	req.Header.Set("Content-Type", "application/json")
@@ -58,8 +58,8 @@ func GetToken(t *testing.T, router *gin.Engine, cfg *config.DatabaseConfig) (str
 	return res.AccessToken, res.RefreshToken
 }
 
-func GetProject(t *testing.T, router *gin.Engine, token string) *pr.AdminProjectDetailedResponseDto {
-	req, _ := http.NewRequest("GET", "/grape/projects", nil)
+func GetProject(t *testing.T, router *gin.Engine, cfg *config.Config, token string) *pr.AdminProjectDetailedResponseDto {
+	req, _ := http.NewRequest("GET", cfg.Server.Prefix+"/projects", nil)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
@@ -73,7 +73,7 @@ func GetProject(t *testing.T, router *gin.Engine, token string) *pr.AdminProject
 	require.Greater(t, res.Total, 0)
 	require.NotEmpty(t, res.Result[0].Id)
 
-	req, _ = http.NewRequest("GET", fmt.Sprintf("/grape/admin/projects/%s", res.Result[0].Id), nil)
+	req, _ = http.NewRequest("GET", fmt.Sprintf("%s/admin/projects/%s", cfg.Server.Prefix, res.Result[0].Id), nil)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 

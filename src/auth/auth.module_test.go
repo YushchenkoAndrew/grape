@@ -17,11 +17,12 @@ import (
 )
 
 var router *gin.Engine
-var cfg *config.DatabaseConfig
+var cfg *config.Config
+var db *config.DatabaseConfig
 
 func init() {
-	cfg = config.NewDatabaseConfig("configs/", "database", "yaml")
-	router = test.SetUpRouter(auth.NewAuthModule)
+	db = config.NewDatabaseConfig("configs/", "database", "yaml")
+	router, cfg = test.SetUpRouter(auth.NewAuthModule)
 }
 
 func TestLogin(t *testing.T) {
@@ -34,7 +35,7 @@ func TestLogin(t *testing.T) {
 	}{
 		{
 			name:   "test correct login",
-			body:   request.LoginDto{Username: cfg.User.Name, Password: cfg.User.Password},
+			body:   request.LoginDto{Username: db.User.Name, Password: db.User.Password},
 			status: http.StatusOK,
 			handler: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var res response.LoginResponseDto
@@ -46,7 +47,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name:    "test invalid password",
-			body:    request.LoginDto{Username: cfg.User.Name, Password: "invalid"},
+			body:    request.LoginDto{Username: db.User.Name, Password: "invalid"},
 			status:  http.StatusUnprocessableEntity,
 			handler: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
@@ -63,7 +64,7 @@ func TestLogin(t *testing.T) {
 			body, _ := json.Marshal(test.body)
 
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("POST", "/grape/login", bytes.NewBuffer(body))
+			req, _ := http.NewRequest("POST", cfg.Server.Prefix+"/login", bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 			router.ServeHTTP(w, req)
 
@@ -74,7 +75,7 @@ func TestLogin(t *testing.T) {
 }
 
 func TestRefresh(t *testing.T) {
-	_, token := test.GetToken(t, router, cfg)
+	_, token := test.GetToken(t, router, cfg, db)
 
 	tests := []struct {
 		name     string
@@ -107,7 +108,7 @@ func TestRefresh(t *testing.T) {
 			body, _ := json.Marshal(test.body)
 
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("POST", "/grape/refresh", bytes.NewBuffer(body))
+			req, _ := http.NewRequest("POST", cfg.Server.Prefix+"/refresh", bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 			router.ServeHTTP(w, req)
 

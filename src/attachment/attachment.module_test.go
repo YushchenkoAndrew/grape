@@ -26,11 +26,12 @@ import (
 )
 
 var router *gin.Engine
-var cfg *config.DatabaseConfig
+var cfg *config.Config
+var db *config.DatabaseConfig
 
 func init() {
-	cfg = config.NewDatabaseConfig("configs/", "database", "yaml")
-	router = test.SetUpRouter(
+	db = config.NewDatabaseConfig("configs/", "database", "yaml")
+	router, cfg = test.SetUpRouter(
 		func(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
 			return src.NewIndexModule(route, []m.ModuleT{
 				auth.NewAuthModule(route, []m.ModuleT{}, s),
@@ -46,7 +47,7 @@ func TestAttachmentModule(t *testing.T) {
 		require.NotEmpty(t, id)
 
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", fmt.Sprintf("/grape/attachments/%s", id), nil)
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/attachments/%s", cfg.Server.Prefix, id), nil)
 		router.ServeHTTP(w, req)
 
 		require.Equal(t, http.StatusOK, w.Code)
@@ -54,7 +55,7 @@ func TestAttachmentModule(t *testing.T) {
 
 	var attachment_id string
 	var content string
-	token, _ := test.GetToken(t, router, cfg)
+	token, _ := test.GetToken(t, router, cfg, db)
 
 	tests := []struct {
 		name     string
@@ -78,7 +79,7 @@ func TestAttachmentModule(t *testing.T) {
 				writer := multipart.NewWriter(body)
 
 				writer.WriteField("path", "/test/")
-				writer.WriteField("attachable_id", test.GetProject(t, router, token).Id)
+				writer.WriteField("attachable_id", test.GetProject(t, router, cfg, token).Id)
 				writer.WriteField("attachable_type", "projects")
 
 				part, _ := writer.CreateFormFile("file", filepath.Base(file.Name()))
@@ -181,7 +182,7 @@ func TestAttachmentModule(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest(test.method, "/grape"+test.url(), test.body())
+			req, _ := http.NewRequest(test.method, cfg.Server.Prefix+test.url(), test.body())
 			req.Header.Set("Content-Type", content)
 			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", test.auth))
 
@@ -192,7 +193,7 @@ func TestAttachmentModule(t *testing.T) {
 
 			if test.auth != "" {
 				w := httptest.NewRecorder()
-				req, _ := http.NewRequest(test.method, "/grape"+test.url(), test.body())
+				req, _ := http.NewRequest(test.method, cfg.Server.Prefix+test.url(), test.body())
 				req.Header.Set("Content-Type", content)
 
 				router.ServeHTTP(w, req)
