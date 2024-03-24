@@ -8,9 +8,6 @@ import (
 type PaletteDto struct {
 	*request.PageDto
 
-	// TODO: ?????
-	// Colors []string `form:"colors,omitempty,regexp=^#?([a-f0-9]{6}|[a-f0-9]{3})$"`
-
 	PaletteIds []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 }
 

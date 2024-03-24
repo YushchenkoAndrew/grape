@@ -28,7 +28,7 @@ func (c *PaletteController) dto(ctx *gin.Context, init ...*request.PaletteDto) *
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
-// @Param model query request.PatternDto true "Pattern Data"
+// @Param model query request.PaletteDto true "Palette Data"
 // @Success 200 {object} response.PageResponseDto[[]response.PaletteBasicResponseDto]
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
@@ -76,7 +76,7 @@ func (c *PaletteController) FindOne(ctx *gin.Context) {
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
-// @Router /admin/settings/patterns [post]
+// @Router /admin/settings/palettes [post]
 func (c *PaletteController) Create(ctx *gin.Context) {
 	var body request.PaletteCreateDto
 	if err := ctx.ShouldBind(&body); err != nil {
@@ -100,7 +100,7 @@ func (c *PaletteController) Create(ctx *gin.Context) {
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
-// @Router /admin/settings/patterns/{id} [put]
+// @Router /admin/settings/palettes/{id} [put]
 func (c *PaletteController) Update(ctx *gin.Context) {
 	var body request.PaletteCreateDto
 	if err := ctx.ShouldBind(&body); err != nil {
@@ -112,17 +112,17 @@ func (c *PaletteController) Update(ctx *gin.Context) {
 	response.Handler(ctx, http.StatusOK, res, err)
 }
 
-// @Tags Pattern
-// @Summary Delete Pattern
+// @Tags Palette
+// @Summary Delete palette
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
-// @Param id path string true "Pattern id"
+// @Param id path string true "palette id"
 // @Success 204
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
-// @Router /admin/settings/patterns/{id} [delete]
+// @Router /admin/settings/palettes/{id} [delete]
 func (c *PaletteController) Delete(ctx *gin.Context) {
 	res, err := c.service.Delete(
 		c.dto(ctx, &request.PaletteDto{PaletteIds: []string{ctx.Param("id")}}),

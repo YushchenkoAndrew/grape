@@ -22,15 +22,11 @@ import (
 )
 
 // @title Gin API
-// @version 1.0
-// @description Remake of my previous attampted on creating API with Node.js
+// @version 3.0
+// @description Gin API for my various projects
 
 // @contact.name API Author
-// @contact.url https://mortis-grimreaper.ddns.net/projects
 // @contact.email AndrewYushchenko@gmail.com
-
-// @license.name MIT
-// @license.url https://github.com/YushchenkoAndrew/API_Server/blob/master/LICENSE
 
 // @securityDefinitions.apikey BearerAuth
 // @in header
@@ -38,12 +34,6 @@ import (
 
 // @BasePath /grape
 func main() {
-	// config.NewConfigs([]func() config.ConfigT{
-	// 	config.NewEnvConfig("./", ""),
-	// 	// config.NewOperationConfig("./", "operations"),
-	// }).Init()
-
-	// cfg
 	cfg := config.NewConfig("configs/", "config", "yaml")
 
 	service := &service.CommonService{
@@ -63,9 +53,7 @@ func main() {
 		link.NewLinkModule(rg, []m.ModuleT{}, service),
 		statistic.NewStatisticModule(rg, []m.ModuleT{}, service),
 		setting.NewSettingModule(rg, []m.ModuleT{}, service),
-		// routes.NewLinkRouter(rg, db, redis),
 		// routes.NewBotRouter(rg, db, redis),
-		// routes.NewPatternRouter(rg, db, redis),
 
 		// // routes.NewWorldRouter(rg),
 		// // routes.NewInfoRouter(rg, []func(*gin.RouterGroup) interfaces.Router{

@@ -13,10 +13,8 @@ RUN go mod download
 COPY . ./
 
 # Update docs
-RUN go install github.com/swaggo/swag/cmd/swag@v1.7.8
-RUN swag init -g ./main.go --parseDependency
-
-RUN go build -o ./api ./main.go
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+RUN make build
 
 # Create final image
 FROM alpine AS runner
@@ -25,9 +23,9 @@ WORKDIR /
 ENV GIN_MODE=release
 
 # Copy config file & complied file
-COPY .env.template .env
-COPY operations.yaml .
+COPY configs/config.template.yaml configs/config.yaml 
+COPY configs/database.template.yaml configs/database.yaml 
 COPY --from=builder /app/api .
 
 EXPOSE 31337
-CMD ["./api"]
+CMD ["./grape"]

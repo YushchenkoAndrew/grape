@@ -1,7 +1,10 @@
-.PHONY: dev migrate test cover swagger
+.PHONY: dev build migrate test cover swagger
 
 dev: 
 	go run main.go
+
+build: swagger
+	go build -o ./grape main.go
 
 csv: 
 	docker cp ./tmp/Colors.csv psql:/home

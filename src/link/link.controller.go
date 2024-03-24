@@ -28,7 +28,7 @@ func (c *LinkController) dto(ctx *gin.Context, init ...*request.LinkDto) *reques
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
-// @Param model formData request.LinkCreateDto true
+// @Param model formData request.LinkCreateDto true "Link data"
 // @Success 201 {object} response.LinkBasicResponseDto
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
@@ -52,7 +52,7 @@ func (c *LinkController) Create(ctx *gin.Context) {
 // @Produce application/xml
 // @Security BearerAuth
 // @Param id path string true "Link id"
-// @Param model formData request.LinkUpdateDto true
+// @Param model formData request.LinkUpdateDto true "Link data"
 // @Success 200 {object} response.LinkBasicResponseDto
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error

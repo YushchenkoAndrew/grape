@@ -1,4 +1,4 @@
-package pattern_test
+package palette_test
 
 import (
 	"bytes"
@@ -8,15 +8,16 @@ import (
 	"grape/src/auth"
 	"grape/src/common/config"
 	common "grape/src/common/dto/response"
-	m "grape/src/common/module"
 	"grape/src/common/service"
 	"grape/src/common/test"
 	"grape/src/setting"
-	"grape/src/setting/modules/pattern/dto/request"
-	"grape/src/setting/modules/pattern/dto/response"
+	"grape/src/setting/modules/palette/dto/request"
+	"grape/src/setting/modules/palette/dto/response"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	m "grape/src/common/module"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -38,12 +39,12 @@ func init() {
 	)
 }
 
-func TestPatternModule(t *testing.T) {
+func TestPaletteModule(t *testing.T) {
 	validate := func(id, token string, body interface{}) {
 		require.NotEmpty(t, id)
 
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/admin/settings/patterns/%s", cfg.Server.Prefix, id), nil)
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/admin/settings/palettes/%s", cfg.Server.Prefix, id), nil)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 		router.ServeHTTP(w, req)
@@ -52,7 +53,7 @@ func TestPatternModule(t *testing.T) {
 		json.Unmarshal(w.Body.Bytes(), &body)
 	}
 
-	var pattern_id string
+	var palette_id string
 	token, _ := test.GetToken(t, router, cfg, db)
 
 	tests := []struct {
@@ -65,110 +66,85 @@ func TestPatternModule(t *testing.T) {
 		validate func(*testing.T, *httptest.ResponseRecorder)
 	}{
 		{
-			name:   "Pattern create",
+			name:   "Palette create",
 			method: "POST",
-			url:    func() string { return "/admin/settings/patterns" },
+			url:    func() string { return "/admin/settings/palettes" },
 			auth:   token,
-			body: request.PatternCreateDto{
-				Mode:   "fill",
-				Colors: 2,
-				Width:  10.5,
-				Height: 20.5,
-				Path:   "<path d='M20 0L0 10v10l20-10zm0 10v10l20 10V20z'/>~<path d='M20-10V0l20 10V0zm0 30L0 30v10l20-10zm0 10v10l20 10V40z'/>",
-				Options: &request.PatternCreateOptionDto{
-					MaxStroke:   2.5,
-					MaxScale:    5,
-					MaxSpacingX: 1.5,
-					MaxSpacingY: 1.5,
-				},
+			body: request.PaletteCreateDto{
+				Colors: []string{"#355070", "#B56576"},
 			},
 			expected: http.StatusCreated,
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var res common.UuidResponseDto
 				json.Unmarshal(w.Body.Bytes(), &res)
 
-				var entity response.PatternAdvancedResponseDto
+				var entity response.PaletteBasicResponseDto
 				validate(res.Id, token, &entity)
 
-				pattern_id = res.Id
-				require.Equal(t, 2, entity.Colors)
-				require.Equal(t, "fill", entity.Mode)
-				require.Equal(t, float32(10.5), entity.Width)
-				require.Equal(t, float32(20.5), entity.Height)
-				require.Equal(t, "<path d='M20 0L0 10v10l20-10zm0 10v10l20 10V20z'/>~<path d='M20-10V0l20 10V0zm0 30L0 30v10l20-10zm0 10v10l20 10V40z'/>", entity.Path)
+				palette_id = res.Id
+				require.ElementsMatch(t, []string{"#355070", "#B56576"}, entity.Colors)
 			},
 		},
 		{
-			name:   "Pattern update",
+			name:   "Palette create, should through 400",
+			method: "POST",
+			url:    func() string { return "/admin/settings/palettes" },
+			auth:   token,
+			body: request.PaletteCreateDto{
+				Colors: []string{"355070", "B56576"},
+			},
+			expected: http.StatusBadRequest,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
+			name:   "Palette update",
 			method: "PUT",
 			url: func() string {
-				return fmt.Sprintf("/admin/settings/patterns/%s", pattern_id)
+				return fmt.Sprintf("/admin/settings/palettes/%s", palette_id)
 			},
 			auth: token,
-			body: request.PatternUpdateDto{
-				Mode:   "stroke",
-				Colors: 3,
-				Width:  15.5,
-				Height: 25.5,
-				Path:   "<path />",
-				Options: &request.PatternUpdateOptionDto{
-					MaxStroke:   3.5,
-					MaxScale:    6,
-					MaxSpacingX: 2.5,
-					MaxSpacingY: 2.5,
-				},
+			body: request.PaletteCreateDto{
+				Colors: []string{"#355072", "#B56576", "#70C1B3"},
 			},
 			expected: http.StatusOK,
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
-				var entity response.PatternAdvancedResponseDto
-				validate(pattern_id, token, &entity)
+				var entity response.PaletteBasicResponseDto
+				validate(palette_id, token, &entity)
 
-				require.Equal(t, 3, entity.Colors)
-				require.Equal(t, "stroke", entity.Mode)
-				require.Equal(t, float32(15.5), entity.Width)
-				require.Equal(t, float32(25.5), entity.Height)
-				require.Equal(t, "<path />", entity.Path)
+				require.ElementsMatch(t, []string{"#355072", "#B56576", "#70C1B3"}, entity.Colors)
 			},
 		},
 		{
-			name:     "Find one pattern",
+			name:     "Find one palette",
 			method:   "GET",
-			url:      func() string { return fmt.Sprintf("/admin/settings/patterns/%s", pattern_id) },
+			url:      func() string { return fmt.Sprintf("/admin/settings/palettes/%s", palette_id) },
 			auth:     token,
 			expected: http.StatusOK,
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
 		{
-			name:     "Find all patterns, paginated",
+			name:     "Find all palettes, paginated",
 			method:   "GET",
-			url:      func() string { return "/admin/settings/patterns?page=1&take=10" },
+			url:      func() string { return "/admin/settings/palettes?page=1&take=10" },
 			auth:     token,
 			expected: http.StatusOK,
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
 		{
-			name:     "Find all patterns, filtered",
-			method:   "GET",
-			url:      func() string { return "/admin/settings/patterns?colors=4&mode=fill" },
-			auth:     token,
-			expected: http.StatusOK,
-			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
-		},
-		{
-			name:   "Delete pattern",
+			name:   "Delete palette",
 			method: "DELETE",
 			url: func() string {
-				return fmt.Sprintf("/admin/settings/patterns/%s", pattern_id)
+				return fmt.Sprintf("/admin/settings/palettes/%s", palette_id)
 			},
 			auth:     token,
 			expected: http.StatusNoContent,
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
 		{
-			name:   "Delete pattern, should return not found",
+			name:   "Delete palettes, should return not found",
 			method: "DELETE",
 			url: func() string {
-				return fmt.Sprintf("/admin/settings/patterns/%s", pattern_id)
+				return fmt.Sprintf("/admin/settings/palettes/%s", palette_id)
 			},
 			auth:     token,
 			expected: http.StatusUnprocessableEntity,
