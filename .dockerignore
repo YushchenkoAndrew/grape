@@ -1,6 +1,6 @@
 kubernetes/
-tmp/
-.env
+configs/config.yaml
+configs/database.yaml
 .gitignore
 .dockerignore
 Dockerfile

@@ -46,12 +46,14 @@ testprofile.out
 *.dll
 *.so
 *.dylib
-tmp/
 
 # Test binary, built with `go test -c`
 *.test
 secrete.yaml
+configs/config.yaml
+configs/database.yaml
 k3s.yaml
+.vscode
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
@@ -60,3 +62,7 @@ k3s.yaml
 vendor/
 docs/
 
+migrations/tmp/GeoLite2-Country-Blocks.csv
+migrations/tmp/GeoLite2-Country-Locations-en.csv
+migrations/tmp/LICENSE.txt
+migrations/tmp/COPYRIGHT.txt

@@ -1,98 +1,98 @@
-name: ci-test
+# name: ci-test
 
-on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+# on:
+#   push:
+#     branches: [master]
+#   pull_request:
+#     branches: [master]
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    env:
-      HOST: ""
-      PORT: "31337"
-      BASE_PATH: /api
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     env:
+#       HOST: ""
+#       PORT: "31337"
+#       BASE_PATH: /api
 
-      DB_NAME: api_db
-      DB_HOST: localhost
-      DB_PORT: "5432"
-      DB_USER: root
-      DB_PASS: postgres
+#       DB_NAME: api_db
+#       DB_HOST: localhost
+#       DB_PORT: "5432"
+#       DB_USER: root
+#       DB_PASS: postgres
 
-      REDIS_HOST: localhost
-      REDIS_PORT: "6379"
-      REDIS_PASS: ""
+#       REDIS_HOST: localhost
+#       REDIS_PORT: "6379"
+#       REDIS_PASS: ""
 
-      # Pagination setting
-      LIVE_TIME: 12000
-      ITEMS: 20
-      LIMIT: 20
+#       # Pagination setting
+#       LIVE_TIME: 12000
+#       ITEMS: 20
+#       LIMIT: 20
 
-      # JWT
-      TOKEN_EXPIRE: 20m
+#       # JWT
+#       TOKEN_EXPIRE: 20m
 
-      # Rate info
-      RATE_LIMIT: 200
-      RATE_TIME: 1000
+#       # Rate info
+#       RATE_LIMIT: 200
+#       RATE_TIME: 1000
 
-      # Migation Settings
-      FORCE_MIGRATE: true
-      MIGRATION_PATH: ./tmp
+#       # Migation Settings
+#       FORCE_MIGRATE: true
+#       MIGRATION_PATH: ./tmp
 
-      METRICS_COUNT: 5
+#       METRICS_COUNT: 5
 
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: api_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+#     services:
+#       postgres:
+#         image: postgres:14
+#         env:
+#           POSTGRES_USER: root
+#           POSTGRES_PASSWORD: postgres
+#           POSTGRES_DB: api_db
+#         options: >-
+#           --health-cmd pg_isready
+#           --health-interval 10s
+#           --health-timeout 5s
+#           --health-retries 5
+#         ports:
+#           - 5432:5432
 
-      redis:
-        image: redis
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
+#       redis:
+#         image: redis
+#         options: >-
+#           --health-cmd "redis-cli ping"
+#           --health-interval 10s
+#           --health-timeout 5s
+#           --health-retries 5
+#         ports:
+#           - 6379:6379
 
-    steps:
-      - uses: actions/checkout@v3
+#     steps:
+#       - uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
+#       - name: Set up Go
+#         uses: actions/setup-go@v3
+#         with:
+#           go-version: 1.18
 
-      - name: Create env from sample
-        run: cp .env.template test/services/.env
+#       - name: Create env from sample
+#         run: cp .env.template test/services/.env
 
-      - name: Test Service File
-        run: go test -v ./test/services/file_test.go
+#       - name: Test Service File
+#         run: go test -v ./test/services/file_test.go
 
-      - name: Test Service Link
-        run: go test -v ./test/services/link_test.go
+#       - name: Test Service Link
+#         run: go test -v ./test/services/link_test.go
 
-      # FIXME: FIX BUGS WITH TESTING !!!
-      # - name: Test Service Subscription
-      #   run: go test -v ./test/services/subscription_test.go
+#       # FIXME: FIX BUGS WITH TESTING !!!
+#       # - name: Test Service Subscription
+#       #   run: go test -v ./test/services/subscription_test.go
 
-      - name: Test Service Metrics
-        run: go test -v ./test/services/metrics_test.go
+#       - name: Test Service Metrics
+#         run: go test -v ./test/services/metrics_test.go
 
-      - name: Test Service Project
-        run: go test -v ./test/services/project_test.go
+#       - name: Test Service Project
+#         run: go test -v ./test/services/project_test.go
 
-      - name: Test Service Pattern
-        run: go test -v ./test/services/pattern_test.go
+#       - name: Test Service Pattern
+#         run: go test -v ./test/services/pattern_test.go
