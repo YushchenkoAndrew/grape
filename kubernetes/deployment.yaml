@@ -1,61 +1,49 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-deployment
+  name: grape-deployment
   namespace: demo
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: api
+      app: grape
   template:
     metadata:
       labels:
-        app: api
+        app: grape
     spec:
-      serviceAccountName: api-sa
+      # serviceAccountName: api-sa
       containers:
-        - name: api
-          image: grimreapermortis/grape:0.0.2
+        - name: grape
+          image: grimreapermortis/grape:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 31337
-          envFrom:
-            - secretRef:
-                name: api-secrete
-          env:
-            - name: BASE_PATH
-              value: /api
-            - name: API_URL
-              value: http://$(API_SERVICE_SERVICE_HOST):$(API_SERVICE_SERVICE_PORT)/api
-            - name: REDIS_HOST
-              value: $(REDIS_SERVICE_SERVICE_HOST)
-            - name: DB_HOST
-              value: $(DB_SERVICE_SERVICE_HOST)
-            - name: BOT_URL
-              value: http://$(BOT_SERVICE_SERVICE_HOST):$(BOT_SERVICE_SERVICE_PORT)/bot
-            - name: FORCE_MIGRATE
-              value: "false"
+          volumeMounts:
+            - name: config
+              mountPath: /app/configs
+              readOnly: true
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: redis-deployment
+  name: grape-redis-deployment
   namespace: demo
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: redis
+      app: grape-redis
   template:
     metadata:
       labels:
-        app: redis
+        app: grape-redis
     spec:
       containers:
         - name: redis
-          image: redis:6-alpine
+          image: redis:8-alpine
           # resources:
           #   requests:
           #     cpu: 100m
@@ -67,24 +55,24 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: db-deployment
+  name: grape-psql-deployment
   namespace: demo
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: db
+      app: grape-psql
   template:
     metadata:
       labels:
-        app: db
+        app: grape-psql
     spec:
       volumes:
         - name: storage
           persistentVolumeClaim:
-            claimName: db-pvc
+            claimName: grape-psql-pvc
       containers:
-        - name: db
+        - name: grape-psql
           image: postgres:14-alpine
           ports:
             - containerPort: 5432
@@ -96,19 +84,19 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: api-secrete
+                  name: grape-psql-secrete
                   key: DB_USER
 
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: api-secrete
+                  name: grape-psql-secrete
                   key: DB_PASS
 
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: api-secrete
+                  name: grape-psql-secrete
                   key: DB_NAME
 
             - name: PGDATA

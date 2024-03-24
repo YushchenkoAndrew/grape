@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine AS builder
+FROM golang:1.22-alpine AS builder
 RUN apk --no-cache add ca-certificates gcc g++ make bash git
 WORKDIR /app
 
@@ -18,14 +18,14 @@ RUN make build
 
 # Create final image
 FROM alpine AS runner
-WORKDIR /
+WORKDIR /app
 
 ENV GIN_MODE=release
 
 # Copy config file & complied file
-COPY configs/config.template.yaml configs/config.yaml 
-COPY configs/database.template.yaml configs/database.yaml 
-COPY --from=builder /app/api .
+COPY configs/config.template.yaml ./configs/config.yaml 
+COPY configs/database.template.yaml ./configs/database.yaml 
+COPY --from=builder /app/grape .
 
 EXPOSE 31337
 CMD ["./grape"]
