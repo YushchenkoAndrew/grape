@@ -25,6 +25,7 @@ ENV GIN_MODE=release
 # Copy config file & complied file
 COPY configs/config.template.yaml ./configs/config.yaml 
 COPY configs/database.template.yaml ./configs/database.yaml 
+COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/grape .
 
 EXPOSE 31337

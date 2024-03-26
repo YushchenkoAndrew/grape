@@ -5,9 +5,9 @@ metadata:
   namespace: demo
 spec:
   capacity:
-    storage: 20Gi
+    storage: 10Gi
   accessModes:
-    - ReadWriteOnce
+    - ReadOnlyMany
   nfs:
     path: /media/sdb1/nfs/psql
     server: 192.168.10.1

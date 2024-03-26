@@ -13,6 +13,10 @@ spec:
       labels:
         app: grape
     spec:
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: demo-config-pvc
       # serviceAccountName: api-sa
       containers:
         - name: grape
@@ -43,7 +47,7 @@ spec:
     spec:
       containers:
         - name: redis
-          image: redis:8-alpine
+          image: redis:7-alpine
           # resources:
           #   requests:
           #     cpu: 100m
@@ -84,20 +88,54 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: grape-psql-secrete
-                  key: DB_USER
+                  name: grape-secrete
+                  key: GRAPE_PSQL_USERNAME
 
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: grape-psql-secrete
-                  key: DB_PASS
+                  name: grape-secrete
+                  key: GRAPE_PSQL_PASSWORD
 
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: grape-psql-secrete
-                  key: DB_NAME
+                  name: grape-secrete
+                  key: GRAPE_PSQL_DATABSE
 
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grape-pgadmin-deployment
+  namespace: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grape-pgadmin
+  template:
+    metadata:
+      labels:
+        app: grape-pgadmin
+    spec:
+      containers:
+        - name: grape-pgadmin
+          image: dpage/pgadmin4:6.10
+          ports:
+            - containerPort: 80
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: grape-secrete
+                  key: PGADMIN_EMAIL
+
+            - name: PGADMIN_DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grape-secrete
+                  key: PGADMIN_PASSWORD

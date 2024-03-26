@@ -23,6 +23,7 @@ spec:
     app: grape-redis
   ports:
     - port: 6379
+  type: LoadBalancer
 
 ---
 apiVersion: v1
@@ -37,3 +38,20 @@ spec:
     app: grape-psql
   ports:
     - port: 5432
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grape-pgadmin-service
+  namespace: demo
+  labels:
+    app: grape-pgadmin
+spec:
+  selector:
+    app: grape-pgadmin
+  ports:
+    - port: 5050
+      targetPort: 80
+  type: LoadBalancer
