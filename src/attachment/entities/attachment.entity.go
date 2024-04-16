@@ -1,9 +1,8 @@
 package entities
 
 import (
-	"grape/src/common/config"
+	"fmt"
 	e "grape/src/common/entities"
-	"net/url"
 	"path/filepath"
 )
 
@@ -25,12 +24,7 @@ func (*AttachmentEntity) TableName() string {
 }
 
 func (c *AttachmentEntity) GetAttachment() string {
-	url := url.URL{
-		Scheme: "http",
-		Host:   config.GetGlobalConfig().Server.Address,
-		Path:   filepath.Join(config.GetGlobalConfig().Server.Prefix, c.TableName(), c.UUID),
-	}
-	return url.String()
+	return fmt.Sprintf("/attachments/%s", c.UUID)
 }
 
 func (c *AttachmentEntity) GetPath() string {
