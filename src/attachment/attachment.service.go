@@ -99,10 +99,14 @@ func (c *AttachmentService) Update(dto *request.AttachmentDto, body *request.Att
 		}
 
 		e := entities.AttachmentEntity{}
-		e.Name, e.Path, e.Size, e.Type = file.Filename, body.Path, file.Size, filepath.Ext(file.Filename)
+		e.Name, e.Path, e.Home, e.Size, e.Type = file.Filename, body.Path, entity.Home, file.Size, filepath.Ext(file.Filename)
 		copier.CopyWithOption(&e, body, copier.Option{IgnoreEmpty: true})
 
 		if _, err := c.Repository.Update(tx, dto, e, entity); err != nil {
+			return err
+		}
+
+		if _, err := c.VoidService.Delete(path); err != nil {
 			return err
 		}
 
@@ -112,12 +116,7 @@ func (c *AttachmentService) Update(dto *request.AttachmentDto, body *request.Att
 		}
 
 		defer f.Close()
-		if err := c.VoidService.Save(entity.GetPath(), e.Name, f); err != nil {
-			return err
-		}
-
-		_, err = c.VoidService.Delete(path)
-		return err
+		return c.VoidService.Save(e.GetPath(), e.Name, f)
 	})
 
 	return common.NewResponse[response.AttachmentAdvancedResponseDto](entity), err
