@@ -10,9 +10,6 @@ import (
 	st "grape/src/statistic/entities"
 	org "grape/src/user/entities"
 	"path/filepath"
-	"strings"
-
-	"github.com/samber/lo"
 )
 
 type ProjectEntity struct {
@@ -43,6 +40,8 @@ type ProjectEntity struct {
 	Links       []ln.LinkEntity        `gorm:"polymorphic:Linkable" copier:"-"`
 	Attachments []att.AttachmentEntity `gorm:"polymorphic:Attachable" copier:"-"`
 
+	Thumbnail *att.AttachmentEntity `gorm:"polymorphic:Attachable" copier:"-"`
+
 	// Metrics      []Metrics      `gorm:"foreignKey:ProjectID" json:"metrics" xml:"metrics"`
 	// Subscription []Subscription `gorm:"foreignKey:ProjectID" json:"subscription" xml:"subscription"`
 }
@@ -69,14 +68,6 @@ func (c *ProjectEntity) SetType(str string) {
 	if str != "" {
 		c.Type = t.Html.Value(str)
 	}
-}
-
-func (c *ProjectEntity) GetThumbnail() *att.AttachmentEntity {
-	if result, found := lo.Find(c.Attachments, func(item att.AttachmentEntity) bool { return strings.Contains(item.Name, "thumbnail") }); found {
-		return &result
-	}
-
-	return nil
 }
 
 func (c *ProjectEntity) GetPath() string {

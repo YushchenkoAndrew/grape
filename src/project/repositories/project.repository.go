@@ -16,6 +16,7 @@ type ProjectRelation string
 const (
 	Organization ProjectRelation = "Organization"
 	Attachments  ProjectRelation = "Attachments"
+	Thumbnail    ProjectRelation = "Thumbnail"
 	Links        ProjectRelation = "Links"
 	Owner        ProjectRelation = "Owner"
 	Palette      ProjectRelation = "Palette"
@@ -35,7 +36,7 @@ func (c *projectRepository) Model() *e.ProjectEntity {
 func (c *projectRepository) Build(db *gorm.DB, dto *r.ProjectDto, relations ...ProjectRelation) *gorm.DB {
 	tx := db.Model(c.Model()).Where(`projects.organization_id = ?`, dto.CurrentUser.Organization.ID)
 
-	required := c.applyFilter(tx, dto, []ProjectRelation{})
+	required := c.applyFilter(tx, dto, []ProjectRelation{Thumbnail})
 	c.attachRelations(tx, dto, append(relations, required...))
 	c.sortBy(tx, dto, append(relations, required...))
 
@@ -69,6 +70,9 @@ func (c *projectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, relation
 func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relations []ProjectRelation) {
 	for _, r := range relations {
 		switch r {
+		case Thumbnail:
+			tx.Preload(string(r), "name ILIKE ?", "thumbnail%")
+
 		case Links, Attachments:
 			tx.Preload(string(r))
 

@@ -15,5 +15,5 @@ type ProjectBasicResponseDto struct {
 
 	Palette   palette.PaletteBasicResponseDto `json:"palette" xml:"palette"`
 	Pattern   pattern.PatternBasicResponseDto `json:"pattern" xml:"pattern"`
-	Thumbnail *att.AttachmentBasicResponseDto `copier:"GetThumbnail" json:"thumbnail" xml:"thumbnail"`
+	Thumbnail *att.AttachmentBasicResponseDto `json:"thumbnail" xml:"thumbnail"`
 }
