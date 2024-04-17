@@ -2,6 +2,7 @@ package auth
 
 import (
 	"grape/src/auth/dto/request"
+	t "grape/src/auth/types"
 	"grape/src/common/dto/response"
 	"net/http"
 
@@ -66,4 +67,33 @@ func (c *AuthController) Refresh(ctx *gin.Context) {
 	}
 
 	response.Build(ctx, http.StatusOK, res)
+}
+
+// @Tags Auth
+// @Summary Logout
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Success 201 {object} interface{}
+// @failure 401 {object} response.Error
+// @Router /logout [post]
+func (c *AuthController) Logout(ctx *gin.Context) {
+	claim, _ := ctx.Get("access_claim")
+	res, err := c.service.Logout(claim.(*t.AccessClaim))
+
+	response.Handler(ctx, http.StatusOK, res, err)
+}
+
+// @Tags Auth
+// @Summary Check if jwt is valid
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Success 200 {object} interface{}
+// @failure 401 {object} response.Error
+// @Router /admin/ping [get]
+func (c *AuthController) AdminPing(ctx *gin.Context) {
+	response.Handler(ctx, http.StatusOK, gin.H{"message": "pong"}, nil)
 }

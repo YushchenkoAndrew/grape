@@ -50,6 +50,7 @@ func (c *Middleware) Jwt() gin.HandlerFunc {
 		}
 
 		ctx.Set("user", &users[0])
+		ctx.Set("access_claim", &claim)
 		ctx.Next()
 	}
 }

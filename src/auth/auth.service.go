@@ -77,6 +77,15 @@ func (c *AuthService) Refresh(dto *request.RefreshDto) (*response.LoginResponseD
 	return c.generate(&users[0])
 }
 
+func (c *AuthService) Logout(claim *t.AccessClaim) (interface{}, error) {
+
+	ctx := context.Background()
+	c.redis.Del(ctx, claim.UID)
+	c.redis.Del(ctx, claim.RID)
+
+	return nil, nil
+}
+
 func (c *AuthService) generate(user *e.UserEntity) (*response.LoginResponseDto, error) {
 	access_id, refresh_id := uuid.New().String(), uuid.New().String()
 	access_exp, _ := time.ParseDuration(c.config.Jwt.AccessExpire)
