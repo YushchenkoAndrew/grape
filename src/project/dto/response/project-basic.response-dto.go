@@ -3,6 +3,7 @@ package response
 import (
 	att "grape/src/attachment/dto/response"
 	r "grape/src/common/dto/response"
+	ln "grape/src/link/dto/response"
 	palette "grape/src/setting/modules/palette/dto/response"
 	pattern "grape/src/setting/modules/pattern/dto/response"
 )
@@ -16,4 +17,5 @@ type ProjectBasicResponseDto struct {
 	Palette   palette.PaletteBasicResponseDto `json:"palette" xml:"palette"`
 	Pattern   pattern.PatternBasicResponseDto `json:"pattern" xml:"pattern"`
 	Thumbnail *att.AttachmentBasicResponseDto `json:"thumbnail" xml:"thumbnail"`
+	Redirect  *ln.LinkBasicResponseDto        `json:"redirect" xml:"redirect"`
 }

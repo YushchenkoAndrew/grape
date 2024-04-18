@@ -15,8 +15,9 @@ type ProjectRelation string
 
 const (
 	Organization ProjectRelation = "Organization"
-	Attachments  ProjectRelation = "Attachments"
 	Thumbnail    ProjectRelation = "Thumbnail"
+	Attachments  ProjectRelation = "Attachments"
+	Redirect     ProjectRelation = "Redirect"
 	Links        ProjectRelation = "Links"
 	Owner        ProjectRelation = "Owner"
 	Palette      ProjectRelation = "Palette"
@@ -36,7 +37,7 @@ func (c *projectRepository) Model() *e.ProjectEntity {
 func (c *projectRepository) Build(db *gorm.DB, dto *r.ProjectDto, relations ...ProjectRelation) *gorm.DB {
 	tx := db.Model(c.Model()).Where(`projects.organization_id = ?`, dto.CurrentUser.Organization.ID)
 
-	required := c.applyFilter(tx, dto, []ProjectRelation{Thumbnail})
+	required := c.applyFilter(tx, dto, []ProjectRelation{Thumbnail, Redirect})
 	c.attachRelations(tx, dto, append(relations, required...))
 	c.sortBy(tx, dto, append(relations, required...))
 
@@ -73,6 +74,9 @@ func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relati
 		case Thumbnail:
 			tx.Preload(string(r), "name ILIKE ?", "thumbnail%")
 
+		case Redirect:
+			tx.Preload(string(r), "name ILIKE ?", "redirect")
+
 		case Links, Attachments:
 			tx.Preload(string(r))
 
@@ -84,6 +88,9 @@ func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relati
 
 func (c *projectRepository) sortBy(tx *gorm.DB, dto *r.ProjectDto, _ []ProjectRelation) {
 	switch dto.SortBy {
+	case "":
+		return
+
 	case "name", "order", "created_at":
 		tx.Order(repositories.NewSortBy(c.Model().TableName(), dto.SortBy, dto.Direction))
 
@@ -95,7 +102,8 @@ func (c *projectRepository) sortBy(tx *gorm.DB, dto *r.ProjectDto, _ []ProjectRe
 
 func (c *projectRepository) Create(db *gorm.DB, dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
 	var order int64
-	c.Build(db, dto).Select(`MAX(projects.order) AS "order"`).Group("projects.id").Scan(&order)
+	dto.SortBy = ""
+	c.Build(db, dto).Select(`MAX(projects.order) AS "order"`).Scan(&order)
 
 	db.First(&entity.Pattern)
 	db.First(&entity.Palette)

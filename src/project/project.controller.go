@@ -194,3 +194,27 @@ func (c *ProjectController) UpdateProjectStatistics(ctx *gin.Context) {
 	res, err := c.service.UpdateProjectStatistics(dto, &body)
 	response.Handler(ctx, http.StatusNoContent, res, err)
 }
+
+// @Tags Project
+// @Summary Update Project order position
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Project id"
+// @Param model body request.ProjectOrderUpdateDto true "Project body"
+// @Success 200 {object} response.UuidResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/projects/{id}/order [put]
+func (c *ProjectController) PutOrder(ctx *gin.Context) {
+	var body request.ProjectOrderUpdateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	res, err := c.service.PutOrder(c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}), &body)
+	response.Handler(ctx, http.StatusOK, res, err)
+}

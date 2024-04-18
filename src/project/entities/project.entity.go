@@ -40,6 +40,7 @@ type ProjectEntity struct {
 	Links       []ln.LinkEntity        `gorm:"polymorphic:Linkable" copier:"-"`
 	Attachments []att.AttachmentEntity `gorm:"polymorphic:Attachable" copier:"-"`
 
+	Redirect  *ln.LinkEntity        `gorm:"polymorphic:Linkable" copier:"-"`
 	Thumbnail *att.AttachmentEntity `gorm:"polymorphic:Attachable" copier:"-"`
 
 	// Metrics      []Metrics      `gorm:"foreignKey:ProjectID" json:"metrics" xml:"metrics"`

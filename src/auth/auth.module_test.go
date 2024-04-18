@@ -3,6 +3,7 @@ package auth_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"grape/src/auth"
 	"grape/src/auth/dto/request"
 	"grape/src/auth/dto/response"
@@ -26,35 +27,73 @@ func init() {
 }
 
 func TestLogin(t *testing.T) {
+	var token string
 
 	tests := []struct {
 		name    string
+		method  string
+		url     string
+		auth    func() string
 		body    request.LoginDto
 		status  int
 		handler func(t *testing.T, w *httptest.ResponseRecorder)
 	}{
 		{
 			name:   "test correct login",
+			method: "POST",
+			url:    "/auth/login",
+			auth:   func() string { return "" },
 			body:   request.LoginDto{Username: db.User.Name, Password: db.User.Password},
 			status: http.StatusOK,
 			handler: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var res response.LoginResponseDto
 				json.Unmarshal(w.Body.Bytes(), &res)
 
+				token = res.AccessToken
 				require.NotEmpty(t, res.AccessToken)
 				require.NotEmpty(t, res.RefreshToken)
 			},
 		},
 		{
+			name:    "test validate token",
+			method:  "GET",
+			url:     "/auth/ping",
+			auth:    func() string { return token },
+			status:  http.StatusOK,
+			handler: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
 			name:    "test invalid password",
+			method:  "POST",
+			url:     "/auth/login",
+			auth:    func() string { return "" },
 			body:    request.LoginDto{Username: db.User.Name, Password: "invalid"},
 			status:  http.StatusUnprocessableEntity,
 			handler: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
 		{
 			name:    "test invalid username",
+			method:  "POST",
+			url:     "/auth/login",
+			auth:    func() string { return "" },
 			body:    request.LoginDto{Username: "invalid", Password: "invalid"},
 			status:  http.StatusUnprocessableEntity,
+			handler: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
+			name:    "test validate logout",
+			method:  "POST",
+			url:     "/auth/logout",
+			auth:    func() string { return token },
+			status:  http.StatusOK,
+			handler: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
+			name:    "test check if token is no longer valid",
+			method:  "GET",
+			url:     "/auth/ping",
+			auth:    func() string { return token },
+			status:  http.StatusUnauthorized,
 			handler: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
 	}
@@ -64,8 +103,10 @@ func TestLogin(t *testing.T) {
 			body, _ := json.Marshal(test.body)
 
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("POST", cfg.Server.Prefix+"/auth/login", bytes.NewBuffer(body))
+			req, _ := http.NewRequest(test.method, cfg.Server.Prefix+test.url, bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", test.auth()))
+
 			router.ServeHTTP(w, req)
 
 			require.Equal(t, test.status, w.Code)

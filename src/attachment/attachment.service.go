@@ -141,8 +141,18 @@ func (c *AttachmentService) Delete(dto *request.AttachmentDto) (interface{}, err
 	return nil, err
 }
 
-func (c *AttachmentService) InitProjectFromTemplate(project *pre.ProjectEntity) []entities.AttachmentEntity {
+func (c *AttachmentService) InitProjectFromTemplate(project *pre.ProjectEntity, readme bool) []entities.AttachmentEntity {
 	var attachments []entities.AttachmentEntity
+
+	if readme {
+		entity := entities.NewAttachmentEntity()
+		entity.Home = project.GetPath()
+		entity.Create()
+
+		entity.Name, entity.Path, entity.Size, entity.Type = "README.md", "/", 0, ".md"
+		c.VoidService.Rename("/templates/readme.template.md", entity.GetFile(), true)
+		attachments = append(attachments, *entity)
+	}
 
 	entity := entities.NewAttachmentEntity()
 	entity.Home = project.GetPath()

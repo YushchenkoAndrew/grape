@@ -1,6 +1,7 @@
 package response
 
 import (
+	att "grape/src/attachment/dto/response"
 	user "grape/src/user/dto/response"
 )
 
@@ -11,6 +12,6 @@ type AdminProjectBasicResponseDto struct {
 	Order     int    `json:"order" xml:"order" example:"0"`
 	Status    string `copier:"GetStatus" json:"status" xml:"status" example:"true"`
 
-	Owner user.UserBasicResponseDto `json:"owner" xml:"owner"`
-	// Attachments []att.AttachmentAdvancedResponseDto `json:"attachments" xml:"attachments"`
+	Owner       user.UserBasicResponseDto           `json:"owner" xml:"owner"`
+	Attachments []att.AttachmentAdvancedResponseDto `json:"attachments" xml:"attachments"`
 }

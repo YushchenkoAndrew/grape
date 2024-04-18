@@ -8,7 +8,9 @@ import (
 type ProjectDto struct {
 	*request.PageDto
 
-	Query string `form:"query,omitempty" example:"test"`
+	Query     string `form:"query,omitempty" example:"test"`
+	SortBy    string `form:"sort_by,default=order" example:"name"`
+	Direction string `form:"direction,default=asc" binding:"oneof=asc desc" example:"asc"`
 
 	ProjectIds []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 	Statuses   []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
