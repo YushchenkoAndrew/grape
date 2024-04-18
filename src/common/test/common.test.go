@@ -42,7 +42,7 @@ func SetUpRouter(module func(route *gin.RouterGroup, modules []m.ModuleT, s *ser
 
 func GetToken(t *testing.T, router *gin.Engine, cfg *config.Config, db *config.DatabaseConfig) (string, string) {
 	body, _ := json.Marshal(request.LoginDto{Username: db.User.Name, Password: db.User.Password})
-	req, _ := http.NewRequest("POST", cfg.Server.Prefix+"/login", bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", cfg.Server.Prefix+"/auth/login", bytes.NewBuffer(body))
 
 	w := httptest.NewRecorder()
 	req.Header.Set("Content-Type", "application/json")

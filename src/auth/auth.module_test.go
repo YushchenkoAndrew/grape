@@ -64,7 +64,7 @@ func TestLogin(t *testing.T) {
 			body, _ := json.Marshal(test.body)
 
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("POST", cfg.Server.Prefix+"/login", bytes.NewBuffer(body))
+			req, _ := http.NewRequest("POST", cfg.Server.Prefix+"/auth/login", bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 			router.ServeHTTP(w, req)
 
@@ -108,7 +108,7 @@ func TestRefresh(t *testing.T) {
 			body, _ := json.Marshal(test.body)
 
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("POST", cfg.Server.Prefix+"/refresh", bytes.NewBuffer(body))
+			req, _ := http.NewRequest("POST", cfg.Server.Prefix+"/auth/refresh", bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 			router.ServeHTTP(w, req)
 

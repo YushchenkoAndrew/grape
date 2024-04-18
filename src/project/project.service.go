@@ -1,7 +1,6 @@
 package project
 
 import (
-	"fmt"
 	att "grape/src/attachment"
 	req "grape/src/common/dto/request"
 	common "grape/src/common/dto/response"
@@ -122,7 +121,6 @@ func (c *ProjectService) Delete(dto *request.ProjectDto) (interface{}, error) {
 
 	err = c.Repository.Transaction(func(tx *gorm.DB) error {
 		if _, err := c.AttachmentService.VoidService.Delete(project.GetPath()); err != nil {
-			fmt.Println(err.Error())
 			return err
 		}
 

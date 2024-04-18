@@ -26,7 +26,7 @@ func NewAuthController(s *AuthService) *AuthController {
 // @Success 200 {object} response.LoginResponseDto
 // @failure 400 {object} response.Error
 // @failure 422 {object} response.Error
-// @Router /login [post]
+// @Router /auth/login [post]
 func (c *AuthController) Login(ctx *gin.Context) {
 	var body request.LoginDto
 	if err := ctx.ShouldBind(&body); err != nil {
@@ -52,7 +52,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 // @Success 200 {object} response.LoginResponseDto
 // @failure 400 {object} response.Error
 // @failure 422 {object} response.Error
-// @Router /refresh [post]
+// @Router /auth/refresh [post]
 func (c *AuthController) Refresh(ctx *gin.Context) {
 	var body request.RefreshDto
 	if err := ctx.ShouldBind(&body); err != nil {
@@ -77,7 +77,7 @@ func (c *AuthController) Refresh(ctx *gin.Context) {
 // @Security BearerAuth
 // @Success 201 {object} interface{}
 // @failure 401 {object} response.Error
-// @Router /logout [post]
+// @Router /auth/logout [post]
 func (c *AuthController) Logout(ctx *gin.Context) {
 	claim, _ := ctx.Get("access_claim")
 	res, err := c.service.Logout(claim.(*t.AccessClaim))
@@ -93,7 +93,7 @@ func (c *AuthController) Logout(ctx *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} interface{}
 // @failure 401 {object} response.Error
-// @Router /admin/ping [get]
-func (c *AuthController) AdminPing(ctx *gin.Context) {
+// @Router /auth/ping [get]
+func (c *AuthController) Ping(ctx *gin.Context) {
 	response.Handler(ctx, http.StatusOK, gin.H{"message": "pong"}, nil)
 }

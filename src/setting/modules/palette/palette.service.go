@@ -1,7 +1,6 @@
 package palette
 
 import (
-	"fmt"
 	common "grape/src/common/dto/response"
 	"grape/src/common/service"
 	"grape/src/setting/modules/palette/dto/request"
@@ -26,8 +25,6 @@ func (c *PaletteService) FindOne(dto *request.PaletteDto) (*response.PaletteBasi
 }
 
 func (c *PaletteService) FindAll(dto *request.PaletteDto) (*common.PageResponseDto[[]response.PaletteBasicResponseDto], error) {
-
-	fmt.Println(*dto)
 	total, palette, err := c.Repository.GetAllPage(dto)
 
 	return &common.PageResponseDto[[]response.PaletteBasicResponseDto]{
