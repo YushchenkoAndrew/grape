@@ -128,7 +128,7 @@ func (c *projectRepository) Update(db *gorm.DB, dto *r.ProjectDto, body interfac
 		db.First(&entity.Pattern, "uuid = ?", options.PatternID)
 	}
 
-	entity.SetType(options.Type)
+	// entity.SetType(options.Type)
 	entity.SetStatus(options.Status)
 
 	return db.Model(entity).Updates(entity)

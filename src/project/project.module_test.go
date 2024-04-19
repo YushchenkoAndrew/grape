@@ -120,7 +120,7 @@ func TestProjectModule(t *testing.T) {
 			url:    func() string { return fmt.Sprintf("/admin/projects/%s", projects[0].Id) },
 			auth:   token,
 			body: func() interface{} {
-				return request.ProjectUpdateDto{Name: "UpdatedProject", Description: "Updated project description", Type: "markdown", Footer: "Updated footer"}
+				return request.ProjectUpdateDto{Name: "UpdatedProject", Description: "Updated project description", Footer: "Updated footer"}
 			},
 			expected: http.StatusOK,
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -132,7 +132,7 @@ func TestProjectModule(t *testing.T) {
 
 				require.Equal(t, "UpdatedProject", entity.Name)
 				require.Equal(t, "Updated project description", entity.Description)
-				require.Equal(t, "markdown", entity.Type)
+				// require.Equal(t, "markdown", entity.Type)
 				// require.Equal(t, "Updated footer", entity.Footer)
 			},
 		},
