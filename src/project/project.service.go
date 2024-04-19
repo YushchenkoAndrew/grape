@@ -152,8 +152,10 @@ func (c *ProjectService) Delete(dto *request.ProjectDto) (interface{}, error) {
 			}
 		}
 
-		if _, err := c.AttachmentService.VoidService.Delete(project.GetPath()); err != nil {
-			return err
+		if len(project.Attachments) != 0 {
+			if _, err := c.AttachmentService.VoidService.Delete(project.GetPath()); err != nil {
+				return err
+			}
 		}
 
 		for _, attachment := range project.Attachments {
