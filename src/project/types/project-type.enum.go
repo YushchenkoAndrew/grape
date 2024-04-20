@@ -3,7 +3,9 @@ package types
 type ProjectTypeEnum int
 
 const (
-	Html ProjectTypeEnum = iota + 1
+	P5js ProjectTypeEnum = iota + 1
+	Emscripten
+	Html
 	Markdown
 	Link
 	K3s
@@ -11,6 +13,12 @@ const (
 
 func (c ProjectTypeEnum) String() string {
 	switch c {
+	case P5js:
+		return "p5js"
+
+	case Emscripten:
+		return "emscripten"
+
 	case Html:
 		return "html"
 
@@ -29,6 +37,12 @@ func (c ProjectTypeEnum) String() string {
 
 func (ProjectTypeEnum) Value(str string) ProjectTypeEnum {
 	switch str {
+	case "p5js":
+		return P5js
+
+	case "emscripten":
+		return Emscripten
+
 	case "html":
 		return Html
 

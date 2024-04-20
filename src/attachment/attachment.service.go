@@ -159,6 +159,10 @@ func (c *AttachmentService) InitProjectFromTemplate(project *pre.ProjectEntity, 
 	entity.Create()
 
 	switch project.Type {
+	case prt.P5js:
+		entity.Name, entity.Path, entity.Size, entity.Type = "Main.js", "/", 0, ".js"
+		c.VoidService.Rename("/templates/p5js.template.js", entity.GetFile(), true)
+
 	case prt.Html:
 		entity.Name, entity.Path, entity.Size, entity.Type = "index.html", "/", 0, ".html"
 		c.VoidService.Rename("/templates/html.template.html", entity.GetFile(), true)
