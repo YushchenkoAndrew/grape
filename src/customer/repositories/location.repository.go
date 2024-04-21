@@ -66,7 +66,11 @@ func (c *locationRepository) Update(tx *gorm.DB, dto *r.LocationDto, body interf
 	return nil
 }
 
-func (c *locationRepository) Delete(tx *gorm.DB, dto *r.LocationDto, entity *e.LocationEntity) *gorm.DB {
+func (c *locationRepository) Delete(tx *gorm.DB, dto *r.LocationDto, entity []*e.LocationEntity) *gorm.DB {
+	return nil
+}
+
+func (c *locationRepository) Reorder(db *gorm.DB, entity *e.LocationEntity, position int) error {
 	return nil
 }
 

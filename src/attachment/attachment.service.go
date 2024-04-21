@@ -6,6 +6,7 @@ import (
 	"grape/src/attachment/dto/response"
 	"grape/src/attachment/entities"
 	"grape/src/attachment/repositories"
+	req "grape/src/common/dto/request"
 	common "grape/src/common/dto/response"
 	"grape/src/common/service"
 	pre "grape/src/project/entities"
@@ -18,6 +19,7 @@ import (
 	pr "grape/src/project/repositories"
 
 	"github.com/jinzhu/copier"
+	"github.com/samber/lo"
 	"gorm.io/gorm"
 )
 
@@ -46,6 +48,11 @@ func (c *AttachmentService) FindOne(dto *request.AttachmentDto) (string, []byte,
 	return c.VoidService.Get(attachment.GetFile())
 }
 
+func (c *AttachmentService) AdminFindOne(dto *request.AttachmentDto) (*response.AttachmentAdvancedResponseDto, error) {
+	attachment, err := c.Repository.ValidateEntityExistence(dto)
+	return common.NewResponse[response.AttachmentAdvancedResponseDto](attachment), err
+}
+
 func (c *AttachmentService) Create(dto *request.AttachmentDto, body *request.AttachmentCreateDto, file *multipart.FileHeader) (*response.AttachmentAdvancedResponseDto, error) {
 	entity := entities.NewAttachmentEntity()
 	entity.Name, entity.Path, entity.Size, entity.Type = file.Filename, body.Path, file.Size, filepath.Ext(file.Filename)
@@ -54,13 +61,16 @@ func (c *AttachmentService) Create(dto *request.AttachmentDto, body *request.Att
 
 	switch body.AttachableType {
 	case c.ProjectRepository.TableName():
-		project, err := c.ProjectRepository.ValidateEntityExistence(project.NewProjectDto(dto.CurrentUser, &project.ProjectDto{ProjectIds: []string{body.AttachableID}}))
+		project, err := c.ProjectRepository.ValidateEntityExistence(project.NewProjectDto(dto.CurrentUser, &project.ProjectDto{ProjectIds: []string{body.AttachableID}}), pr.Attachments)
 		if err != nil {
 			return nil, err
 		}
 
 		entity.Home = project.GetPath()
 		err = c.ProjectRepository.Transaction(func(tx *gorm.DB) error {
+			order := lo.Max(append(lo.Map(project.Attachments, func(e entities.AttachmentEntity, _ int) int { return e.Order }), 0))
+
+			entity.Order = order + 1
 			if err := tx.Model(project).Association("Attachments").Append(entity); err != nil {
 				return err
 			}
@@ -139,6 +149,17 @@ func (c *AttachmentService) Delete(dto *request.AttachmentDto) (interface{}, err
 	})
 
 	return nil, err
+}
+
+func (c *AttachmentService) PutOrder(dto *request.AttachmentDto, body *req.OrderUpdateDto) (*response.AttachmentAdvancedResponseDto, error) {
+	attachement, err := c.Repository.ValidateEntityExistence(dto)
+	if err != nil || attachement.Order == body.Position {
+		return common.NewResponse[response.AttachmentAdvancedResponseDto](attachement), err
+	}
+
+	err = c.Repository.Reorder(nil, attachement, body.Position)
+	return common.NewResponse[response.AttachmentAdvancedResponseDto](attachement), err
+
 }
 
 func (c *AttachmentService) InitProjectFromTemplate(project *pre.ProjectEntity, readme bool) []entities.AttachmentEntity {

@@ -15,7 +15,6 @@ import (
 	statistic "grape/src/statistic/dto/request"
 	st_repo "grape/src/statistic/repositories"
 
-	"github.com/samber/lo"
 	"gorm.io/gorm"
 )
 
@@ -135,42 +134,21 @@ func (c *ProjectService) Delete(dto *request.ProjectDto) (interface{}, error) {
 	}
 
 	err = c.Repository.Transaction(func(tx *gorm.DB) error {
-		var projects []*entities.ProjectEntity
-		res := tx.Table(c.Repository.TableName()).
-			Where(`projects.organization_id = ?`, dto.CurrentUser.Organization.ID).
-			Where(`projects.order > ?`, project.Order).
-			Find(&projects)
-
-		if res.Error != nil {
-			return res.Error
-		}
-
-		if len(projects) != 0 {
-			lo.ForEach(projects, func(e *entities.ProjectEntity, _ int) { e.Order -= 1 })
-			if res := tx.Table(c.Repository.TableName()).Save(projects); res.Error != nil {
-				return res.Error
-			}
-		}
-
 		if len(project.Attachments) != 0 {
 			if _, err := c.AttachmentService.VoidService.Delete(project.GetPath()); err != nil {
 				return err
 			}
 		}
 
-		for _, attachment := range project.Attachments {
-			if err := c.AttachmentService.Repository.Delete(tx, nil, &attachment); err != nil {
-				return nil
-			}
+		if err := c.AttachmentService.Repository.DeleteAll(tx, nil, project.GetAttachments()); err != nil {
+			return nil
 		}
 
-		for _, link := range project.Links {
-			if err := c.LinkRepository.Delete(tx, nil, &link); err != nil {
-				return nil
-			}
+		if err := c.LinkRepository.DeleteAll(tx, nil, project.GetLinks()); err != nil {
+			return nil
 		}
 
-		return c.Repository.Delete(nil, dto, project)
+		return c.Repository.Delete(tx, dto, project)
 	})
 
 	return nil, err
@@ -186,40 +164,12 @@ func (c *ProjectService) UpdateProjectStatistics(dto *request.ProjectDto, body *
 	return nil, err
 }
 
-func (c *ProjectService) PutOrder(dto *request.ProjectDto, body *request.ProjectOrderUpdateDto) (*common.UuidResponseDto, error) {
+func (c *ProjectService) PutOrder(dto *request.ProjectDto, body *req.OrderUpdateDto) (*common.UuidResponseDto, error) {
 	project, err := c.Repository.ValidateEntityExistence(dto)
 	if err != nil || project.Order == body.Position {
 		return common.NewResponse[common.UuidResponseDto](project), err
 	}
 
-	err = c.Repository.Transaction(func(tx *gorm.DB) error {
-		var projects []*entities.ProjectEntity
-		db := tx.Table(c.Repository.TableName()).Where(`projects.organization_id = ?`, dto.CurrentUser.Organization.ID)
-
-		if project.Order < body.Position {
-			db = db.Where(`projects.order > ?`, project.Order).Where(`projects.order <= ?`, body.Position)
-		} else {
-			db = db.Where(`projects.order < ?`, project.Order).Where(`projects.order >= ?`, body.Position)
-		}
-
-		if res := db.Find(&projects); res.Error != nil || len(projects) == 0 {
-			return res.Error
-		}
-
-		for _, e := range projects {
-			if project.Order < body.Position {
-				e.Order -= 1
-			} else {
-				e.Order += 1
-			}
-		}
-
-		project.Order = body.Position
-		projects = append(projects, project)
-
-		res := tx.Table(c.Repository.TableName()).Save(projects)
-		return res.Error
-	})
-
+	err = c.Repository.Reorder(nil, project, body.Position)
 	return common.NewResponse[common.UuidResponseDto](project), err
 }

@@ -5,6 +5,7 @@ import (
 	e "grape/src/attachment/entities"
 	"grape/src/common/repositories"
 
+	"github.com/samber/lo"
 	"gorm.io/gorm"
 )
 
@@ -58,8 +59,59 @@ func (c *attachmentRepository) Update(db *gorm.DB, dto *r.AttachmentDto, body in
 	return db.Model(entity).Updates(entity)
 }
 
-func (c *attachmentRepository) Delete(db *gorm.DB, dto *r.AttachmentDto, entity *e.AttachmentEntity) *gorm.DB {
+func (c *attachmentRepository) Delete(db *gorm.DB, dto *r.AttachmentDto, entity []*e.AttachmentEntity) *gorm.DB {
+	for _, attachment := range entity {
+		var attachments []*e.AttachmentEntity
+		res := db.Model(c.Model()).
+			Where(`attachments.attachable_id = ? AND attachments.attachable_type = ?`, attachment.AttachableID, attachment.AttachableType).
+			Where(`attachments.order > ?`, attachment.Order).
+			Find(&attachments)
+
+		if res.Error != nil {
+			return res
+		}
+
+		if len(attachments) == 0 {
+			continue
+		}
+
+		lo.ForEach(attachments, func(e *e.AttachmentEntity, _ int) { e.Order -= 1 })
+		if res := db.Model(c.Model()).Save(attachments); res.Error != nil {
+			return res
+		}
+	}
+
 	return db.Model(c.Model()).Delete(entity)
+}
+
+func (c *attachmentRepository) Reorder(db *gorm.DB, entity *e.AttachmentEntity, position int) error {
+	var attachments []*e.AttachmentEntity
+	db = db.Model(c.Model()).
+		Where(`attachments.attachable_id = ? AND attachments.attachable_type = ?`, entity.AttachableID, entity.AttachableType)
+
+	if entity.Order < position {
+		db = db.Where(`attachments.order > ?`, entity.Order).Where(`attachments.order <= ?`, position)
+	} else {
+		db = db.Where(`attachments.order < ?`, entity.Order).Where(`attachments.order >= ?`, position)
+	}
+
+	if res := db.Find(&attachments); res.Error != nil || len(attachments) == 0 {
+		return res.Error
+	}
+
+	for _, e := range attachments {
+		if entity.Order < position {
+			e.Order -= 1
+		} else {
+			e.Order += 1
+		}
+	}
+
+	entity.Order = position
+	attachments = append(attachments, entity)
+
+	res := db.Model(c.Model()).Save(attachments)
+	return res.Error
 }
 
 var repository *attachmentRepository

@@ -73,7 +73,11 @@ func (c *statisticRepository) Update(db *gorm.DB, dto *r.StatisticDto, body inte
 	return db.Model(entity).Updates(entity)
 }
 
-func (c *statisticRepository) Delete(db *gorm.DB, dto *r.StatisticDto, entity *e.StatisticEntity) *gorm.DB {
+func (c *statisticRepository) Delete(db *gorm.DB, dto *r.StatisticDto, entity []*e.StatisticEntity) *gorm.DB {
+	return nil
+}
+
+func (c *statisticRepository) Reorder(db *gorm.DB, entity *e.StatisticEntity, position int) error {
 	return nil
 }
 

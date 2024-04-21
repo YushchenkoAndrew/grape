@@ -1,6 +1,7 @@
 package project
 
 import (
+	req "grape/src/common/dto/request"
 	"grape/src/common/dto/response"
 	"grape/src/project/dto/request"
 	statistic "grape/src/statistic/dto/request"
@@ -202,14 +203,14 @@ func (c *ProjectController) UpdateProjectStatistics(ctx *gin.Context) {
 // @Produce application/xml
 // @Security BearerAuth
 // @Param id path string true "Project id"
-// @Param model body request.ProjectOrderUpdateDto true "Project body"
+// @Param model body req.OrderUpdateDto true "Position body"
 // @Success 200 {object} response.UuidResponseDto
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /admin/projects/{id}/order [put]
 func (c *ProjectController) PutOrder(ctx *gin.Context) {
-	var body request.ProjectOrderUpdateDto
+	var body req.OrderUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
 		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
 		return

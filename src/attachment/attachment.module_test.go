@@ -9,6 +9,7 @@ import (
 	"grape/src/attachment/dto/response"
 	"grape/src/auth"
 	"grape/src/common/config"
+	req "grape/src/common/dto/request"
 	m "grape/src/common/module"
 	"grape/src/common/service"
 	"grape/src/common/test"
@@ -43,19 +44,32 @@ func init() {
 }
 
 func TestAttachmentModule(t *testing.T) {
-	validate := func(id string) {
+	token, _ := test.GetToken(t, router, cfg, db)
+
+	validate := func(id string, body interface{}) {
 		require.NotEmpty(t, id)
+		var route string
+		if body != nil {
+			route = "/admin"
+		}
 
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/attachments/%s", cfg.Server.Prefix, id), nil)
-		router.ServeHTTP(w, req)
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/attachments/%s", cfg.Server.Prefix+route, id), nil)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		}
 
+		router.ServeHTTP(w, req)
 		require.Equal(t, http.StatusOK, w.Code)
+
+		if body != nil {
+			json.Unmarshal(w.Body.Bytes(), &body)
+		}
 	}
 
-	var attachment_id string
+	var attachments []response.AttachmentAdvancedResponseDto
 	var content string
-	token, _ := test.GetToken(t, router, cfg, db)
 
 	tests := []struct {
 		name     string
@@ -94,15 +108,104 @@ func TestAttachmentModule(t *testing.T) {
 				var res response.AttachmentAdvancedResponseDto
 				json.Unmarshal(w.Body.Bytes(), &res)
 
-				validate(res.Id)
-				attachment_id = res.Id
+				var entity response.AttachmentAdvancedResponseDto
+				validate(res.Id, &entity)
+				validate(res.Id, nil)
+
+				attachments = append(attachments, entity)
 				require.Equal(t, "/test/", res.Path)
+			},
+		},
+		{
+			name:   "Attachment create",
+			method: "POST",
+			url:    func() string { return "/admin/attachments" },
+			auth:   token,
+			body: func() *bytes.Buffer {
+				file, _ := os.Open(config.GetConfigFile())
+				defer file.Close()
+
+				body := &bytes.Buffer{}
+				writer := multipart.NewWriter(body)
+
+				writer.WriteField("path", "/test2/")
+				writer.WriteField("attachable_id", test.GetProject(t, router, cfg, token).Id)
+				writer.WriteField("attachable_type", "projects")
+
+				part, _ := writer.CreateFormFile("file", filepath.Base(file.Name()))
+				io.Copy(part, file)
+				writer.Close()
+
+				content = writer.FormDataContentType()
+				return body
+			},
+			expected: http.StatusCreated,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res response.AttachmentAdvancedResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				var entity response.AttachmentAdvancedResponseDto
+				validate(res.Id, &entity)
+				validate(res.Id, nil)
+
+				attachments = append(attachments, entity)
+				require.Equal(t, "/test2/", res.Path)
+			},
+		},
+		{
+			name:   "Attachment update order",
+			method: "PUT",
+			url:    func() string { return fmt.Sprintf("/admin/attachments/%s/order", attachments[1].Id) },
+			auth:   token,
+			body: func() *bytes.Buffer {
+				content = "application/json"
+				body, _ := json.Marshal(req.OrderUpdateDto{Position: attachments[0].Order})
+				return bytes.NewBuffer(body)
+			},
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res response.AttachmentAdvancedResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				var entity response.AttachmentAdvancedResponseDto
+				validate(res.Id, &entity)
+
+				var entity2 response.AttachmentAdvancedResponseDto
+				validate(attachments[0].Id, &entity2)
+
+				require.Equal(t, entity.Order, attachments[0].Order)
+				require.Equal(t, entity2.Order, attachments[1].Order)
+			},
+		},
+		{
+			name:   "Attachment update revert order",
+			method: "PUT",
+			url:    func() string { return fmt.Sprintf("/admin/attachments/%s/order", attachments[1].Id) },
+			auth:   token,
+			body: func() *bytes.Buffer {
+				content = "application/json"
+				body, _ := json.Marshal(req.OrderUpdateDto{Position: attachments[1].Order})
+				return bytes.NewBuffer(body)
+			},
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res response.AttachmentAdvancedResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				var entity response.AttachmentAdvancedResponseDto
+				validate(res.Id, &entity)
+
+				var entity2 response.AttachmentAdvancedResponseDto
+				validate(attachments[0].Id, &entity2)
+
+				require.Equal(t, entity.Order, attachments[1].Order)
+				require.Equal(t, entity2.Order, attachments[0].Order)
 			},
 		},
 		{
 			name:   "Attachment update file name",
 			method: "PUT",
-			url:    func() string { return fmt.Sprintf("/admin/attachments/%s", attachment_id) },
+			url:    func() string { return fmt.Sprintf("/admin/attachments/%s", attachments[0].Id) },
 			auth:   token,
 			body: func() *bytes.Buffer {
 				file, _ := os.Open(config.GetConfigFile())
@@ -121,14 +224,14 @@ func TestAttachmentModule(t *testing.T) {
 				var res response.AttachmentAdvancedResponseDto
 				json.Unmarshal(w.Body.Bytes(), &res)
 
-				validate(res.Id)
+				validate(res.Id, nil)
 				require.Equal(t, "test.txt", res.Name)
 			},
 		},
 		{
 			name:   "Replace file with a new one",
 			method: "PUT",
-			url:    func() string { return fmt.Sprintf("/admin/attachments/%s", attachment_id) },
+			url:    func() string { return fmt.Sprintf("/admin/attachments/%s", attachments[0].Id) },
 			auth:   token,
 			body: func() *bytes.Buffer {
 				file, _ := os.Open(config.GetConfigFile())
@@ -147,13 +250,13 @@ func TestAttachmentModule(t *testing.T) {
 				var res response.AttachmentAdvancedResponseDto
 				json.Unmarshal(w.Body.Bytes(), &res)
 
-				validate(res.Id)
+				validate(res.Id, nil)
 			},
 		},
 		{
 			name:     "Attachment get",
 			method:   "GET",
-			url:      func() string { return fmt.Sprintf("/attachments/%s", attachment_id) },
+			url:      func() string { return fmt.Sprintf("/attachments/%s", attachments[0].Id) },
 			auth:     "",
 			body:     func() *bytes.Buffer { return &bytes.Buffer{} },
 			expected: http.StatusOK,
@@ -162,7 +265,21 @@ func TestAttachmentModule(t *testing.T) {
 		{
 			name:     "Attachment delete",
 			method:   "DELETE",
-			url:      func() string { return fmt.Sprintf("/admin/attachments/%s", attachment_id) },
+			url:      func() string { return fmt.Sprintf("/admin/attachments/%s", attachments[0].Id) },
+			auth:     token,
+			expected: http.StatusNoContent,
+			body:     func() *bytes.Buffer { return &bytes.Buffer{} },
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var entity response.AttachmentAdvancedResponseDto
+				validate(attachments[1].Id, &entity)
+
+				require.Equal(t, entity.Order, attachments[0].Order)
+			},
+		},
+		{
+			name:     "Attachment delete",
+			method:   "DELETE",
+			url:      func() string { return fmt.Sprintf("/admin/attachments/%s", attachments[1].Id) },
 			auth:     token,
 			expected: http.StatusNoContent,
 			body:     func() *bytes.Buffer { return &bytes.Buffer{} },
@@ -171,7 +288,7 @@ func TestAttachmentModule(t *testing.T) {
 		{
 			name:     "Attachment delete return not found",
 			method:   "DELETE",
-			url:      func() string { return fmt.Sprintf("/admin/attachments/%s", attachment_id) },
+			url:      func() string { return fmt.Sprintf("/admin/attachments/%s", attachments[0].Id) },
 			auth:     token,
 			expected: http.StatusUnprocessableEntity,
 			body:     func() *bytes.Buffer { return &bytes.Buffer{} },

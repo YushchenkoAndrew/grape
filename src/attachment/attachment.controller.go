@@ -3,6 +3,7 @@ package attachment
 import (
 	"grape/src/attachment/constant"
 	"grape/src/attachment/dto/request"
+	req "grape/src/common/dto/request"
 	"grape/src/common/dto/response"
 	"grape/src/user/entities"
 	"net/http"
@@ -44,6 +45,25 @@ func (c *AttachmentController) FindOne(ctx *gin.Context) {
 	}
 
 	ctx.Data(http.StatusOK, content, res)
+}
+
+// @Tags Attachment
+// @Summary Find attachment
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Attachment id"
+// @Success 200 {object} response.AttachmentAdvancedResponseDto
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/attachments/{id} [get]
+func (c *AttachmentController) AdminFindOne(ctx *gin.Context) {
+	res, err := c.service.AdminFindOne(
+		c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}}),
+	)
+
+	response.Handler(ctx, http.StatusOK, res, err)
 }
 
 // @Tags Attachment
@@ -118,8 +138,10 @@ func (c *AttachmentController) Update(ctx *gin.Context) {
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
+// @Security BearerAuth
 // @Param id path string true "Attachment id"
 // @Success 204
+// @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /admin/attachments/{id} [delete]
 func (c *AttachmentController) Delete(ctx *gin.Context) {
@@ -128,4 +150,28 @@ func (c *AttachmentController) Delete(ctx *gin.Context) {
 	)
 
 	response.Handler(ctx, http.StatusNoContent, res, err)
+}
+
+// @Tags Attachment
+// @Summary Update Attachment order position
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Project id"
+// @Param model body req.OrderUpdateDto true "Position body"
+// @Success 200 {object} response.AttachmentAdvancedResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/attachments/{id}/order [put]
+func (c *AttachmentController) PutOrder(ctx *gin.Context) {
+	var body req.OrderUpdateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	res, err := c.service.PutOrder(c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}}), &body)
+	response.Handler(ctx, http.StatusOK, res, err)
 }

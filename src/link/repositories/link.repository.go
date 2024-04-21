@@ -58,8 +58,12 @@ func (c *linkRepository) Update(db *gorm.DB, dto *r.LinkDto, body interface{}, e
 	return db.Model(entity).Updates(entity)
 }
 
-func (c *linkRepository) Delete(db *gorm.DB, dto *r.LinkDto, entity *e.LinkEntity) *gorm.DB {
+func (c *linkRepository) Delete(db *gorm.DB, dto *r.LinkDto, entity []*e.LinkEntity) *gorm.DB {
 	return db.Model(c.Model()).Delete(entity)
+}
+
+func (c *linkRepository) Reorder(db *gorm.DB, entity *e.LinkEntity, position int) error {
+	return nil
 }
 
 var repository *linkRepository

@@ -69,9 +69,13 @@ func (c *paletteRepository) Update(db *gorm.DB, dto *r.PaletteDto, body interfac
 	return db.Model(entity).Updates(entity)
 }
 
-func (c *paletteRepository) Delete(db *gorm.DB, dto *r.PaletteDto, entity *e.PaletteEntity) *gorm.DB {
+func (c *paletteRepository) Delete(db *gorm.DB, dto *r.PaletteDto, entity []*e.PaletteEntity) *gorm.DB {
 	// TODO: Add transaction with recursive delete related entities
 	return db.Model(c.Model()).Delete(entity)
+}
+
+func (c *paletteRepository) Reorder(db *gorm.DB, entity *e.PaletteEntity, position int) error {
+	return nil
 }
 
 var repository *paletteRepository

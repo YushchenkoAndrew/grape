@@ -29,7 +29,8 @@ type CommonRepositoryT[Dto CommonDtoT, Entity CommonEntity, Relations any] inter
 	Build(*gorm.DB, Dto, ...Relations) *gorm.DB
 	Create(*gorm.DB, Dto, interface{}, Entity) *gorm.DB
 	Update(*gorm.DB, Dto, interface{}, Entity) *gorm.DB
-	Delete(*gorm.DB, Dto, Entity) *gorm.DB
+	Delete(*gorm.DB, Dto, []Entity) *gorm.DB
+	Reorder(*gorm.DB, Entity, int) error
 }
 
 type CommonRepository[Entity CommonEntity, Dto CommonDtoT, Relations any] struct {
@@ -138,8 +139,28 @@ func (c *CommonRepository[Entity, Dto, Relations]) Update(db *gorm.DB, dto Dto, 
 }
 
 func (c *CommonRepository[Entity, Dto, Relations]) Delete(db *gorm.DB, dto Dto, entity Entity) error {
-	if tx := c.handler.Delete(c.connection(db), dto, entity); tx.Error != nil {
+	if tx := c.handler.Delete(c.connection(db), dto, []Entity{entity}); tx.Error != nil {
 		return tx.Error
+	}
+
+	return nil
+}
+
+func (c *CommonRepository[Entity, Dto, Relations]) DeleteAll(db *gorm.DB, dto Dto, entities []Entity) error {
+	if len(entities) == 0 {
+		return nil
+	}
+
+	if tx := c.handler.Delete(c.connection(db), dto, entities); tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (c *CommonRepository[Entity, Dto, Relations]) Reorder(db *gorm.DB, entity Entity, position int) error {
+	if err := c.handler.Reorder(c.connection(db), entity, position); err != nil {
+		return err
 	}
 
 	return nil

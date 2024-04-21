@@ -7,6 +7,7 @@ import (
 	"grape/src"
 	"grape/src/auth"
 	"grape/src/common/config"
+	req "grape/src/common/dto/request"
 	common "grape/src/common/dto/response"
 	m "grape/src/common/module"
 	"grape/src/common/service"
@@ -91,7 +92,7 @@ func TestProjectModule(t *testing.T) {
 			},
 		},
 		{
-			name:   "Project create 2",
+			name:   "Project create",
 			method: "POST",
 			url:    func() string { return "/admin/projects" },
 			auth:   token,
@@ -115,33 +116,11 @@ func TestProjectModule(t *testing.T) {
 			},
 		},
 		{
-			name:   "Project update",
-			method: "PUT",
-			url:    func() string { return fmt.Sprintf("/admin/projects/%s", projects[0].Id) },
-			auth:   token,
-			body: func() interface{} {
-				return request.ProjectUpdateDto{Name: "UpdatedProject", Description: "Updated project description", Footer: "Updated footer"}
-			},
-			expected: http.StatusOK,
-			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
-				var res common.UuidResponseDto
-				json.Unmarshal(w.Body.Bytes(), &res)
-
-				var entity response.AdminProjectDetailedResponseDto
-				validate(res.Id, &entity)
-
-				require.Equal(t, "UpdatedProject", entity.Name)
-				require.Equal(t, "Updated project description", entity.Description)
-				// require.Equal(t, "markdown", entity.Type)
-				// require.Equal(t, "Updated footer", entity.Footer)
-			},
-		},
-		{
 			name:     "Project update order",
 			method:   "PUT",
 			url:      func() string { return fmt.Sprintf("/admin/projects/%s/order", projects[1].Id) },
 			auth:     token,
-			body:     func() interface{} { return request.ProjectOrderUpdateDto{Position: projects[0].Order} },
+			body:     func() interface{} { return req.OrderUpdateDto{Position: projects[0].Order} },
 			expected: http.StatusOK,
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var res common.UuidResponseDto
@@ -162,7 +141,7 @@ func TestProjectModule(t *testing.T) {
 			method:   "PUT",
 			url:      func() string { return fmt.Sprintf("/admin/projects/%s/order", projects[1].Id) },
 			auth:     token,
-			body:     func() interface{} { return request.ProjectOrderUpdateDto{Position: projects[1].Order} },
+			body:     func() interface{} { return req.OrderUpdateDto{Position: projects[1].Order} },
 			expected: http.StatusOK,
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var res common.UuidResponseDto
@@ -176,6 +155,28 @@ func TestProjectModule(t *testing.T) {
 
 				require.Equal(t, entity.Order, projects[1].Order)
 				require.Equal(t, entity2.Order, projects[0].Order)
+			},
+		},
+		{
+			name:   "Project update",
+			method: "PUT",
+			url:    func() string { return fmt.Sprintf("/admin/projects/%s", projects[0].Id) },
+			auth:   token,
+			body: func() interface{} {
+				return request.ProjectUpdateDto{Name: "UpdatedProject", Description: "Updated project description", Footer: "Updated footer"}
+			},
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res common.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				var entity response.AdminProjectDetailedResponseDto
+				validate(res.Id, &entity)
+
+				require.Equal(t, "UpdatedProject", entity.Name)
+				require.Equal(t, "Updated project description", entity.Description)
+				// require.Equal(t, "markdown", entity.Type)
+				// require.Equal(t, "Updated footer", entity.Footer)
 			},
 		},
 		{
@@ -273,7 +274,7 @@ func TestProjectModule(t *testing.T) {
 			},
 		},
 		{
-			name:     "Project delete 2",
+			name:     "Project delete",
 			method:   "DELETE",
 			auth:     token,
 			url:      func() string { return fmt.Sprintf("/admin/projects/%s", projects[1].Id) },

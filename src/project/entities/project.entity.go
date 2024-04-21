@@ -10,6 +10,8 @@ import (
 	st "grape/src/statistic/entities"
 	org "grape/src/user/entities"
 	"path/filepath"
+
+	"github.com/samber/lo"
 )
 
 type ProjectEntity struct {
@@ -73,6 +75,14 @@ func (c *ProjectEntity) SetType(str string) {
 
 func (c *ProjectEntity) GetPath() string {
 	return filepath.Join("/", c.TableName(), c.UUID)
+}
+
+func (c *ProjectEntity) GetAttachments() []*att.AttachmentEntity {
+	return lo.Map(c.Attachments, func(e att.AttachmentEntity, _ int) *att.AttachmentEntity { return &e })
+}
+
+func (c *ProjectEntity) GetLinks() []*ln.LinkEntity {
+	return lo.Map(c.Links, func(e ln.LinkEntity, _ int) *ln.LinkEntity { return &e })
 }
 
 func NewProjectEntity() *ProjectEntity {
