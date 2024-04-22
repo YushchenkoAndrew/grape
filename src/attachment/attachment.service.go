@@ -19,7 +19,6 @@ import (
 	pr "grape/src/project/repositories"
 
 	"github.com/jinzhu/copier"
-	"github.com/samber/lo"
 	"gorm.io/gorm"
 )
 
@@ -68,10 +67,9 @@ func (c *AttachmentService) Create(dto *request.AttachmentDto, body *request.Att
 
 		entity.Home = project.GetPath()
 		err = c.ProjectRepository.Transaction(func(tx *gorm.DB) error {
-			order := lo.Max(append(lo.Map(project.Attachments, func(e entities.AttachmentEntity, _ int) int { return e.Order }), 0))
-
-			entity.Order = order + 1
-			if err := tx.Model(project).Association("Attachments").Append(entity); err != nil {
+			entity.AttachableID = project.ID
+			entity.AttachableType = c.ProjectRepository.TableName()
+			if _, err := c.Repository.Create(tx, dto, entity); err != nil {
 				return err
 			}
 

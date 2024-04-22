@@ -150,6 +150,7 @@ func TestAttachmentModule(t *testing.T) {
 
 				attachments = append(attachments, entity)
 				require.Equal(t, "/test2/", res.Path)
+				require.Greater(t, entity.Order, attachments[0].Order)
 			},
 		},
 		{

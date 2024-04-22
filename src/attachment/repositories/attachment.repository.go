@@ -7,6 +7,7 @@ import (
 
 	"github.com/samber/lo"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type AttachmentRelation string
@@ -52,7 +53,20 @@ func (c *attachmentRepository) sortBy(tx *gorm.DB, dto *r.AttachmentDto, _ []Att
 }
 
 func (c *attachmentRepository) Create(db *gorm.DB, dto *r.AttachmentDto, body interface{}, entity *e.AttachmentEntity) *gorm.DB {
-	return nil
+	db.Clauses(clause.Locking{Strength: clause.LockingStrengthShare, Table: clause.Table{Name: c.Model().TableName()}})
+	entity = body.(*e.AttachmentEntity)
+
+	if res := db.Create(entity); res.Error != nil {
+		return res
+	}
+
+	var order int64
+	db.Model(c.Model()).
+		Select(`MAX(attachments.order) AS "order"`).
+		Where(`attachments.attachable_id = ? AND attachments.attachable_type = ?`, entity.AttachableID, entity.AttachableType).
+		Scan(&order)
+
+	return db.Model(c.Model()).Where("attachments.id = ?", entity.ID).Update("order", int(order)+1)
 }
 
 func (c *attachmentRepository) Update(db *gorm.DB, dto *r.AttachmentDto, body interface{}, entity *e.AttachmentEntity) *gorm.DB {
