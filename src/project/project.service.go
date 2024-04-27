@@ -77,7 +77,7 @@ func (c *ProjectService) AdminFindOne(dto *request.ProjectDto) (*response.AdminP
 }
 
 func (c *ProjectService) AdminFindAll(dto *request.ProjectDto) (*common.PageResponseDto[[]response.AdminProjectBasicResponseDto], error) {
-	total, projects, err := c.Repository.GetAllPage(dto, repo.Owner, repo.Attachments, repo.Palette, repo.Pattern, repo.Statistic)
+	total, projects, err := c.Repository.GetAllPage(dto, repo.Owner, repo.Attachments, repo.Links, repo.Palette, repo.Pattern, repo.Statistic)
 
 	return &common.PageResponseDto[[]response.AdminProjectBasicResponseDto]{
 		Page:    dto.Page,

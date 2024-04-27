@@ -2,6 +2,7 @@ package response
 
 import (
 	att "grape/src/attachment/dto/response"
+	ln "grape/src/link/dto/response"
 	user "grape/src/user/dto/response"
 )
 
@@ -14,4 +15,5 @@ type AdminProjectBasicResponseDto struct {
 
 	Owner       user.UserBasicResponseDto           `json:"owner" xml:"owner"`
 	Attachments []att.AttachmentAdvancedResponseDto `json:"attachments" xml:"attachments"`
+	Links       []ln.LinkBasicResponseDto           `json:"links" xml:"links"`
 }
