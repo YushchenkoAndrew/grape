@@ -109,8 +109,9 @@ func (c *AttachmentService) Update(dto *request.AttachmentDto, body *request.Att
 		e := entities.AttachmentEntity{}
 		e.Name, e.Path, e.Home, e.Size, e.Type = file.Filename, body.Path, entity.Home, file.Size, filepath.Ext(file.Filename)
 		copier.CopyWithOption(&e, body, copier.Option{IgnoreEmpty: true})
+		updated, err := c.Repository.Update(tx, dto, e, entity)
 
-		if _, err := c.Repository.Update(tx, dto, e, entity); err != nil {
+		if err != nil {
 			return err
 		}
 
@@ -124,7 +125,7 @@ func (c *AttachmentService) Update(dto *request.AttachmentDto, body *request.Att
 		}
 
 		defer f.Close()
-		return c.VoidService.Save(e.GetPath(), e.Name, f)
+		return c.VoidService.Save(updated.GetPath(), e.Name, f)
 	})
 
 	return common.NewResponse[response.AttachmentAdvancedResponseDto](entity), err

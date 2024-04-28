@@ -60,8 +60,13 @@ func (c *VoidService) Save(path, filename string, file io.Reader) error {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, _ := writer.CreateFormFile("file", filename)
-	io.Copy(part, file)
-	writer.Close()
+	if _, err := io.Copy(part, file); err != nil {
+		return err
+	}
+
+	if err := writer.Close(); err != nil {
+		return err
+	}
 
 	res, err := c.http("POST", path, writer.FormDataContentType(), body)
 	if err != nil {
