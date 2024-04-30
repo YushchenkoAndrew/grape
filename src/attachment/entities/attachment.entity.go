@@ -9,12 +9,13 @@ import (
 type AttachmentEntity struct {
 	*e.UuidEntity
 
-	Name  string `gorm:"not null"`
-	Home  string `gorm:"not null;default:'/'"`
-	Path  string `gorm:"not null;default:'/'"`
-	Type  string `gorm:"not null"`
-	Size  int64  `gorm:"not null"`
-	Order int    `gorm:"not null;default:0" copier:"-"`
+	Name    string `gorm:"not null"`
+	Home    string `gorm:"not null;default:'/'"`
+	Path    string `gorm:"not null;default:'/'"`
+	Type    string `gorm:"not null"`
+	Size    int64  `gorm:"not null"`
+	Order   int    `gorm:"not null;default:0" copier:"-"`
+	Preview bool   `gorm:"not null"`
 
 	AttachableID   int64  `gorm:"not null"`
 	AttachableType string `gorm:"not null"`
