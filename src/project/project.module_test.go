@@ -306,7 +306,6 @@ func TestProjectModule(t *testing.T) {
 
 			router.ServeHTTP(w, req)
 
-			fmt.Println(w.Body.String())
 			require.Equal(t, test.expected, w.Code)
 			test.validate(t, w)
 
