@@ -7,9 +7,9 @@ psql:
   name: api_db
   host: localhost
   port: 7432
-  username: ""
-  password: ""
-  logger: true
+  username: root
+  password: root
+  logger: false
 
 redis:
   db: 0
@@ -18,12 +18,12 @@ redis:
   password: ""
 
 void:
-  url: http://192.168.0.106:8003/void
-  username: ""
-  password: ""
+  url: http://localhost:8003/void
+  username: root
+  password: root
 
 jwt:
-  access_secret: ""
-  refresh_secret: ""
-  access_expire: 2h
+  access_secret: TEST
+  refresh_secret: TEST
+  access_expire: 30d
   refresh_expire: 30d

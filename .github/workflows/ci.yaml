@@ -60,6 +60,12 @@ jobs:
       - name: Create database file from template
         run: cp configs/database.template.yaml configs/database.yaml
 
+      - name: Create config_test file from template
+        run: cp configs/config.template.yaml configs/config_test.yaml
+
+      - name: Create config file from template
+        run: cp configs/config.template.yaml configs/config.yaml
+
       - name: Install packages
         run: go mod download
 

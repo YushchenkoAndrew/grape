@@ -66,3 +66,4 @@ migrations/tmp/GeoLite2-Country-Blocks.csv
 migrations/tmp/GeoLite2-Country-Locations-en.csv
 migrations/tmp/LICENSE.txt
 migrations/tmp/COPYRIGHT.txt
+configs/config_test.yaml
