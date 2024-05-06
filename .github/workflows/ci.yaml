@@ -48,7 +48,7 @@ jobs:
         with:
           go-version: 1.22
 
-      - name: Install packages
+      - name: Install make
         run: sudo apt install -y make
 
       - name: Install swagger
@@ -59,6 +59,9 @@ jobs:
 
       - name: Create database file from template
         run: cp configs/database.template.yaml configs/database.yaml
+
+      - name: Install packages
+        run: go mod download
 
       - name: Run tests
         run: make test
