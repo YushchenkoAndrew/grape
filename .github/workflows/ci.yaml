@@ -54,5 +54,8 @@ jobs:
       - name: Install swagger
         run: go install github.com/swaggo/swag/cmd/swag@latest
 
+      - name: Build swagger
+        run: make swagger
+
       - name: Run tests
         run: make test
