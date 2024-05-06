@@ -1,26 +1,29 @@
 server:
-  host: localhost
-  port: 31337
+  address: localhost:31337
   prefix: /grape
-  migration: migrations/
+  migrations: migrations/
 
 psql:
   name: api_db
   host: localhost
   port: 7432
-  user: root
-  pass: root
+  username: root
+  password: root
   logger: false
 
 redis:
-  name: ""
-  host: localhost
-  port: 6379
-  user: ""
-  pass: ""
+  db: 0
+  address: localhost:6379
+  username: ""
+  password: ""
+
+void:
+  url: http://localhost:8003/void
+  username: root
+  password: root
 
 jwt:
-  access_secret: HELLO
-  refresh_secret: HELLO
-  access_expire: 10m
-  refresh_expire: 10m
+  access_secret: TEST
+  refresh_secret: TEST
+  access_expire: 30d
+  refresh_expire: 30d
