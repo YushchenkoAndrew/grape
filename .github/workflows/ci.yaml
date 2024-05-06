@@ -57,5 +57,8 @@ jobs:
       - name: Build swagger
         run: make swagger
 
+      - name: Create database file from template
+        run: cp configs/database.template.yaml configs/database.yaml
+
       - name: Run tests
         run: make test
