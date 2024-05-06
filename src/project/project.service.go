@@ -52,7 +52,7 @@ func NewProjectService(s *service.CommonService) *ProjectService {
 func (c *ProjectService) FindOne(dto *request.ProjectDto) (*response.ProjectDetailedResponseDto, error) {
 	project, err := c.Repository.ValidateEntityExistence(req.NewRequest(dto, &request.ProjectDto{
 		Statuses: []string{types.Active.String()},
-	}), repo.Attachments, repo.Palette, repo.Pattern, repo.Links)
+	}), repo.Attachments, repo.Links)
 
 	return common.NewResponse[response.ProjectDetailedResponseDto](project), err
 }
@@ -60,7 +60,7 @@ func (c *ProjectService) FindOne(dto *request.ProjectDto) (*response.ProjectDeta
 func (c *ProjectService) FindAll(dto *request.ProjectDto) (*common.PageResponseDto[[]response.ProjectBasicResponseDto], error) {
 	total, projects, err := c.Repository.GetAllPage(req.NewRequest(dto, &request.ProjectDto{
 		Statuses: []string{types.Active.String()},
-	}), repo.Attachments, repo.Palette, repo.Pattern)
+	}), repo.Attachments)
 
 	return &common.PageResponseDto[[]response.ProjectBasicResponseDto]{
 		Page:    dto.Page,
@@ -71,13 +71,13 @@ func (c *ProjectService) FindAll(dto *request.ProjectDto) (*common.PageResponseD
 }
 
 func (c *ProjectService) AdminFindOne(dto *request.ProjectDto) (*response.AdminProjectDetailedResponseDto, error) {
-	project, err := c.Repository.ValidateEntityExistence(dto, repo.Owner, repo.Attachments, repo.Palette, repo.Pattern, repo.Statistic, repo.Links)
+	project, err := c.Repository.ValidateEntityExistence(dto, repo.Owner, repo.Attachments, repo.Statistic, repo.Links)
 
 	return common.NewResponse[response.AdminProjectDetailedResponseDto](project), err
 }
 
 func (c *ProjectService) AdminFindAll(dto *request.ProjectDto) (*common.PageResponseDto[[]response.AdminProjectBasicResponseDto], error) {
-	total, projects, err := c.Repository.GetAllPage(dto, repo.Owner, repo.Attachments, repo.Links, repo.Palette, repo.Pattern, repo.Statistic)
+	total, projects, err := c.Repository.GetAllPage(dto, repo.Owner, repo.Attachments, repo.Links, repo.Statistic)
 
 	return &common.PageResponseDto[[]response.AdminProjectBasicResponseDto]{
 		Page:    dto.Page,

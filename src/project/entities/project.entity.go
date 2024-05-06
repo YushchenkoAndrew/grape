@@ -5,8 +5,6 @@ import (
 	e "grape/src/common/entities"
 	ln "grape/src/link/entities"
 	t "grape/src/project/types"
-	palette "grape/src/setting/modules/palette/entities"
-	pattern "grape/src/setting/modules/pattern/entities"
 	st "grape/src/statistic/entities"
 	org "grape/src/user/entities"
 	"path/filepath"
@@ -30,14 +28,8 @@ type ProjectEntity struct {
 	OrganizationID int64                   `gorm:"not null" copier:"-"`
 	Organization   *org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID" copier:"-"`
 
-	PaletteID int64                  `gorm:"not null" copier:"-"`
-	Palette   *palette.PaletteEntity `gorm:"foreignKey:PaletteID;references:ID" copier:"-"`
-
 	StatisticID int64               `gorm:"not null" copier:"-"`
 	Statistic   *st.StatisticEntity `gorm:"foreignKey:StatisticID;references:ID" copier:"-"`
-
-	PatternID int64                  `gorm:"not null" copier:"-"`
-	Pattern   *pattern.PatternEntity `gorm:"foreignKey:PatternID;references:ID" copier:"-"`
 
 	Links       []ln.LinkEntity        `gorm:"polymorphic:Linkable" copier:"-"`
 	Attachments []att.AttachmentEntity `gorm:"polymorphic:Attachable" copier:"-"`

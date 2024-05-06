@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"grape/src/common/config"
-	"grape/src/setting/modules/pattern/types"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,6 +15,51 @@ import (
 	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
 )
+
+type PatternOptionsType struct {
+	MaxStroke   float32 `json:"max_stroke" xml:"max_stroke"`
+	MaxScale    int     `json:"max_scale" xml:"max_scale"`
+	MaxSpacingX float32 `json:"max_spacing_x" xml:"max_spacing_x"`
+	MaxSpacingY float32 `json:"max_spacing_y" xml:"max_spacing_y"`
+}
+
+type PatternColorModeEnum int
+
+const (
+	Stroke PatternColorModeEnum = iota + 1
+	Fill
+	Join
+)
+
+func (c PatternColorModeEnum) String() string {
+	switch c {
+	case Stroke:
+		return "stroke"
+
+	case Fill:
+		return "fill"
+
+	case Join:
+		return "join"
+	}
+
+	return ""
+}
+
+func (PatternColorModeEnum) Value(str string) PatternColorModeEnum {
+	switch str {
+	case "stroke":
+		return Stroke
+
+	case "fill":
+		return Fill
+
+	case "join":
+		return Join
+	}
+
+	return Join
+}
 
 func init() {
 	goose.AddMigrationContext(upCreateSvgPatterns, downCreateSvgPatterns)
@@ -100,10 +144,10 @@ func upCreateSvgPatterns(ctx context.Context, tx *sql.Tx) error {
 		max_spacing_x, _ := strconv.ParseFloat(s[MAX_SPACING_X], 32)
 		max_spacing_y, _ := strconv.ParseFloat(s[MAX_SPACING_Y], 32)
 
-		data := &types.PatternOptionsType{MaxStroke: float32(max_stroke), MaxScale: int(max_scale), MaxSpacingX: float32(max_spacing_x), MaxSpacingY: float32(max_spacing_y)}
+		data := &PatternOptionsType{MaxStroke: float32(max_stroke), MaxScale: int(max_scale), MaxSpacingX: float32(max_spacing_x), MaxSpacingY: float32(max_spacing_y)}
 		json, _ := json.Marshal(data)
 
-		chunk = append(chunk, fmt.Sprintf(`('%s', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, %d, %s, '%s'::jsonb, %s, %s, $%d)`, uuid.New().String(), int(types.Fill.Value(s[MODE])), s[COLORS], string(json), s[WIDTH], s[HEIGHT], len(args)+1))
+		chunk = append(chunk, fmt.Sprintf(`('%s', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, %d, %s, '%s'::jsonb, %s, %s, $%d)`, uuid.New().String(), int(Fill.Value(s[MODE])), s[COLORS], string(json), s[WIDTH], s[HEIGHT], len(args)+1))
 		args = append(args, s[PATH])
 
 		if len(chunk) == 500 {

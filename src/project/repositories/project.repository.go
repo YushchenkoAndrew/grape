@@ -22,8 +22,6 @@ const (
 	Redirect     ProjectRelation = "Redirect"
 	Links        ProjectRelation = "Links"
 	Owner        ProjectRelation = "Owner"
-	Palette      ProjectRelation = "Palette"
-	Pattern      ProjectRelation = "Pattern"
 	Statistic    ProjectRelation = "Statistic"
 )
 
@@ -110,9 +108,6 @@ func (c *projectRepository) Create(db *gorm.DB, dto *r.ProjectDto, body interfac
 	dto.SortBy = ""
 	c.Build(db, dto).Select(`MAX(projects.order) AS "order"`).Scan(&order)
 
-	db.First(&entity.Pattern)
-	db.First(&entity.Palette)
-
 	entity.Order = int(order) + 1
 	entity.Owner = dto.CurrentUser
 	entity.Organization = &dto.CurrentUser.Organization
@@ -124,14 +119,6 @@ func (c *projectRepository) Create(db *gorm.DB, dto *r.ProjectDto, body interfac
 
 func (c *projectRepository) Update(db *gorm.DB, dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
 	options := body.(*r.ProjectUpdateDto)
-
-	if options.PaletteID != "" {
-		db.First(&entity.Palette, "uuid = ?", options.PaletteID)
-	}
-
-	if options.PatternID != "" {
-		db.First(&entity.Pattern, "uuid = ?", options.PatternID)
-	}
 
 	// entity.SetType(options.Type)
 	entity.SetStatus(options.Status)
