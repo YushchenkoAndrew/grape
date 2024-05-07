@@ -29,6 +29,9 @@ func (c *IdEntity) Update() { c.UpdatedAt = time.Now() }
 func (c *IdEntity) CreatedAtISO() string { return c.CreatedAt.Format(time.RFC3339) }
 func (c *IdEntity) UpdatedAtISO() string { return c.UpdatedAt.Format(time.RFC3339) }
 
+func (c *IdEntity) SetOrder(int)  {}
+func (c *IdEntity) GetOrder() int { return 0 }
+
 func NewIdEntity() *IdEntity {
 	return &IdEntity{BasicEntity: NewBasicEntity()}
 }

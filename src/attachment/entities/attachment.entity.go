@@ -14,7 +14,7 @@ type AttachmentEntity struct {
 	Path    string `gorm:"not null;default:'/'"`
 	Type    string `gorm:"not null"`
 	Size    int64  `gorm:"not null"`
-	Order   int    `gorm:"not null;default:0" copier:"-"`
+	Order   int    `gorm:"not null;default:1" copier:"-"`
 	Preview bool   `gorm:"not null"`
 
 	AttachableID   int64  `gorm:"not null"`
@@ -23,6 +23,14 @@ type AttachmentEntity struct {
 
 func (*AttachmentEntity) TableName() string {
 	return "attachments"
+}
+
+func (c *AttachmentEntity) SetOrder(order int) {
+	c.Order = order
+}
+
+func (c *AttachmentEntity) GetOrder() int {
+	return c.Order
 }
 
 func (c *AttachmentEntity) GetAttachment() string {

@@ -21,6 +21,8 @@ type CommonEntity interface {
 	Create()
 	Update()
 	TableName() string
+	SetOrder(int)
+	GetOrder() int
 }
 
 type CommonRepositoryT[Dto CommonDtoT, Entity CommonEntity, Relations any] interface {
@@ -30,7 +32,7 @@ type CommonRepositoryT[Dto CommonDtoT, Entity CommonEntity, Relations any] inter
 	Create(*gorm.DB, Dto, interface{}, Entity) *gorm.DB
 	Update(*gorm.DB, Dto, interface{}, Entity) *gorm.DB
 	Delete(*gorm.DB, Dto, []Entity) *gorm.DB
-	Reorder(*gorm.DB, Entity, int) error
+	Reorder(*gorm.DB, Entity, int) ([]Entity, error)
 }
 
 type CommonRepository[Entity CommonEntity, Dto CommonDtoT, Relations any] struct {
@@ -159,11 +161,24 @@ func (c *CommonRepository[Entity, Dto, Relations]) DeleteAll(db *gorm.DB, dto Dt
 }
 
 func (c *CommonRepository[Entity, Dto, Relations]) Reorder(db *gorm.DB, entity Entity, position int) error {
-	if err := c.handler.Reorder(c.connection(db), entity, position); err != nil {
+	entities, err := c.handler.Reorder(c.connection(db), entity, position)
+	if err != nil || len(entities) == 0 {
 		return err
 	}
 
-	return nil
+	for _, e := range entities {
+		if entity.GetOrder() < position {
+			e.SetOrder(e.GetOrder() - 1)
+		} else {
+			e.SetOrder(e.GetOrder() + 1)
+		}
+	}
+
+	entity.SetOrder(position)
+	entities = append(entities, entity)
+
+	res := db.Model(c.handler.Model()).Save(entities)
+	return res.Error
 }
 
 func NewSortBy(alias, column string, direction string) clause.OrderByColumn {

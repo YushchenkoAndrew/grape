@@ -62,8 +62,19 @@ func (c *linkRepository) Delete(db *gorm.DB, dto *r.LinkDto, entity []*e.LinkEnt
 	return db.Model(c.Model()).Delete(entity)
 }
 
-func (c *linkRepository) Reorder(db *gorm.DB, entity *e.LinkEntity, position int) error {
-	return nil
+func (c *linkRepository) Reorder(db *gorm.DB, entity *e.LinkEntity, position int) ([]*e.LinkEntity, error) {
+	var links []*e.LinkEntity
+	db = db.Model(c.Model()).
+		Where(`links.attachable_id = ? AND links.attachable_type = ?`, entity.LinkableID, entity.LinkableType)
+
+	if entity.Order < position {
+		db = db.Where(`links.order > ?`, entity.Order).Where(`links.order <= ?`, position)
+	} else {
+		db = db.Where(`links.order < ?`, entity.Order).Where(`links.order >= ?`, position)
+	}
+
+	res := db.Find(&links)
+	return links, res.Error
 }
 
 var repository *linkRepository

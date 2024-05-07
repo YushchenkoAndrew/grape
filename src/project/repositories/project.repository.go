@@ -3,8 +3,8 @@ package repositories
 import (
 	"fmt"
 	"grape/src/common/repositories"
+	t "grape/src/common/types"
 	r "grape/src/project/dto/request"
-	"grape/src/project/entities"
 	e "grape/src/project/entities"
 	"grape/src/project/types"
 	st "grape/src/statistic/entities"
@@ -54,8 +54,8 @@ func (c *projectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, relation
 	}
 
 	if len(dto.Statuses) != 0 {
-		tx.Where(`projects.status IN ?`, lo.Map(dto.Statuses, func(str string, _ int) types.ProjectStatusEnum {
-			return types.Active.Value(str)
+		tx.Where(`projects.status IN ?`, lo.Map(dto.Statuses, func(str string, _ int) t.StatusEnum {
+			return t.Active.Value(str)
 		}))
 	}
 
@@ -144,7 +144,7 @@ func (c *projectRepository) Delete(db *gorm.DB, dto *r.ProjectDto, entity []*e.P
 			continue
 		}
 
-		lo.ForEach(projects, func(e *entities.ProjectEntity, _ int) { e.Order -= 1 })
+		lo.ForEach(projects, func(e *e.ProjectEntity, _ int) { e.Order -= 1 })
 		if res := db.Model(c.Model()).Save(projects); res.Error != nil {
 			return res
 		}
@@ -153,7 +153,7 @@ func (c *projectRepository) Delete(db *gorm.DB, dto *r.ProjectDto, entity []*e.P
 	return db.Model(c.Model()).Delete(entity)
 }
 
-func (c *projectRepository) Reorder(db *gorm.DB, entity *e.ProjectEntity, position int) error {
+func (c *projectRepository) Reorder(db *gorm.DB, entity *e.ProjectEntity, position int) ([]*e.ProjectEntity, error) {
 	var projects []*e.ProjectEntity
 	db = db.Model(c.Model()).Where(`projects.organization_id = ?`, entity.OrganizationID)
 
@@ -163,23 +163,8 @@ func (c *projectRepository) Reorder(db *gorm.DB, entity *e.ProjectEntity, positi
 		db = db.Where(`projects.order < ?`, entity.Order).Where(`projects.order >= ?`, position)
 	}
 
-	if res := db.Find(&projects); res.Error != nil || len(projects) == 0 {
-		return res.Error
-	}
-
-	for _, e := range projects {
-		if entity.Order < position {
-			e.Order -= 1
-		} else {
-			e.Order += 1
-		}
-	}
-
-	entity.Order = position
-	projects = append(projects, entity)
-
-	res := db.Model(c.Model()).Save(projects)
-	return res.Error
+	res := db.Find(&projects)
+	return projects, res.Error
 }
 
 var repository *projectRepository

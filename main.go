@@ -9,10 +9,12 @@ import (
 	"grape/src/common/middleware"
 	m "grape/src/common/module"
 	"grape/src/common/service"
+	"grape/src/context"
 	"grape/src/customer"
 	"grape/src/link"
 	"grape/src/project"
 	"grape/src/setting"
+	"grape/src/stage"
 	"grape/src/statistic"
 	"grape/src/swagger"
 
@@ -53,6 +55,8 @@ func main() {
 		link.NewLinkModule(rg, []m.ModuleT{}, service),
 		statistic.NewStatisticModule(rg, []m.ModuleT{}, service),
 		setting.NewSettingModule(rg, []m.ModuleT{}, service),
+		stage.NewStageModule(rg, []m.ModuleT{}, service),
+		context.NewContextModule(rg, []m.ModuleT{}, service),
 		// routes.NewBotRouter(rg, db, redis),
 
 		// // routes.NewWorldRouter(rg),

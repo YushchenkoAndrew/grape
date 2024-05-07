@@ -150,7 +150,7 @@ func (c *AttachmentService) Delete(dto *request.AttachmentDto) (interface{}, err
 	return nil, err
 }
 
-func (c *AttachmentService) PutOrder(dto *request.AttachmentDto, body *req.OrderUpdateDto) (*response.AttachmentAdvancedResponseDto, error) {
+func (c *AttachmentService) UpdateOrder(dto *request.AttachmentDto, body *req.OrderUpdateDto) (*response.AttachmentAdvancedResponseDto, error) {
 	attachement, err := c.Repository.ValidateEntityExistence(dto)
 	if err != nil || attachement.Order == body.Position {
 		return common.NewResponse[response.AttachmentAdvancedResponseDto](attachement), err

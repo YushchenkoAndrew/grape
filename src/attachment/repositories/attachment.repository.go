@@ -98,7 +98,7 @@ func (c *attachmentRepository) Delete(db *gorm.DB, dto *r.AttachmentDto, entity 
 	return db.Model(c.Model()).Delete(entity)
 }
 
-func (c *attachmentRepository) Reorder(db *gorm.DB, entity *e.AttachmentEntity, position int) error {
+func (c *attachmentRepository) Reorder(db *gorm.DB, entity *e.AttachmentEntity, position int) ([]*e.AttachmentEntity, error) {
 	var attachments []*e.AttachmentEntity
 	db = db.Model(c.Model()).
 		Where(`attachments.attachable_id = ? AND attachments.attachable_type = ?`, entity.AttachableID, entity.AttachableType)
@@ -109,23 +109,8 @@ func (c *attachmentRepository) Reorder(db *gorm.DB, entity *e.AttachmentEntity, 
 		db = db.Where(`attachments.order < ?`, entity.Order).Where(`attachments.order >= ?`, position)
 	}
 
-	if res := db.Find(&attachments); res.Error != nil || len(attachments) == 0 {
-		return res.Error
-	}
-
-	for _, e := range attachments {
-		if entity.Order < position {
-			e.Order -= 1
-		} else {
-			e.Order += 1
-		}
-	}
-
-	entity.Order = position
-	attachments = append(attachments, entity)
-
-	res := db.Model(c.Model()).Save(attachments)
-	return res.Error
+	res := db.Find(&attachments)
+	return attachments, res.Error
 }
 
 var repository *attachmentRepository

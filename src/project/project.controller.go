@@ -209,13 +209,13 @@ func (c *ProjectController) UpdateProjectStatistics(ctx *gin.Context) {
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /admin/projects/{id}/order [put]
-func (c *ProjectController) PutOrder(ctx *gin.Context) {
+func (c *ProjectController) UpdateOrder(ctx *gin.Context) {
 	var body req.OrderUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
 		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	res, err := c.service.PutOrder(c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}), &body)
+	res, err := c.service.UpdateOrder(c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}), &body)
 	response.Handler(ctx, http.StatusOK, res, err)
 }

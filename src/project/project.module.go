@@ -35,7 +35,7 @@ func (c *projectModule) Init() {
 	c.Auth.POST("", c.Controller.Create)
 
 	c.Auth.PUT("/:id", c.Controller.Update)
-	c.Auth.PUT("/:id/order", c.Controller.PutOrder)
+	c.Auth.PUT("/:id/order", c.Controller.UpdateOrder)
 
 	c.Auth.DELETE("/:id", c.Controller.Delete)
 

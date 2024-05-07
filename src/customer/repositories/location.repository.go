@@ -70,8 +70,8 @@ func (c *locationRepository) Delete(tx *gorm.DB, dto *r.LocationDto, entity []*e
 	return nil
 }
 
-func (c *locationRepository) Reorder(db *gorm.DB, entity *e.LocationEntity, position int) error {
-	return nil
+func (c *locationRepository) Reorder(db *gorm.DB, entity *e.LocationEntity, position int) ([]*e.LocationEntity, error) {
+	return []*e.LocationEntity{}, nil
 }
 
 var repository *locationRepository

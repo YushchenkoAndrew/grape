@@ -3,6 +3,7 @@ package entities
 import (
 	att "grape/src/attachment/entities"
 	e "grape/src/common/entities"
+	"grape/src/common/types"
 	ln "grape/src/link/entities"
 	t "grape/src/project/types"
 	st "grape/src/statistic/entities"
@@ -15,12 +16,12 @@ import (
 type ProjectEntity struct {
 	*e.UuidEntity
 
-	Name        string              `gorm:"not null"`
-	Description string              `gorm:"default:''"`
-	Type        t.ProjectTypeEnum   `gorm:"not null;default:1"`
-	Status      t.ProjectStatusEnum `gorm:"not null;default:1"`
-	Footer      string              ``
-	Order       int                 `gorm:"not null;default:0" copier:"-"`
+	Name        string            `gorm:"not null"`
+	Description string            `gorm:"default:''"`
+	Type        t.ProjectTypeEnum `gorm:"not null;default:1"`
+	Status      types.StatusEnum  `gorm:"not null;default:1"`
+	Footer      string            ``
+	Order       int               `gorm:"not null;default:1" copier:"-"`
 
 	OwnerID int64           `gorm:"not null" copier:"-"`
 	Owner   *org.UserEntity `gorm:"foreignKey:OwnerID;references:ID" copier:"-"`
@@ -45,13 +46,21 @@ func (*ProjectEntity) TableName() string {
 	return "projects"
 }
 
+func (c *ProjectEntity) SetOrder(order int) {
+	c.Order = order
+}
+
+func (c *ProjectEntity) GetOrder() int {
+	return c.Order
+}
+
 func (c *ProjectEntity) GetStatus() string {
 	return c.Status.String()
 }
 
 func (c *ProjectEntity) SetStatus(str string) {
 	if str != "" {
-		c.Status = t.Active.Value(str)
+		c.Status = types.Active.Value(str)
 	}
 }
 

@@ -1,13 +1,13 @@
 package types
 
-type ProjectStatusEnum int
+type StatusEnum int
 
 const (
-	Active ProjectStatusEnum = iota + 1
+	Active StatusEnum = iota + 1
 	Inactive
 )
 
-func (c ProjectStatusEnum) String() string {
+func (c StatusEnum) String() string {
 	switch c {
 	case Active:
 		return "active"
@@ -19,7 +19,7 @@ func (c ProjectStatusEnum) String() string {
 	return ""
 }
 
-func (ProjectStatusEnum) Value(str string) ProjectStatusEnum {
+func (StatusEnum) Value(str string) StatusEnum {
 	switch str {
 	case "active":
 		return Active

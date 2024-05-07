@@ -74,8 +74,8 @@ func (c *paletteRepository) Delete(db *gorm.DB, dto *r.PaletteDto, entity []*e.P
 	return db.Model(c.Model()).Delete(entity)
 }
 
-func (c *paletteRepository) Reorder(db *gorm.DB, entity *e.PaletteEntity, position int) error {
-	return nil
+func (c *paletteRepository) Reorder(db *gorm.DB, entity *e.PaletteEntity, position int) ([]*e.PaletteEntity, error) {
+	return []*e.PaletteEntity{}, nil
 }
 
 var repository *paletteRepository

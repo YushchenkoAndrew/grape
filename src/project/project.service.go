@@ -5,6 +5,7 @@ import (
 	req "grape/src/common/dto/request"
 	common "grape/src/common/dto/response"
 	"grape/src/common/service"
+	t "grape/src/common/types"
 	ln_entity "grape/src/link/entities"
 	ln_repo "grape/src/link/repositories"
 	"grape/src/project/dto/request"
@@ -51,7 +52,7 @@ func NewProjectService(s *service.CommonService) *ProjectService {
 
 func (c *ProjectService) FindOne(dto *request.ProjectDto) (*response.ProjectDetailedResponseDto, error) {
 	project, err := c.Repository.ValidateEntityExistence(req.NewRequest(dto, &request.ProjectDto{
-		Statuses: []string{types.Active.String()},
+		Statuses: []string{t.Active.String()},
 	}), repo.Attachments, repo.Links)
 
 	return common.NewResponse[response.ProjectDetailedResponseDto](project), err
@@ -59,7 +60,7 @@ func (c *ProjectService) FindOne(dto *request.ProjectDto) (*response.ProjectDeta
 
 func (c *ProjectService) FindAll(dto *request.ProjectDto) (*common.PageResponseDto[[]response.ProjectBasicResponseDto], error) {
 	total, projects, err := c.Repository.GetAllPage(req.NewRequest(dto, &request.ProjectDto{
-		Statuses: []string{types.Active.String()},
+		Statuses: []string{t.Active.String()},
 	}), repo.Attachments)
 
 	return &common.PageResponseDto[[]response.ProjectBasicResponseDto]{
@@ -164,7 +165,7 @@ func (c *ProjectService) UpdateProjectStatistics(dto *request.ProjectDto, body *
 	return nil, err
 }
 
-func (c *ProjectService) PutOrder(dto *request.ProjectDto, body *req.OrderUpdateDto) (*common.UuidResponseDto, error) {
+func (c *ProjectService) UpdateOrder(dto *request.ProjectDto, body *req.OrderUpdateDto) (*common.UuidResponseDto, error) {
 	project, err := c.Repository.ValidateEntityExistence(dto)
 	if err != nil || project.Order == body.Position {
 		return common.NewResponse[common.UuidResponseDto](project), err
