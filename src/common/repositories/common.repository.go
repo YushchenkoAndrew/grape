@@ -161,7 +161,9 @@ func (c *CommonRepository[Entity, Dto, Relations]) DeleteAll(db *gorm.DB, dto Dt
 }
 
 func (c *CommonRepository[Entity, Dto, Relations]) Reorder(db *gorm.DB, entity Entity, position int) error {
-	entities, err := c.handler.Reorder(c.connection(db), entity, position)
+	tx := c.connection(db)
+
+	entities, err := c.handler.Reorder(tx, entity, position)
 	if err != nil || len(entities) == 0 {
 		return err
 	}
@@ -177,7 +179,7 @@ func (c *CommonRepository[Entity, Dto, Relations]) Reorder(db *gorm.DB, entity E
 	entity.SetOrder(position)
 	entities = append(entities, entity)
 
-	res := db.Model(c.handler.Model()).Save(entities)
+	res := tx.Model(c.handler.Model()).Save(entities)
 	return res.Error
 }
 
