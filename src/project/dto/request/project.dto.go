@@ -17,8 +17,8 @@ type ProjectDto struct {
 	Types      []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 }
 
-func (c *ProjectDto) UUID() string {
-	return c.ProjectIds[0]
+func (c *ProjectDto) GetIds() []string {
+	return c.ProjectIds
 }
 
 func NewProjectDto(user *entities.UserEntity, init ...*ProjectDto) *ProjectDto {

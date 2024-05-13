@@ -1,10 +1,16 @@
 package stage
 
 import (
+	"grape/src/attachment"
+	att_req "grape/src/attachment/dto/request"
 	req "grape/src/common/dto/request"
 	common "grape/src/common/dto/response"
 	"grape/src/common/service"
 	"grape/src/common/types"
+	ctx_entity "grape/src/context/entities"
+	ctx_repo "grape/src/context/repositories"
+	ln_entity "grape/src/link/entities"
+	ln_repo "grape/src/link/repositories"
 	"grape/src/stage/dto/request"
 	"grape/src/stage/dto/response"
 	repo "grape/src/stage/repositories"
@@ -13,14 +19,22 @@ import (
 )
 
 type StageService struct {
-	Repository     *repo.StageRepositoryT
-	TaskRepository *repo.TaskRepositoryT
+	Repository        *repo.StageRepositoryT
+	TaskRepository    *repo.TaskRepositoryT
+	LinkRepository    *ln_repo.LinkRepositoryT
+	ContextRepository *ctx_repo.ContextRepositoryT
+
+	AttachmentService *attachment.AttachmentService
 }
 
 func NewStageService(s *service.CommonService) *StageService {
 	return &StageService{
-		Repository:     repo.NewStageRepository(s.DB),
-		TaskRepository: repo.NewTaskRepository(s.DB),
+		Repository:        repo.NewStageRepository(s.DB),
+		TaskRepository:    repo.NewTaskRepository(s.DB),
+		LinkRepository:    ln_repo.NewLinkRepository(s.DB),
+		ContextRepository: ctx_repo.NewContextRepository(s.DB),
+
+		AttachmentService: attachment.NewAttachmentService(s),
 	}
 }
 
@@ -60,19 +74,32 @@ func (c *StageService) Delete(dto *request.StageDto) (interface{}, error) {
 	}
 
 	err = c.Repository.Transaction(func(tx *gorm.DB) error {
+		var links []*ln_entity.LinkEntity
+		var contexts []*ctx_entity.ContextEntity
 
-		// TODO: Delete each task
-		// if _, err := c.Repository.DeleteAll(tx, nil, stage.GetTasks()); err != nil {
-		// 	return nil
-		// }
+		for _, task := range stage.Tasks {
+			links = append(links, task.GetLinks()...)
+			contexts = append(contexts, task.GetContexts()...)
 
-		// if err := c.AttachmentService.Repository.DeleteAll(tx, nil, project.GetAttachments()); err != nil {
-		// 	return nil
-		// }
+			for _, e := range task.Attachments {
+				dto := att_req.NewAttachmentDto(dto.CurrentUser, &att_req.AttachmentDto{AttachmentIds: []string{e.UUID}})
+				if _, err := c.AttachmentService.Delete(dto); err != nil {
+					return nil
+				}
+			}
+		}
 
-		// if err := c.LinkRepository.DeleteAll(tx, nil, project.GetLinks()); err != nil {
-		// 	return nil
-		// }
+		if err := c.LinkRepository.DeleteAll(tx, nil, links); err != nil {
+			return nil
+		}
+
+		if err := c.ContextRepository.DeleteAll(tx, nil, contexts); err != nil {
+			return nil
+		}
+
+		if err := c.TaskRepository.DeleteAll(tx, nil, stage.GetTasks()); err != nil {
+			return nil
+		}
 
 		return c.Repository.Delete(tx, dto, stage)
 	})
@@ -92,10 +119,6 @@ func (c *StageService) CreateTask(dto *request.TaskDto, body *request.TaskCreate
 }
 
 func (c *StageService) UpdateTask(dto *request.TaskDto, body *request.TaskUpdateDto) (*common.UuidResponseDto, error) {
-	if _, err := c.Repository.ValidateEntityExistence(request.NewStageDto(dto.CurrentUser, &request.StageDto{StageIds: dto.StageIds})); err != nil {
-		return nil, err
-	}
-
 	task, err := c.TaskRepository.ValidateEntityExistence(dto)
 	if err != nil {
 		return nil, err
@@ -106,28 +129,26 @@ func (c *StageService) UpdateTask(dto *request.TaskDto, body *request.TaskUpdate
 }
 
 func (c *StageService) DeleteTask(dto *request.TaskDto) (interface{}, error) {
-	if _, err := c.Repository.ValidateEntityExistence(request.NewStageDto(dto.CurrentUser, &request.StageDto{StageIds: dto.StageIds})); err != nil {
-		return nil, err
-	}
-
-	task, err := c.TaskRepository.ValidateEntityExistence(dto)
+	task, err := c.TaskRepository.ValidateEntityExistence(dto, repo.Attachments, repo.Links, repo.Contexts)
 	if err != nil {
 		return nil, err
 	}
 
 	err = c.Repository.Transaction(func(tx *gorm.DB) error {
-		// TODO: Delete each task
-		// if _, err := c.Repository.DeleteAll(tx, nil, stage.GetTasks()); err != nil {
-		// 	return nil
-		// }
+		for _, e := range task.Attachments {
+			dto := att_req.NewAttachmentDto(dto.CurrentUser, &att_req.AttachmentDto{AttachmentIds: []string{e.UUID}})
+			if _, err := c.AttachmentService.Delete(dto); err != nil {
+				return nil
+			}
+		}
 
-		// if err := c.AttachmentService.Repository.DeleteAll(tx, nil, project.GetAttachments()); err != nil {
-		// 	return nil
-		// }
+		if err := c.LinkRepository.DeleteAll(tx, nil, task.GetLinks()); err != nil {
+			return nil
+		}
 
-		// if err := c.LinkRepository.DeleteAll(tx, nil, project.GetLinks()); err != nil {
-		// 	return nil
-		// }
+		if err := c.ContextRepository.DeleteAll(tx, nil, task.GetContexts()); err != nil {
+			return nil
+		}
 
 		return c.TaskRepository.Delete(tx, dto, task)
 	})

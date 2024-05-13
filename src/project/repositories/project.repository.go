@@ -77,11 +77,8 @@ func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relati
 		case Redirect:
 			tx.Preload(string(r), "name ILIKE ?", "redirect")
 
-		case Attachments:
+		case Attachments, Links:
 			tx.Preload(string(r), func(db *gorm.DB) *gorm.DB { return db.Order(fmt.Sprintf("%s.order ASC", string(r))) })
-
-		case Links:
-			tx.Preload(string(r))
 
 		default:
 			tx.Joins(string(r))
@@ -127,29 +124,6 @@ func (c *projectRepository) Update(db *gorm.DB, dto *r.ProjectDto, body interfac
 }
 
 func (c *projectRepository) Delete(db *gorm.DB, dto *r.ProjectDto, entity []*e.ProjectEntity) *gorm.DB {
-	// TODO: Add transaction with recursive delete related entities
-
-	for _, project := range entity {
-		var projects []*e.ProjectEntity
-		res := db.Model(c.Model()).
-			Where(`projects.organization_id = ?`, project.OrganizationID).
-			Where(`projects.order > ?`, project.Order).
-			Find(&projects)
-
-		if res.Error != nil {
-			return res
-		}
-
-		if len(projects) == 0 {
-			continue
-		}
-
-		lo.ForEach(projects, func(e *e.ProjectEntity, _ int) { e.Order -= 1 })
-		if res := db.Model(c.Model()).Save(projects); res.Error != nil {
-			return res
-		}
-	}
-
 	return db.Model(c.Model()).Delete(entity)
 }
 

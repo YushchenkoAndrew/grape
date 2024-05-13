@@ -1,7 +1,8 @@
 package project
 
 import (
-	att "grape/src/attachment"
+	"grape/src/attachment"
+	att_req "grape/src/attachment/dto/request"
 	req "grape/src/common/dto/request"
 	common "grape/src/common/dto/response"
 	"grape/src/common/service"
@@ -13,7 +14,7 @@ import (
 	"grape/src/project/entities"
 	repo "grape/src/project/repositories"
 	"grape/src/project/types"
-	statistic "grape/src/statistic/dto/request"
+	st_req "grape/src/statistic/dto/request"
 	st_repo "grape/src/statistic/repositories"
 
 	"gorm.io/gorm"
@@ -22,13 +23,10 @@ import (
 type ProjectService struct {
 	Repository          *repo.ProjectRepositoryT
 	StatisticRepository *st_repo.StatisticRepositoryT
+	LinkRepository      *ln_repo.LinkRepositoryT
 
-	LinkRepository    *ln_repo.LinkRepositoryT
-	AttachmentService *att.AttachmentService
+	AttachmentService *attachment.AttachmentService
 
-	// Link         i.Default[m.Link, m.LinkQueryDto]
-	// File         i.Default[m.File, m.FileQueryDto]
-	// Project      i.Default[m.Project, m.ProjectQueryDto]
 	// Cron         *CronService
 	// Subscription i.Default[m.Subscription, m.SubscribeQueryDto]
 	// Metrics      i.Default[m.Metrics, m.MetricsQueryDto]
@@ -40,10 +38,7 @@ func NewProjectService(s *service.CommonService) *ProjectService {
 		LinkRepository:      ln_repo.NewLinkRepository(s.DB),
 		StatisticRepository: st_repo.NewStatisticRepository(s.DB),
 
-		AttachmentService: att.NewAttachmentService(s),
-		// Link:         NewLinkService(db, client),
-		// File:         NewFileService(db, client),
-		// Project:      NewProjectService(db, client),
+		AttachmentService: attachment.NewAttachmentService(s),
 		// Cron:         NewCronService(),
 		// Subscription: NewSubscriptionService(db, client),
 		// Metrics:      pods.NewMetricsService(db, client),
@@ -135,14 +130,11 @@ func (c *ProjectService) Delete(dto *request.ProjectDto) (interface{}, error) {
 	}
 
 	err = c.Repository.Transaction(func(tx *gorm.DB) error {
-		if len(project.Attachments) != 0 {
-			if _, err := c.AttachmentService.VoidService.Delete(project.GetPath()); err != nil {
-				return err
+		for _, e := range project.Attachments {
+			dto := att_req.NewAttachmentDto(dto.CurrentUser, &att_req.AttachmentDto{AttachmentIds: []string{e.UUID}})
+			if _, err := c.AttachmentService.Delete(dto); err != nil {
+				return nil
 			}
-		}
-
-		if err := c.AttachmentService.Repository.DeleteAll(tx, nil, project.GetAttachments()); err != nil {
-			return nil
 		}
 
 		if err := c.LinkRepository.DeleteAll(tx, nil, project.GetLinks()); err != nil {
@@ -155,7 +147,7 @@ func (c *ProjectService) Delete(dto *request.ProjectDto) (interface{}, error) {
 	return nil, err
 }
 
-func (c *ProjectService) UpdateProjectStatistics(dto *request.ProjectDto, body *statistic.StatisticUpdateDto) (interface{}, error) {
+func (c *ProjectService) UpdateProjectStatistics(dto *request.ProjectDto, body *st_req.StatisticUpdateDto) (interface{}, error) {
 	project, err := c.Repository.ValidateEntityExistence(dto, repo.Statistic)
 	if err != nil {
 		return nil, err

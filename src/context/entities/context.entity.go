@@ -6,9 +6,9 @@ import (
 
 type ContextEntity struct {
 	*e.UuidEntity
+	*e.DroppableEntity
 
-	Name  string `gorm:"not null"`
-	Order int    `gorm:"not null;default:1" copier:"-"`
+	Name string `gorm:"not null"`
 
 	ContextableID   int64  `gorm:"not null"`
 	ContextableType string `gorm:"not null"`
@@ -20,14 +20,9 @@ func (*ContextEntity) TableName() string {
 	return "contexts"
 }
 
-func (c *ContextEntity) SetOrder(order int) {
-	c.Order = order
-}
-
-func (c *ContextEntity) GetOrder() int {
-	return c.Order
-}
-
 func NewContextEntity() *ContextEntity {
-	return &ContextEntity{UuidEntity: e.NewUuidEntity()}
+	return &ContextEntity{
+		UuidEntity:      e.NewUuidEntity(),
+		DroppableEntity: e.NewDroppableEntity(),
+	}
 }

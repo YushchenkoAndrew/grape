@@ -7,10 +7,10 @@ import (
 
 type ContextFieldEntity struct {
 	*e.UuidEntity
+	*e.DroppableEntity
 
 	Name    string  `gorm:"not null"`
 	Value   *string `gorm:"default:null"`
-	Order   int     `gorm:"not null;default:1" copier:"-"`
 	Options *string `gorm:"default:null"`
 
 	ContextID int64 `gorm:"not null" copier:"-"`
@@ -18,14 +18,6 @@ type ContextFieldEntity struct {
 
 func (*ContextFieldEntity) TableName() string {
 	return "context_fields"
-}
-
-func (c *ContextFieldEntity) SetOrder(order int) {
-	c.Order = order
-}
-
-func (c *ContextFieldEntity) GetOrder() int {
-	return c.Order
 }
 
 func (c *ContextFieldEntity) GetOptions() interface{} {
@@ -53,5 +45,8 @@ func (c *ContextFieldEntity) SetOptions(data interface{}) {
 }
 
 func NewContextFieldEntity() *ContextFieldEntity {
-	return &ContextFieldEntity{UuidEntity: e.NewUuidEntity()}
+	return &ContextFieldEntity{
+		UuidEntity:      e.NewUuidEntity(),
+		DroppableEntity: e.NewDroppableEntity(),
+	}
 }

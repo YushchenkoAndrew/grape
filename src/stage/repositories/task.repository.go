@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"grape/src/common/repositories"
 	t "grape/src/common/types"
 	r "grape/src/stage/dto/request"
@@ -12,9 +13,11 @@ import (
 
 type TaskRelation string
 
-// const (
-// 	Organization StageRelation = "Organization"
-// )
+const (
+	Links       TaskRelation = "Links"
+	Contexts    TaskRelation = "Contexts"
+	Attachments TaskRelation = "Attachments"
+)
 
 type TaskRepositoryT = repositories.CommonRepository[*e.TaskEntity, *r.TaskDto, TaskRelation]
 
@@ -36,6 +39,10 @@ func (c *taskRepository) Build(db *gorm.DB, dto *r.TaskDto, relations ...TaskRel
 }
 
 func (c *taskRepository) applyFilter(tx *gorm.DB, dto *r.TaskDto, relations []TaskRelation) []TaskRelation {
+	if len(dto.TaskIds) != 0 {
+		tx.Where(`tasks.uuid IN ?`, dto.TaskIds)
+	}
+
 	if len(dto.Statuses) != 0 {
 		tx.Where(`tasks.status IN ?`, lo.Map(dto.Statuses, func(str string, _ int) t.StatusEnum {
 			return t.Active.Value(str)
@@ -52,6 +59,9 @@ func (c *taskRepository) applyFilter(tx *gorm.DB, dto *r.TaskDto, relations []Ta
 func (c *taskRepository) attachRelations(tx *gorm.DB, _ *r.TaskDto, relations []TaskRelation) {
 	for _, r := range relations {
 		switch r {
+		case Attachments, Links:
+			tx.Preload(string(r), func(db *gorm.DB) *gorm.DB { return db.Order(fmt.Sprintf("%s.order ASC", string(r))) })
+
 		default:
 			tx.Joins(string(r))
 		}
@@ -97,31 +107,7 @@ func (c *taskRepository) Update(db *gorm.DB, dto *r.TaskDto, body interface{}, e
 }
 
 func (c *taskRepository) Delete(db *gorm.DB, dto *r.TaskDto, entity []*e.TaskEntity) *gorm.DB {
-	// // TODO: Add transaction with recursive delete related entities
-
-	// for _, project := range entity {
-	// 	var projects []*e.StageEntity
-	// 	res := db.Model(c.Model()).
-	// 		Where(`projects.organization_id = ?`, project.OrganizationID).
-	// 		Where(`projects.order > ?`, project.Order).
-	// 		Find(&projects)
-
-	// 	if res.Error != nil {
-	// 		return res
-	// 	}
-
-	// 	if len(projects) == 0 {
-	// 		continue
-	// 	}
-
-	// 	lo.ForEach(projects, func(e *entities.StageEntity, _ int) { e.Order -= 1 })
-	// 	if res := db.Model(c.Model()).Save(projects); res.Error != nil {
-	// 		return res
-	// 	}
-	// }
-
-	// return db.Model(c.Model()).Delete(entity)
-	return db
+	return db.Model(c.Model()).Delete(entity)
 }
 
 func (c *taskRepository) Reorder(db *gorm.DB, entity *e.TaskEntity, position int) ([]*e.TaskEntity, error) {

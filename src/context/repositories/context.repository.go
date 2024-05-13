@@ -73,33 +73,23 @@ func (c *contextRepository) Update(db *gorm.DB, dto *r.ContextDto, body interfac
 }
 
 func (c *contextRepository) Delete(db *gorm.DB, dto *r.ContextDto, entity []*e.ContextEntity) *gorm.DB {
-	// for _, attachment := range entity {
-	// 	var attachments []*e.ContextEntity
-	// 	res := db.Model(c.Model()).
-	// 		Where(`attachments.attachable_id = ? AND attachments.attachable_type = ?`, attachment.AttachableID, attachment.AttachableType).
-	// 		Where(`attachments.order > ?`, attachment.Order).
-	// 		Find(&attachments)
-
-	// 	if res.Error != nil {
-	// 		return res
-	// 	}
-
-	// 	if len(attachments) == 0 {
-	// 		continue
-	// 	}
-
-	// 	lo.ForEach(attachments, func(e *e.ContextEntity, _ int) { e.Order -= 1 })
-	// 	if res := db.Model(c.Model()).Save(attachments); res.Error != nil {
-	// 		return res
-	// 	}
-	// }
-
-	// return db.Model(c.Model()).Delete(entity)
-	return db
+	// TODO: Delete context_fields
+	return db.Model(c.Model()).Delete(entity)
 }
 
 func (c *contextRepository) Reorder(db *gorm.DB, entity *e.ContextEntity, position int) ([]*e.ContextEntity, error) {
-	return []*e.ContextEntity{}, nil
+	var contexts []*e.ContextEntity
+	db = db.Model(c.Model()).
+		Where(`contexts.contextable_id = ? AND contexts.contextable_type = ?`, entity.ContextableID, entity.ContextableType)
+
+	if entity.Order < position {
+		db = db.Where(`contexts.order > ?`, entity.Order).Where(`contexts.order <= ?`, position)
+	} else {
+		db = db.Where(`contexts.order < ?`, entity.Order).Where(`contexts.order >= ?`, position)
+	}
+
+	res := db.Find(&contexts)
+	return contexts, res.Error
 }
 
 var repository *contextRepository

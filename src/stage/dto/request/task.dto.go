@@ -16,8 +16,8 @@ type TaskDto struct {
 	Statuses []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 }
 
-func (c *TaskDto) UUID() string {
-	return c.TaskIds[0]
+func (c *TaskDto) GetIds() []string {
+	return c.TaskIds
 }
 
 func NewTaskDto(user *entities.UserEntity, init ...*TaskDto) *TaskDto {

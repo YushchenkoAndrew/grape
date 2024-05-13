@@ -11,8 +11,8 @@ type ContextDto struct {
 	ContextIds []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 }
 
-func (c *ContextDto) UUID() string {
-	return c.ContextIds[0]
+func (c *ContextDto) GetIds() []string {
+	return c.ContextIds
 }
 
 func NewContextDto(user *entities.UserEntity, init ...*ContextDto) *ContextDto {

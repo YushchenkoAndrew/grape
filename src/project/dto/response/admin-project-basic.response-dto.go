@@ -14,6 +14,6 @@ type AdminProjectBasicResponseDto struct {
 	Status    string `copier:"GetStatus" json:"status" xml:"status" example:"true"`
 
 	Owner       user.UserBasicResponseDto           `json:"owner" xml:"owner"`
+	Links       []ln.LinkAdvancedResponseDto        `json:"links" xml:"links"`
 	Attachments []att.AttachmentAdvancedResponseDto `json:"attachments" xml:"attachments"`
-	Links       []ln.LinkBasicResponseDto           `json:"links" xml:"links"`
 }

@@ -24,8 +24,13 @@ func NewLinkModule(rg *gin.RouterGroup, modules []m.ModuleT, s *service.CommonSe
 }
 
 func (c *linkModule) Init() {
+	c.Auth.GET("/:id", c.Controller.AdminFindOne)
+
 	c.Auth.POST("", c.Controller.Create)
+
 	c.Auth.PUT("/:id", c.Controller.Update)
+	c.Auth.PUT("/:id/order", c.Controller.UpdateOrder)
+
 	c.Auth.DELETE("/:id", c.Controller.Delete)
 
 	c.Module.Init()

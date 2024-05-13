@@ -1,6 +1,8 @@
 package entities
 
 import (
+	"grape/src/common/types"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +14,8 @@ type BasicEntity struct {
 
 func (*BasicEntity) Create() {}
 func (*BasicEntity) Update() {}
+
+func (c *BasicEntity) GetID() int64 { return c.ID }
 
 func NewBasicEntity() *BasicEntity {
 	return &BasicEntity{}
@@ -41,6 +45,9 @@ type UuidEntity struct {
 	UUID string `gorm:"unique;not null" copier:"-"`
 }
 
+func (c *UuidEntity) TableName() string { return "" }
+func (c *UuidEntity) GetPath() string   { return filepath.Join("/", c.TableName(), c.UUID) }
+
 func (c *UuidEntity) Create() {
 	c.IdEntity.Create()
 	c.UUID = uuid.New().String()
@@ -48,4 +55,30 @@ func (c *UuidEntity) Create() {
 
 func NewUuidEntity() *UuidEntity {
 	return &UuidEntity{IdEntity: NewIdEntity()}
+}
+
+type DroppableEntity struct {
+	Order int `gorm:"not null;default:1" copier:"-"`
+}
+
+func (c *DroppableEntity) GetOrder() int      { return c.Order }
+func (c *DroppableEntity) SetOrder(order int) { c.Order = order }
+
+func NewDroppableEntity() *DroppableEntity {
+	return &DroppableEntity{}
+}
+
+type DeleteableEntity struct {
+	Status types.StatusEnum `gorm:"not null;default:1"`
+}
+
+func (c *DeleteableEntity) GetStatus() string { return c.Status.String() }
+func (c *DeleteableEntity) SetStatus(str string) {
+	if str != "" {
+		c.Status = types.Active.Value(str)
+	}
+}
+
+func NewDeleteableEntity() *DeleteableEntity {
+	return &DeleteableEntity{}
 }

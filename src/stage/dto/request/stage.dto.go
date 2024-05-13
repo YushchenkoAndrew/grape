@@ -15,8 +15,8 @@ type StageDto struct {
 	Statuses []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 }
 
-func (c *StageDto) UUID() string {
-	return c.StageIds[0]
+func (c *StageDto) GetIds() []string {
+	return c.StageIds
 }
 
 func NewStageDto(user *entities.UserEntity, init ...*StageDto) *StageDto {

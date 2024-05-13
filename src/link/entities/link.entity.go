@@ -6,10 +6,10 @@ import (
 
 type LinkEntity struct {
 	*e.UuidEntity
+	*e.DroppableEntity
 
-	Name  string `gorm:"not null"`
-	Link  string `gorm:"not null"`
-	Order int    `gorm:"not null;default:1" copier:"-"`
+	Name string `gorm:"not null"`
+	Link string `gorm:"not null"`
 
 	LinkableID   int64  `gorm:"not null" copier:"-"`
 	LinkableType string `gorm:"not null" copier:"-"`
@@ -19,14 +19,9 @@ func (*LinkEntity) TableName() string {
 	return "links"
 }
 
-func (c *LinkEntity) SetOrder(order int) {
-	c.Order = order
-}
-
-func (c *LinkEntity) GetOrder() int {
-	return c.Order
-}
-
 func NewLinkEntity() *LinkEntity {
-	return &LinkEntity{UuidEntity: e.NewUuidEntity()}
+	return &LinkEntity{
+		UuidEntity:      e.NewUuidEntity(),
+		DroppableEntity: e.NewDroppableEntity(),
+	}
 }

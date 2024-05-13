@@ -38,6 +38,10 @@ func (c *stageRepository) Build(db *gorm.DB, dto *r.StageDto, relations ...Stage
 }
 
 func (c *stageRepository) applyFilter(tx *gorm.DB, dto *r.StageDto, relations []StageRelation) []StageRelation {
+	if len(dto.StageIds) != 0 {
+		tx.Where(`stages.uuid IN ?`, dto.StageIds)
+	}
+
 	if len(dto.Statuses) != 0 {
 		tx.Where(`stages.status IN ?`, lo.Map(dto.Statuses, func(str string, _ int) t.StatusEnum {
 			return t.Active.Value(str)
@@ -94,41 +98,17 @@ func (c *stageRepository) Update(db *gorm.DB, dto *r.StageDto, body interface{},
 }
 
 func (c *stageRepository) Delete(db *gorm.DB, dto *r.StageDto, entity []*e.StageEntity) *gorm.DB {
-	// // TODO: Add transaction with recursive delete related entities
-
-	// TODO: Impl this
-	// for _, project := range entity {
-	// 	var projects []*e.StageEntity
-	// 	res := db.Model(c.Model()).
-	// 		Where(`projects.organization_id = ?`, project.OrganizationID).
-	// 		Where(`projects.order > ?`, project.Order).
-	// 		Find(&projects)
-
-	// 	if res.Error != nil {
-	// 		return res
-	// 	}
-
-	// 	if len(projects) == 0 {
-	// 		continue
-	// 	}
-
-	// 	lo.ForEach(projects, func(e *entities.StageEntity, _ int) { e.Order -= 1 })
-	// 	if res := db.Model(c.Model()).Save(projects); res.Error != nil {
-	// 		return res
-	// 	}
-	// }
-
 	return db.Model(c.Model()).Delete(entity)
 }
 
 func (c *stageRepository) Reorder(db *gorm.DB, entity *e.StageEntity, position int) ([]*e.StageEntity, error) {
 	var stages []*e.StageEntity
-	db = db.Model(c.Model()).Where(`projects.organization_id = ?`, entity.OrganizationID)
+	db = db.Model(c.Model()).Where(`stages.organization_id = ?`, entity.OrganizationID)
 
 	if entity.Order < position {
-		db = db.Where(`projects.order > ?`, entity.Order).Where(`projects.order <= ?`, position)
+		db = db.Where(`stages.order > ?`, entity.Order).Where(`stages.order <= ?`, position)
 	} else {
-		db = db.Where(`projects.order < ?`, entity.Order).Where(`projects.order >= ?`, position)
+		db = db.Where(`stages.order < ?`, entity.Order).Where(`stages.order >= ?`, position)
 	}
 
 	res := db.Find(&stages)
