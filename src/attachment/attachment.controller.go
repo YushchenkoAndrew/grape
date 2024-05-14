@@ -82,7 +82,7 @@ func (c *AttachmentController) AdminFindOne(ctx *gin.Context) {
 func (c *AttachmentController) Create(ctx *gin.Context) {
 	var body request.AttachmentCreateDto
 	if err := ctx.Bind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -118,7 +118,7 @@ func (c *AttachmentController) Create(ctx *gin.Context) {
 func (c *AttachmentController) Update(ctx *gin.Context) {
 	var body request.AttachmentUpdateDto
 	if err := ctx.Bind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -168,7 +168,7 @@ func (c *AttachmentController) Delete(ctx *gin.Context) {
 func (c *AttachmentController) UpdateOrder(ctx *gin.Context) {
 	var body req.OrderUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 

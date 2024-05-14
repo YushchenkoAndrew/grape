@@ -57,7 +57,7 @@ func (c *LinkController) AdminFindOne(ctx *gin.Context) {
 func (c *LinkController) Create(ctx *gin.Context) {
 	var body request.LinkCreateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -81,7 +81,7 @@ func (c *LinkController) Create(ctx *gin.Context) {
 func (c *LinkController) Update(ctx *gin.Context) {
 	var body request.LinkUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -123,7 +123,7 @@ func (c *LinkController) Delete(ctx *gin.Context) {
 func (c *LinkController) UpdateOrder(ctx *gin.Context) {
 	var body req.OrderUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 

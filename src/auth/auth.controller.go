@@ -30,7 +30,7 @@ func NewAuthController(s *AuthService) *AuthController {
 func (c *AuthController) Login(ctx *gin.Context) {
 	var body request.LoginDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -56,7 +56,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 func (c *AuthController) Refresh(ctx *gin.Context) {
 	var body request.RefreshDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 

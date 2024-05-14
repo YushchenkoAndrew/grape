@@ -42,7 +42,7 @@ func (c *StageController) FindAll(ctx *gin.Context) {
 	dto := c.dto(ctx)
 
 	if err := ctx.ShouldBindQuery(&dto); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -66,7 +66,7 @@ func (c *StageController) AdminFindAll(ctx *gin.Context) {
 	dto := c.dto(ctx)
 
 	if err := ctx.ShouldBindQuery(&dto); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (c *StageController) AdminFindAll(ctx *gin.Context) {
 func (c *StageController) Create(ctx *gin.Context) {
 	var body request.StageCreateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -113,7 +113,7 @@ func (c *StageController) Create(ctx *gin.Context) {
 func (c *StageController) Update(ctx *gin.Context) {
 	var body request.StageUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -156,7 +156,7 @@ func (c *StageController) Delete(ctx *gin.Context) {
 func (c *StageController) CreateTask(ctx *gin.Context) {
 	var body request.TaskCreateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -181,7 +181,7 @@ func (c *StageController) CreateTask(ctx *gin.Context) {
 func (c *StageController) UpdateTask(ctx *gin.Context) {
 	var body request.TaskUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -225,7 +225,7 @@ func (c *StageController) DeleteTask(ctx *gin.Context) {
 func (c *StageController) UpdateOrder(ctx *gin.Context) {
 	var body req.OrderUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -250,7 +250,7 @@ func (c *StageController) UpdateOrder(ctx *gin.Context) {
 func (c *StageController) UpdateTaskOrder(ctx *gin.Context) {
 	var body req.OrderUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 

@@ -16,6 +16,8 @@ import (
 	"grape/src/link/dto/response"
 	"grape/src/project"
 	pr "grape/src/project/dto/response"
+	"grape/src/stage"
+	st "grape/src/stage/dto/response"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -35,6 +37,7 @@ func init() {
 		func(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
 			return src.NewIndexModule(route, []m.ModuleT{
 				auth.NewAuthModule(route, []m.ModuleT{}, s),
+				stage.NewStageModule(route, []m.ModuleT{}, s),
 				project.NewProjectModule(route, []m.ModuleT{}, s),
 				link.NewLinkModule(route, []m.ModuleT{}, s),
 			}, s)
@@ -45,6 +48,7 @@ func init() {
 func TestLinkModule(t *testing.T) {
 	token, _ := test.GetToken(t, router, cfg, db)
 	project := test.GetProject(t, router, cfg, token)
+	task := test.GetTask(t, router, cfg, token)
 
 	validate := func(id string, body interface{}) {
 		require.NotEmpty(t, id)
@@ -122,6 +126,28 @@ func TestLinkModule(t *testing.T) {
 			},
 		},
 		{
+			name:   "Link create",
+			method: "POST",
+			url:    func() string { return "/admin/links" },
+			auth:   token,
+			body: func() interface{} {
+				return request.LinkCreateDto{Name: "test", Link: "http://test/3", LinkableID: task.Id, LinkableType: "tasks"}
+			},
+			expected: http.StatusCreated,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res response.LinkBasicResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				var entity response.LinkAdvancedResponseDto
+				validate(res.Id, &entity)
+				links = append(links, entity)
+
+				require.NotEmpty(t, res.Id)
+				require.Equal(t, "test", res.Name)
+				require.Equal(t, "http://test/3", res.Link)
+			},
+		},
+		{
 			name:     "Link update order",
 			method:   "PUT",
 			url:      func() string { return fmt.Sprintf("/admin/links/%s/order", links[1].Id) },
@@ -179,7 +205,7 @@ func TestLinkModule(t *testing.T) {
 			},
 		},
 		{
-			name:     "Validate that link attached to project",
+			name:     "Validate that link is attached to project",
 			method:   "GET",
 			url:      func() string { return fmt.Sprintf("/admin/projects/%s", project.Id) },
 			auth:     token,
@@ -191,6 +217,32 @@ func TestLinkModule(t *testing.T) {
 
 				require.Len(t, res.Links, len(project.Links)+2)
 				require.Contains(t, lo.Map(res.Links, func(item response.LinkAdvancedResponseDto, _ int) string { return item.Id }), links[0].Id)
+			},
+		},
+		{
+			name:     "Validate that link is attached to task",
+			method:   "GET",
+			url:      func() string { return "/admin/stages" },
+			auth:     token,
+			body:     func() interface{} { return nil },
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var stages []st.AdminStageBasicResponseDto
+				json.Unmarshal(w.Body.Bytes(), &stages)
+				require.Greater(t, len(stages), 0)
+
+				_, found := lo.Find(stages, func(stage st.AdminStageBasicResponseDto) bool {
+					e, found := lo.Find(stage.Tasks, func(e st.AdminTaskBasicResponseDto) bool { return e.Id == task.Id })
+					if !found {
+						return false
+					}
+
+					require.Len(t, e.Links, len(task.Links)+1)
+					require.Contains(t, lo.Map(e.Links, func(item response.LinkAdvancedResponseDto, _ int) string { return item.Id }), links[2].Id)
+					return true
+				})
+
+				require.Equal(t, found, true)
 			},
 		},
 		{
@@ -211,6 +263,15 @@ func TestLinkModule(t *testing.T) {
 			name:     "Link delete",
 			method:   "DELETE",
 			url:      func() string { return fmt.Sprintf("/admin/links/%s", links[1].Id) },
+			auth:     token,
+			body:     func() interface{} { return nil },
+			expected: http.StatusNoContent,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
+			name:     "Link delete",
+			method:   "DELETE",
+			url:      func() string { return fmt.Sprintf("/admin/links/%s", links[2].Id) },
 			auth:     token,
 			body:     func() interface{} { return nil },
 			expected: http.StatusNoContent,
