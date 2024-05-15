@@ -55,15 +55,15 @@ func (c *attachmentRepository) Create(db *gorm.DB, dto *r.AttachmentDto, body in
 	db.Clauses(clause.Locking{Strength: clause.LockingStrengthShare, Table: clause.Table{Name: c.Model().TableName()}})
 	entity = body.(*e.AttachmentEntity)
 
+	var order int64
+	db.Model(c.Model()).
+		Select(`COALESCE(MAX(attachments.order), 0) AS "order"`).
+		Where(`attachments.attachable_id = ? AND attachments.attachable_type = ?`, entity.AttachableID, entity.AttachableType).
+		Scan(&order)
+
 	if res := db.Create(entity); res.Error != nil {
 		return res
 	}
-
-	var order int64
-	db.Model(c.Model()).
-		Select(`MAX(attachments.order) AS "order"`).
-		Where(`attachments.attachable_id = ? AND attachments.attachable_type = ?`, entity.AttachableID, entity.AttachableType).
-		Scan(&order)
 
 	return db.Model(c.Model()).Where("attachments.id = ?", entity.ID).Update("order", int(order)+1)
 }

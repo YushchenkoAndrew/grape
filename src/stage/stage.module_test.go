@@ -110,6 +110,52 @@ func TestStageModule(t *testing.T) {
 			},
 		},
 		{
+			name:   "Task create",
+			method: "POST",
+			url:    func() string { return fmt.Sprintf("/admin/stages/%s/tasks", stages[0].Id) },
+			auth:   token,
+			body: func() interface{} {
+				return request.TaskCreateDto{Name: "TestTask"}
+			},
+			expected: http.StatusCreated,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res common.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				stages[0] = validate(stages[0].Id)
+				entity, found := lo.Find(stages[0].Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == res.Id })
+
+				require.Equal(t, found, true)
+				require.Greater(t, entity.Order, 0)
+				require.Equal(t, entity.Name, "TestTask")
+				require.Equal(t, entity.Status, "active")
+				require.Equal(t, entity.Description, "")
+			},
+		},
+		{
+			name:   "Task create",
+			method: "POST",
+			url:    func() string { return fmt.Sprintf("/admin/stages/%s/tasks", stages[0].Id) },
+			auth:   token,
+			body: func() interface{} {
+				return request.TaskCreateDto{Name: "TestTask2"}
+			},
+			expected: http.StatusCreated,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res common.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				stages[0] = validate(stages[0].Id)
+				entity, found := lo.Find(stages[0].Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == res.Id })
+
+				require.Equal(t, found, true)
+				require.Greater(t, entity.Order, 0)
+				require.Equal(t, entity.Name, "TestTask2")
+				require.Equal(t, entity.Status, "active")
+				require.Equal(t, entity.Description, "")
+			},
+		},
+		{
 			name:     "Stage update order",
 			method:   "PUT",
 			url:      func() string { return fmt.Sprintf("/admin/stages/%s/order", stages[1].Id) },
@@ -163,11 +209,50 @@ func TestStageModule(t *testing.T) {
 			},
 		},
 		{
+			name:   "Task update",
+			method: "PUT",
+			url:    func() string { return fmt.Sprintf("/admin/stages/%s/tasks/%s", stages[0].Id, stages[0].Tasks[0].Id) },
+			auth:   token,
+			body: func() interface{} {
+				return request.TaskUpdateDto{Name: "UpdatedTask", Description: "TaskDescription"}
+			},
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res common.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				stage := validate(stages[0].Id)
+				entity, found := lo.Find(stage.Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == res.Id })
+
+				require.Equal(t, found, true)
+				require.Equal(t, entity.Name, "UpdatedTask")
+				require.Equal(t, entity.Description, "TaskDescription")
+			},
+		},
+		{
 			name:     "Stages get all",
 			method:   "GET",
 			url:      func() string { return "/stages" },
 			body:     func() interface{} { return nil },
 			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
+			name:     "Task delete",
+			method:   "DELETE",
+			auth:     token,
+			url:      func() string { return fmt.Sprintf("/admin/stages/%s/tasks/%s", stages[0].Id, stages[0].Tasks[0].Id) },
+			body:     func() interface{} { return nil },
+			expected: http.StatusNoContent,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
+			name:     "Task delete return not found",
+			method:   "DELETE",
+			auth:     token,
+			url:      func() string { return fmt.Sprintf("/admin/stages/%s/tasks/%s", stages[0].Id, stages[0].Tasks[0].Id) },
+			body:     func() interface{} { return nil },
+			expected: http.StatusUnprocessableEntity,
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
 		{

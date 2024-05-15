@@ -53,15 +53,15 @@ func (c *linkRepository) sortBy(tx *gorm.DB, dto *r.LinkDto, _ []LinkRelation) {
 func (c *linkRepository) Create(db *gorm.DB, dto *r.LinkDto, body interface{}, entity *e.LinkEntity) *gorm.DB {
 	entity = body.(*e.LinkEntity)
 
+	var order int64
+	db.Model(c.Model()).
+		Select(`COALESCE(MAX(links.order), 0) AS "order"`).
+		Where(`links.linkable_id = ? AND links.linkable_type = ?`, entity.LinkableID, entity.LinkableType).
+		Scan(&order)
+
 	if res := db.Create(entity); res.Error != nil {
 		return res
 	}
-
-	var order int64
-	db.Model(c.Model()).
-		Select(`MAX(links.order) AS "order"`).
-		Where(`links.linkable_id = ? AND links.linkable_type = ?`, entity.LinkableID, entity.LinkableType).
-		Scan(&order)
 
 	return db.Model(c.Model()).Where("links.id = ?", entity.ID).Update("order", int(order)+1)
 }

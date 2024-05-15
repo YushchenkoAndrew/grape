@@ -37,7 +37,7 @@ func (c *projectModule) Init() {
 	c.Auth.PUT("/:id/tasks/:task_id/order", c.Controller.UpdateTaskOrder)
 
 	c.Auth.DELETE("/:id", c.Controller.Delete)
-	c.Auth.DELETE("/:id/tasks/:task_id", c.Controller.UpdateTask)
+	c.Auth.DELETE("/:id/tasks/:task_id", c.Controller.DeleteTask)
 
 	c.Module.Init()
 }

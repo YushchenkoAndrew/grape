@@ -10,6 +10,10 @@ import (
 
 type ContextRelation string
 
+const (
+	ContextFields ContextRelation = "ContextFields"
+)
+
 type ContextRepositoryT = repositories.CommonRepository[*e.ContextEntity, *r.ContextDto, ContextRelation]
 
 type contextRepository struct {
@@ -40,6 +44,8 @@ func (c *contextRepository) applyFilter(tx *gorm.DB, dto *r.ContextDto, relation
 func (c *contextRepository) attachRelations(tx *gorm.DB, _ *r.ContextDto, relations []ContextRelation) {
 	for _, r := range relations {
 		switch r {
+		case ContextFields:
+			tx.Preload(string(r))
 
 		default:
 			tx.Joins(string(r))
@@ -51,21 +57,19 @@ func (c *contextRepository) sortBy(tx *gorm.DB, dto *r.ContextDto, _ []ContextRe
 }
 
 func (c *contextRepository) Create(db *gorm.DB, dto *r.ContextDto, body interface{}, entity *e.ContextEntity) *gorm.DB {
-	// db.Clauses(clause.Locking{Strength: clause.LockingStrengthShare, Table: clause.Table{Name: c.Model().TableName()}})
-	// entity = body.(*e.ContextEntity)
+	entity = body.(*e.ContextEntity)
 
-	// if res := db.Create(entity); res.Error != nil {
-	// 	return res
-	// }
+	var order int64
+	db.Model(c.Model()).
+		Select(`COALESCE(MAX(contexts.order), 0) AS "order"`).
+		Where(`contexts.contextable_id = ? AND contexts.contextable_type = ?`, entity.ContextableID, entity.ContextableType).
+		Scan(&order)
 
-	// var order int64
-	// db.Model(c.Model()).
-	// 	Select(`MAX(attachments.order) AS "order"`).
-	// 	Where(`attachments.attachable_id = ? AND attachments.attachable_type = ?`, entity.AttachableID, entity.AttachableType).
-	// 	Scan(&order)
+	if res := db.Create(entity); res.Error != nil {
+		return res
+	}
 
-	// return db.Model(c.Model()).Where("attachments.id = ?", entity.ID).Update("order", int(order)+1)
-	return db
+	return db.Model(c.Model()).Where("contexts.id = ?", entity.ID).Update("order", int(order)+1)
 }
 
 func (c *contextRepository) Update(db *gorm.DB, dto *r.ContextDto, body interface{}, entity *e.ContextEntity) *gorm.DB {
@@ -73,7 +77,6 @@ func (c *contextRepository) Update(db *gorm.DB, dto *r.ContextDto, body interfac
 }
 
 func (c *contextRepository) Delete(db *gorm.DB, dto *r.ContextDto, entity []*e.ContextEntity) *gorm.DB {
-	// TODO: Delete context_fields
 	return db.Model(c.Model()).Delete(entity)
 }
 

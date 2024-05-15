@@ -147,7 +147,7 @@ func (c *StageController) Delete(ctx *gin.Context) {
 // @Produce application/xml
 // @Security BearerAuth
 // @Param id path string true "Stage id"
-// @Param model body request.StageCreateDto true "Stage body"
+// @Param model body request.TaskCreateDto true "Stage body"
 // @Success 201 {object} response.UuidResponseDto
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
@@ -165,15 +165,15 @@ func (c *StageController) CreateTask(ctx *gin.Context) {
 }
 
 // @Tags Stage
-// @Summary Create update task at stage
+// @Summary Update update task at stage
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
 // @Param id path string true "Stage id"
 // @Param task_id path string true "Task id"
-// @Param model body request.StageCreateDto true "Stage body"
-// @Success 201 {object} response.UuidResponseDto
+// @Param model body request.TaskUpdateDto true "Stage body"
+// @Success 200 {object} response.UuidResponseDto
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
@@ -186,7 +186,7 @@ func (c *StageController) UpdateTask(ctx *gin.Context) {
 	}
 
 	res, err := c.service.UpdateTask(c.task_dto(ctx, &request.TaskDto{StageIds: []string{ctx.Param("id")}, TaskIds: []string{ctx.Param("task_id")}}), &body)
-	response.Handler(ctx, http.StatusCreated, res, err)
+	response.Handler(ctx, http.StatusOK, res, err)
 }
 
 // @Tags Stage

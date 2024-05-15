@@ -86,7 +86,7 @@ func TestPaletteModule(t *testing.T) {
 			},
 		},
 		{
-			name:   "Palette create, should through 400",
+			name:   "Palette create should through 400",
 			method: "POST",
 			url:    func() string { return "/admin/settings/palettes" },
 			auth:   token,
@@ -141,7 +141,7 @@ func TestPaletteModule(t *testing.T) {
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
 		},
 		{
-			name:   "Delete palettes, should return not found",
+			name:   "Delete palettes should return not found",
 			method: "DELETE",
 			url: func() string {
 				return fmt.Sprintf("/admin/settings/palettes/%s", palette_id)

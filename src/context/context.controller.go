@@ -1,8 +1,11 @@
 package context
 
 import (
-	"grape/src/attachment/dto/request"
+	req "grape/src/common/dto/request"
+	"grape/src/common/dto/response"
+	"grape/src/context/dto/request"
 	"grape/src/user/entities"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,158 +18,216 @@ func NewContextController(s *ContextService) *ContextController {
 	return &ContextController{service: s}
 }
 
-func (c *ContextController) dto(ctx *gin.Context, init ...*request.AttachmentDto) *request.AttachmentDto {
+func (c *ContextController) dto(ctx *gin.Context, init ...*request.ContextDto) *request.ContextDto {
 	user, _ := ctx.Get("user")
-	return request.NewAttachmentDto(user.(*entities.UserEntity), init...)
+	return request.NewContextDto(user.(*entities.UserEntity), init...)
 }
 
-// // @Tags Context
-// // @Summary Find contexts
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Param id path string true "Attachment id"
-// // @Success 200 {file} file
-// // @failure 422 {object} response.Error
-// // @Router /contexts/{id} [get]
-// func (c *ContextController) FindOne(ctx *gin.Context) {
-// 	content, res, err := c.service.FindOne(
-// 		c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}}),
-// 	)
+func (c *ContextController) field_dto(ctx *gin.Context, init ...*request.ContextFieldDto) *request.ContextFieldDto {
+	user, _ := ctx.Get("user")
+	return request.NewContextFieldDto(user.(*entities.UserEntity), init...)
+}
 
-// 	if err != nil {
-// 		response.ThrowErr(ctx, http.StatusUnprocessableEntity, err.Error())
-// 		return
-// 	}
+// @Tags Context
+// @Summary Find context
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Context id"
+// @Success 200 {object} response.ContextAdvancedResponseDto
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/contexts/{id} [get]
+func (c *ContextController) AdminFindOne(ctx *gin.Context) {
+	res, err := c.service.AdminFindOne(
+		c.dto(ctx, &request.ContextDto{ContextIds: []string{ctx.Param("id")}}),
+	)
 
-// 	ctx.Data(http.StatusOK, content, res)
-// }
+	response.Handler(ctx, http.StatusOK, res, err)
+}
 
-// // @Tags Context
-// // @Summary Find attachment
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param id path string true "Attachment id"
-// // @Success 200 {object} response.AttachmentAdvancedResponseDto
-// // @failure 401 {object} response.Error
-// // @failure 422 {object} response.Error
-// // @Router /admin/attachments/{id} [get]
-// func (c *ContextController) AdminFindOne(ctx *gin.Context) {
-// 	res, err := c.service.AdminFindOne(
-// 		c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}}),
-// 	)
+// @Tags Context
+// @Summary Create contexts
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param model body request.ContextCreateDto true "Context data"
+// @Success 201 {object} response.UuidResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/contexts [post]
+func (c *ContextController) Create(ctx *gin.Context) {
+	var body request.ContextCreateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.BadRequest(ctx, err)
+		return
+	}
 
-// 	response.Handler(ctx, http.StatusOK, res, err)
-// }
+	res, err := c.service.Create(c.dto(ctx), &body)
+	response.Handler(ctx, http.StatusCreated, res, err)
+}
 
-// // @Tags Attachment
-// // @Summary Create attachment
-// // @Accept multipart/form-data
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param model formData request.AttachmentCreateDto true "File descriptions"
-// // @Param file formData file true "File"
-// // @Success 201 {object} response.AttachmentAdvancedResponseDto
-// // @failure 400 {object} response.Error
-// // @failure 401 {object} response.Error
-// // @failure 422 {object} response.Error
-// // @Router /admin/attachments/{id} [post]
-// func (c *ContextController) Create(ctx *gin.Context) {
-// 	var body request.AttachmentCreateDto
-// 	if err := ctx.Bind(&body); err != nil {
-// 		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
-// 		return
-// 	}
+// @Tags Context
+// @Summary Update Context
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Context id"
+// @Param model body request.ContextUpdateDto true "Context data"
+// @Success 200 {object} response.UuidResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/contexts/{id} [put]
+func (c *ContextController) Update(ctx *gin.Context) {
+	var body request.ContextUpdateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.BadRequest(ctx, err)
+		return
+	}
 
-// 	file, err := ctx.FormFile(constant.FORM_DATA_FILE_FILE)
-// 	if err != nil {
-// 		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
-// 		return
-// 	}
+	dto := c.dto(ctx, &request.ContextDto{ContextIds: []string{ctx.Param("id")}})
+	res, err := c.service.Update(dto, &body)
+	response.Handler(ctx, http.StatusOK, res, err)
+}
 
-// 	if strings.Contains(file.Filename, " ") {
-// 		response.ThrowErr(ctx, http.StatusBadRequest, "Invalid filename")
-// 		return
-// 	}
+// @Tags Context
+// @Summary Delete context
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Context id"
+// @Success 204
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/contexts/{id} [delete]
+func (c *ContextController) Delete(ctx *gin.Context) {
+	res, err := c.service.Delete(
+		c.dto(ctx, &request.ContextDto{ContextIds: []string{ctx.Param("id")}}),
+	)
 
-// 	res, err := c.service.Create(c.dto(ctx), &body, file)
-// 	response.Handler(ctx, http.StatusCreated, res, err)
-// }
+	response.Handler(ctx, http.StatusNoContent, res, err)
+}
 
-// // @Tags Attachment
-// // @Summary Update attachment
-// // @Accept multipart/form-data
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param id path string true "Attachment id"
-// // @Param model formData request.AttachmentUpdateDto true "File descriptions"
-// // @Param file formData file true "File"
-// // @Success 200 {object} response.AttachmentAdvancedResponseDto
-// // @failure 400 {object} response.Error
-// // @failure 401 {object} response.Error
-// // @failure 422 {object} response.Error
-// // @Router /admin/attachments/{id} [put]
-// func (c *ContextController) Update(ctx *gin.Context) {
-// 	var body request.AttachmentUpdateDto
-// 	if err := ctx.Bind(&body); err != nil {
-// 		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
-// 		return
-// 	}
+// @Tags Context
+// @Summary Create field at context
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Context id"
+// @Param model body request.ContextFieldCreateDto true "Field body"
+// @Success 201 {object} response.UuidResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/contexts/{id}/fields [post]
+func (c *ContextController) CreateField(ctx *gin.Context) {
+	var body request.ContextFieldCreateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.BadRequest(ctx, err)
+		return
+	}
 
-// 	file, _ := ctx.FormFile(constant.FORM_DATA_FILE_FILE)
-// 	if file != nil && strings.Contains(file.Filename, " ") {
-// 		response.ThrowErr(ctx, http.StatusBadRequest, "Invalid filename")
-// 		return
-// 	}
+	res, err := c.service.CreateField(c.field_dto(ctx, &request.ContextFieldDto{ContextIds: []string{ctx.Param("id")}}), &body)
+	response.Handler(ctx, http.StatusCreated, res, err)
+}
 
-// 	dto := c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}})
-// 	res, err := c.service.Update(dto, &body, file)
-// 	response.Handler(ctx, http.StatusOK, res, err)
-// }
+// @Tags Context
+// @Summary Update update field at context
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Context id"
+// @Param field_id path string true "Field id"
+// @Param model body request.ContextFieldUpdateDto true "Field body"
+// @Success 200 {object} response.UuidResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/contexts/{id}/fields/{field_id} [put]
+func (c *ContextController) UpdateField(ctx *gin.Context) {
+	var body request.ContextFieldUpdateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.BadRequest(ctx, err)
+		return
+	}
 
-// // @Tags Attachment
-// // @Summary Delete attachment
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param id path string true "Attachment id"
-// // @Success 204
-// // @failure 401 {object} response.Error
-// // @failure 422 {object} response.Error
-// // @Router /admin/attachments/{id} [delete]
-// func (c *ContextController) Delete(ctx *gin.Context) {
-// 	res, err := c.service.Delete(
-// 		c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}}),
-// 	)
+	res, err := c.service.UpdateField(c.field_dto(ctx, &request.ContextFieldDto{ContextIds: []string{ctx.Param("id")}, ContextFieldIds: []string{ctx.Param("field_id")}}), &body)
+	response.Handler(ctx, http.StatusOK, res, err)
+}
 
-// 	response.Handler(ctx, http.StatusNoContent, res, err)
-// }
+// @Tags Context
+// @Summary Delete Field in Context
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Context id"
+// @Param field_id path string true "Field id"
+// @Success 204
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/contexts/{id}/fields/{field_id} [delete]
+func (c *ContextController) DeleteField(ctx *gin.Context) {
+	res, err := c.service.DeleteField(
+		c.field_dto(ctx, &request.ContextFieldDto{ContextIds: []string{ctx.Param("id")}, ContextFieldIds: []string{ctx.Param("field_id")}}),
+	)
 
-// // @Tags Attachment
-// // @Summary Update Attachment order position
-// // @Accept json
-// // @Produce application/json
-// // @Produce application/xml
-// // @Security BearerAuth
-// // @Param id path string true "Project id"
-// // @Param model body req.OrderUpdateDto true "Position body"
-// // @Success 200 {object} response.AttachmentAdvancedResponseDto
-// // @failure 400 {object} response.Error
-// // @failure 401 {object} response.Error
-// // @failure 422 {object} response.Error
-// // @Router /admin/attachments/{id}/order [put]
-// func (c *ContextController) PutOrder(ctx *gin.Context) {
-// 	var body req.OrderUpdateDto
-// 	if err := ctx.ShouldBind(&body); err != nil {
-// 		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
-// 		return
-// 	}
+	response.Handler(ctx, http.StatusNoContent, res, err)
+}
 
-// 	res, err := c.service.PutOrder(c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}}), &body)
-// 	response.Handler(ctx, http.StatusOK, res, err)
-// }
+// @Tags Context
+// @Summary Update Context order position
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Context id"
+// @Param model body req.OrderUpdateDto true "Position body"
+// @Success 200 {object} response.UuidResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/contexts/{id}/order [put]
+func (c *ContextController) UpdateOrder(ctx *gin.Context) {
+	var body req.OrderUpdateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	res, err := c.service.UpdateOrder(c.dto(ctx, &request.ContextDto{ContextIds: []string{ctx.Param("id")}}), &body)
+	response.Handler(ctx, http.StatusOK, res, err)
+}
+
+// @Tags Context
+// @Summary Update Field order position
+// @Accept json
+// @Produce application/json
+// @Produce application/xml
+// @Security BearerAuth
+// @Param id path string true "Context id"
+// @Param field_id path string true "Field id"
+// @Param model body req.OrderUpdateDto true "Position body"
+// @Success 200 {object} response.UuidResponseDto
+// @failure 400 {object} response.Error
+// @failure 401 {object} response.Error
+// @failure 422 {object} response.Error
+// @Router /admin/contexts/{id}/fields/{field_id}/order [put]
+func (c *ContextController) UpdateFieldOrder(ctx *gin.Context) {
+	var body req.OrderUpdateDto
+	if err := ctx.ShouldBind(&body); err != nil {
+		response.BadRequest(ctx, err)
+		return
+	}
+
+	res, err := c.service.UpdateFieldOrder(c.field_dto(ctx, &request.ContextFieldDto{ContextIds: []string{ctx.Param("id")}, ContextFieldIds: []string{ctx.Param("field_id")}}), &body)
+	response.Handler(ctx, http.StatusOK, res, err)
+}

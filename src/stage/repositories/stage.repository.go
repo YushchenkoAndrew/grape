@@ -57,10 +57,10 @@ func (c *stageRepository) attachRelations(tx *gorm.DB, _ *r.StageDto, relations 
 		case Tasks:
 			tx.Preload(string(r)).
 				Preload(fmt.Sprintf("%s.Owner", r)).
-				Preload(fmt.Sprintf("%s.Links", r), func(db *gorm.DB) *gorm.DB { return db.Order("Links.order ASC") }).
-				Preload(fmt.Sprintf("%s.Attachments", r), func(db *gorm.DB) *gorm.DB { return db.Order("Attachments.order ASC") }).
-				Preload(fmt.Sprintf("%s.Contexts", r), func(db *gorm.DB) *gorm.DB { return db.Order("Contexts.order ASC") }).
-				Preload(fmt.Sprintf("%s.Contexts.ContextFields", r), func(db *gorm.DB) *gorm.DB { return db.Order("ContextFields.order ASC") })
+				Preload(fmt.Sprintf("%s.Links", r), func(db *gorm.DB) *gorm.DB { return db.Order("links.order ASC") }).
+				Preload(fmt.Sprintf("%s.Attachments", r), func(db *gorm.DB) *gorm.DB { return db.Order("attachments.order ASC") }).
+				Preload(fmt.Sprintf("%s.Contexts", r), func(db *gorm.DB) *gorm.DB { return db.Order("contexts.order ASC") }).
+				Preload(fmt.Sprintf("%s.Contexts.ContextFields", r), func(db *gorm.DB) *gorm.DB { return db.Order("context_fields.order ASC") })
 
 		default:
 			tx.Joins(string(r))
@@ -85,7 +85,7 @@ func (c *stageRepository) sortBy(tx *gorm.DB, dto *r.StageDto, _ []StageRelation
 func (c *stageRepository) Create(db *gorm.DB, dto *r.StageDto, body interface{}, entity *e.StageEntity) *gorm.DB {
 	var order int64
 	dto.SortBy = ""
-	c.Build(db, dto).Select(`MAX(stages.order) AS "order"`).Scan(&order)
+	c.Build(db, dto).Select(`COALESCE(MAX(stages.order), 0) AS "order"`).Scan(&order)
 
 	entity.Order = int(order) + 1
 	entity.Organization = &dto.CurrentUser.Organization
@@ -94,6 +94,9 @@ func (c *stageRepository) Create(db *gorm.DB, dto *r.StageDto, body interface{},
 }
 
 func (c *stageRepository) Update(db *gorm.DB, dto *r.StageDto, body interface{}, entity *e.StageEntity) *gorm.DB {
+	options := body.(*r.StageUpdateDto)
+	entity.SetStatus(options.Status)
+
 	return db.Model(entity).Updates(entity)
 }
 

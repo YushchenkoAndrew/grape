@@ -85,25 +85,22 @@ func (c *taskRepository) sortBy(tx *gorm.DB, dto *r.TaskDto, _ []TaskRelation) {
 func (c *taskRepository) Create(db *gorm.DB, dto *r.TaskDto, body interface{}, entity *e.TaskEntity) *gorm.DB {
 	var order int64
 	dto.SortBy = ""
-	c.Build(db, dto).Select(`MAX(tasks.order) AS "order"`).Scan(&order)
+	c.Build(db, dto).Select(`COALESCE(MAX(tasks.order), 0) AS "order"`).Scan(&order)
 	options := body.(*r.TaskCreateDto)
 
 	entity.Order = int(order) + 1
 	entity.StageID = options.Stage.ID
+	entity.Owner = dto.CurrentUser
 	entity.Organization = &dto.CurrentUser.Organization
 
 	return db.Create(entity)
 }
 
 func (c *taskRepository) Update(db *gorm.DB, dto *r.TaskDto, body interface{}, entity *e.TaskEntity) *gorm.DB {
-	// options := body.(*r.ProjectUpdateDto)
+	options := body.(*r.TaskUpdateDto)
+	entity.SetStatus(options.Status)
 
-	// // entity.SetType(options.Type)
-	// entity.SetStatus(options.Status)
-
-	// return db.Model(entity).Updates(entity)
-
-	return db
+	return db.Model(entity).Updates(entity)
 }
 
 func (c *taskRepository) Delete(db *gorm.DB, dto *r.TaskDto, entity []*e.TaskEntity) *gorm.DB {
@@ -128,7 +125,7 @@ func (c *taskRepository) Reorder(db *gorm.DB, entity *e.TaskEntity, position int
 var task_repository *taskRepository
 
 func NewTaskRepository(db *gorm.DB) *TaskRepositoryT {
-	if repository == nil {
+	if task_repository == nil {
 		task_repository = &taskRepository{}
 	}
 

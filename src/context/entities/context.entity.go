@@ -2,6 +2,8 @@ package entities
 
 import (
 	e "grape/src/common/entities"
+
+	"github.com/samber/lo"
 )
 
 type ContextEntity struct {
@@ -18,6 +20,10 @@ type ContextEntity struct {
 
 func (*ContextEntity) TableName() string {
 	return "contexts"
+}
+
+func (c *ContextEntity) GetContextFields() []*ContextFieldEntity {
+	return lo.Map(c.ContextFields, func(e ContextFieldEntity, _ int) *ContextFieldEntity { return &e })
 }
 
 func NewContextEntity() *ContextEntity {

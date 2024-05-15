@@ -1,182 +1,143 @@
 package context
 
 import (
+	"fmt"
+	req "grape/src/common/dto/request"
+	res "grape/src/common/dto/response"
 	"grape/src/common/service"
+	"grape/src/context/dto/request"
+	"grape/src/context/dto/response"
+	"grape/src/context/entities"
 	"grape/src/context/repositories"
+
+	st_req "grape/src/stage/dto/request"
+	st_repo "grape/src/stage/repositories"
+
+	"github.com/jinzhu/copier"
+	"gorm.io/gorm"
 )
 
 type ContextService struct {
-	Repository *repositories.ContextRepositoryT
+	Repository             *repositories.ContextRepositoryT
+	ContextFieldRepository *repositories.ContextFieldRepositoryT
+	TaskRepository         *st_repo.TaskRepositoryT
 }
 
 func NewContextService(s *service.CommonService) *ContextService {
 	return &ContextService{
-		Repository: repositories.NewContextRepository(s.DB),
+		Repository:             repositories.NewContextRepository(s.DB),
+		ContextFieldRepository: repositories.NewContextFieldRepository(s.DB),
+		TaskRepository:         st_repo.NewTaskRepository(s.DB),
 	}
 }
 
-// func (c *ContextService) FindOne(dto *request.AttachmentDto) (string, []byte, error) {
-// 	attachment, err := c.Repository.ValidateEntityExistence(dto)
-// 	if err != nil {
-// 		return "", nil, err
-// 	}
+func (c *ContextService) AdminFindOne(dto *request.ContextDto) (*response.ContextAdvancedResponseDto, error) {
+	entity, err := c.Repository.ValidateEntityExistence(dto, repositories.ContextFields)
+	return res.NewResponse[response.ContextAdvancedResponseDto](entity), err
+}
 
-// 	return c.VoidService.Get(attachment.GetFile())
-// }
+func (c *ContextService) Create(dto *request.ContextDto, body *request.ContextCreateDto) (*res.UuidResponseDto, error) {
+	entity := entities.NewContextEntity()
+	copier.Copy(&entity, body)
+	entity.Create()
 
-// func (c *ContextService) AdminFindOne(dto *request.AttachmentDto) (*response.AttachmentAdvancedResponseDto, error) {
-// 	attachment, err := c.Repository.ValidateEntityExistence(dto)
-// 	return common.NewResponse[response.AttachmentAdvancedResponseDto](attachment), err
-// }
+	contextable, err := func() (entities.ContextableT, error) {
+		switch body.ContextableType {
+		case c.TaskRepository.TableName():
+			return c.TaskRepository.ValidateEntityExistence(st_req.NewTaskDto(dto.CurrentUser, &st_req.TaskDto{TaskIds: []string{body.ContextableID}}))
+		}
 
-// func (c *ContextService) Create(dto *request.AttachmentDto, body *request.AttachmentCreateDto, file *multipart.FileHeader) (*response.AttachmentAdvancedResponseDto, error) {
-// 	entity := entities.NewAttachmentEntity()
-// 	entity.Name, entity.Path, entity.Size, entity.Type = file.Filename, body.Path, file.Size, filepath.Ext(file.Filename)
+		return nil, fmt.Errorf("contextable_type '%s' is not supported", body.ContextableType)
+	}()
 
-// 	entity.Create()
+	if err != nil {
+		return nil, err
+	}
 
-// 	switch body.AttachableType {
-// 	case c.ProjectRepository.TableName():
-// 		project, err := c.ProjectRepository.ValidateEntityExistence(project.NewProjectDto(dto.CurrentUser, &project.ProjectDto{ProjectIds: []string{body.AttachableID}}), pr.Attachments)
-// 		if err != nil {
-// 			return nil, err
-// 		}
+	err = c.Repository.Transaction(func(tx *gorm.DB) error {
+		entity.ContextableID = contextable.GetID()
+		entity.ContextableType = body.ContextableType
+		_, err := c.Repository.Create(tx, dto, entity)
+		return err
+	})
 
-// 		entity.Home = project.GetPath()
-// 		err = c.ProjectRepository.Transaction(func(tx *gorm.DB) error {
-// 			entity.AttachableID = project.ID
-// 			entity.AttachableType = c.ProjectRepository.TableName()
-// 			if _, err := c.Repository.Create(tx, dto, entity); err != nil {
-// 				return err
-// 			}
+	return res.NewResponse[res.UuidResponseDto](entity), err
+}
 
-// 			f, err := file.Open()
-// 			if err != nil {
-// 				return err
-// 			}
+func (c *ContextService) Update(dto *request.ContextDto, body *request.ContextUpdateDto) (*res.UuidResponseDto, error) {
+	entity, err := c.Repository.ValidateEntityExistence(dto)
+	if err != nil {
+		return nil, err
+	}
 
-// 			defer f.Close()
-// 			return c.VoidService.Save(entity.GetPath(), file.Filename, f)
-// 		})
+	_, err = c.Repository.Update(nil, dto, body, entity)
+	return res.NewResponse[res.UuidResponseDto](entity), err
+}
 
-// 		return common.NewResponse[response.AttachmentAdvancedResponseDto](entity), err
+func (c *ContextService) Delete(dto *request.ContextDto) (interface{}, error) {
+	entity, err := c.Repository.ValidateEntityExistence(dto)
+	if err != nil {
+		return nil, err
+	}
 
-// 	}
+	err = c.Repository.Transaction(func(tx *gorm.DB) error {
+		if err := c.ContextFieldRepository.DeleteAll(tx, nil, entity.GetContextFields()); err != nil {
+			return nil
+		}
 
-// 	return nil, fmt.Errorf("attachable_type '%s' is not supported", body.AttachableType)
-// }
+		return c.Repository.Delete(tx, dto, entity)
+	})
 
-// func (c *ContextService) Update(dto *request.AttachmentDto, body *request.AttachmentUpdateDto, file *multipart.FileHeader) (*response.AttachmentAdvancedResponseDto, error) {
-// 	entity, err := c.Repository.ValidateEntityExistence(dto)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	return nil, err
+}
 
-// 	err = c.Repository.Transaction(func(tx *gorm.DB) error {
-// 		path := entity.GetFile()
+func (c *ContextService) CreateField(dto *request.ContextFieldDto, body *request.ContextFieldCreateDto) (*res.UuidResponseDto, error) {
+	context, err := c.Repository.ValidateEntityExistence(request.NewContextDto(dto.CurrentUser, &request.ContextDto{ContextIds: dto.ContextIds}))
+	if err != nil {
+		return nil, err
+	}
 
-// 		if file == nil {
-// 			if _, err := c.Repository.Update(tx, dto, body, entity); err != nil {
-// 				return err
-// 			}
+	body.Context = context
+	field, err := c.ContextFieldRepository.Create(nil, dto, body)
+	return res.NewResponse[res.UuidResponseDto](field), err
+}
 
-// 			return c.VoidService.Rename(path, entity.GetFile(), false)
-// 		}
+func (c *ContextService) UpdateField(dto *request.ContextFieldDto, body *request.ContextFieldUpdateDto) (*res.UuidResponseDto, error) {
+	field, err := c.ContextFieldRepository.ValidateEntityExistence(dto)
+	if err != nil {
+		return nil, err
+	}
 
-// 		e := entities.AttachmentEntity{}
-// 		e.Name, e.Path, e.Home, e.Size, e.Type = file.Filename, body.Path, entity.Home, file.Size, filepath.Ext(file.Filename)
-// 		copier.CopyWithOption(&e, body, copier.Option{IgnoreEmpty: true})
-// 		updated, err := c.Repository.Update(tx, dto, e, entity)
+	entity, err := c.ContextFieldRepository.Update(nil, dto, body, field)
+	return res.NewResponse[res.UuidResponseDto](entity), err
+}
 
-// 		if err != nil {
-// 			return err
-// 		}
+func (c *ContextService) DeleteField(dto *request.ContextFieldDto) (interface{}, error) {
+	field, err := c.ContextFieldRepository.ValidateEntityExistence(dto)
+	if err != nil {
+		return nil, err
+	}
 
-// 		if _, err := c.VoidService.Delete(path); err != nil {
-// 			return err
-// 		}
+	err = c.ContextFieldRepository.Delete(nil, dto, field)
+	return nil, err
+}
 
-// 		f, err := file.Open()
-// 		if err != nil {
-// 			return err
-// 		}
+func (c *ContextService) UpdateOrder(dto *request.ContextDto, body *req.OrderUpdateDto) (*res.UuidResponseDto, error) {
+	link, err := c.Repository.ValidateEntityExistence(dto)
+	if err != nil || link.Order == body.Position {
+		return res.NewResponse[res.UuidResponseDto](link), err
+	}
 
-// 		defer f.Close()
-// 		return c.VoidService.Save(updated.GetPath(), e.Name, f)
-// 	})
+	err = c.Repository.Reorder(nil, link, body.Position)
+	return res.NewResponse[res.UuidResponseDto](link), err
+}
 
-// 	return common.NewResponse[response.AttachmentAdvancedResponseDto](entity), err
-// }
+func (c *ContextService) UpdateFieldOrder(dto *request.ContextFieldDto, body *req.OrderUpdateDto) (*res.UuidResponseDto, error) {
+	field, err := c.ContextFieldRepository.ValidateEntityExistence(dto)
+	if err != nil || field.Order == body.Position {
+		return res.NewResponse[res.UuidResponseDto](field), err
+	}
 
-// func (c *ContextService) Delete(dto *request.AttachmentDto) (interface{}, error) {
-// 	entity, err := c.Repository.ValidateEntityExistence(dto)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	err = c.Repository.Transaction(func(tx *gorm.DB) error {
-// 		if err := c.Repository.Delete(tx, dto, entity); err != nil {
-// 			return err
-// 		}
-
-// 		_, err = c.VoidService.Delete(entity.GetFile())
-// 		return err
-
-// 	})
-
-// 	return nil, err
-// }
-
-// func (c *ContextService) PutOrder(dto *request.AttachmentDto, body *req.OrderUpdateDto) (*response.AttachmentAdvancedResponseDto, error) {
-// 	attachement, err := c.Repository.ValidateEntityExistence(dto)
-// 	if err != nil || attachement.Order == body.Position {
-// 		return common.NewResponse[response.AttachmentAdvancedResponseDto](attachement), err
-// 	}
-
-// 	err = c.Repository.Reorder(nil, attachement, body.Position)
-// 	return common.NewResponse[response.AttachmentAdvancedResponseDto](attachement), err
-
-// }
-
-// func (c *ContextService) InitProjectFromTemplate(project *pre.ProjectEntity, readme bool) []entities.AttachmentEntity {
-// 	var attachments []entities.AttachmentEntity
-
-// 	if readme {
-// 		entity := entities.NewAttachmentEntity()
-// 		entity.Home = project.GetPath()
-// 		entity.Create()
-
-// 		entity.Name, entity.Path, entity.Size, entity.Type = "README.md", "/", 0, ".md"
-// 		c.VoidService.Rename("/templates/readme.template.md", entity.GetFile(), true)
-// 		attachments = append(attachments, *entity)
-// 	}
-
-// 	entity := entities.NewAttachmentEntity()
-// 	entity.Home = project.GetPath()
-// 	entity.Create()
-
-// 	switch project.Type {
-// 	case prt.P5js:
-// 		entity.Name, entity.Path, entity.Size, entity.Type = "Main.js", "/", 0, ".js"
-// 		c.VoidService.Rename("/templates/p5js.template.js", entity.GetFile(), true)
-
-// 	case prt.Html:
-// 		entity.Name, entity.Path, entity.Size, entity.Type = "index.html", "/", 0, ".html"
-// 		c.VoidService.Rename("/templates/html.template.html", entity.GetFile(), true)
-
-// 	case prt.Markdown:
-// 		entity.Name, entity.Path, entity.Size, entity.Type = "index.md", "/", 0, ".md"
-// 		c.VoidService.Rename("/templates/markdown.template.md", entity.GetFile(), true)
-
-// 	// TODO:
-// 	// case K3s:
-// 	default:
-// 		entity = nil
-// 	}
-
-// 	if entity != nil {
-// 		attachments = append(attachments, *entity)
-// 	}
-
-// 	return attachments
-// }
+	err = c.ContextFieldRepository.Reorder(nil, field, body.Position)
+	return res.NewResponse[res.UuidResponseDto](field), err
+}

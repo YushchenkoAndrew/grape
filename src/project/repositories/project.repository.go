@@ -103,7 +103,7 @@ func (c *projectRepository) sortBy(tx *gorm.DB, dto *r.ProjectDto, _ []ProjectRe
 func (c *projectRepository) Create(db *gorm.DB, dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
 	var order int64
 	dto.SortBy = ""
-	c.Build(db, dto).Select(`MAX(projects.order) AS "order"`).Scan(&order)
+	c.Build(db, dto).Select(`COALESCE(MAX(projects.order), 0) AS "order"`).Scan(&order)
 
 	entity.Order = int(order) + 1
 	entity.Owner = dto.CurrentUser

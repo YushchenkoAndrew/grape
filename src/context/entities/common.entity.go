@@ -13,3 +13,8 @@ func (c *ContextableEntity) GetContexts() []*ContextEntity {
 func NewContextableEntity() *ContextableEntity {
 	return &ContextableEntity{}
 }
+
+type ContextableT interface {
+	GetID() int64
+	GetContexts() []*ContextEntity
+}

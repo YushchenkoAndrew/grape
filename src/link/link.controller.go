@@ -43,8 +43,8 @@ func (c *LinkController) AdminFindOne(ctx *gin.Context) {
 }
 
 // @Tags Link
-// @Summary Create attachment
-// @Accept multipart/form-data
+// @Summary Create link
+// @Accept json
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
@@ -67,12 +67,12 @@ func (c *LinkController) Create(ctx *gin.Context) {
 
 // @Tags Link
 // @Summary Update Link
-// @Accept multipart/form-data
+// @Accept json
 // @Produce application/json
 // @Produce application/xml
 // @Security BearerAuth
 // @Param id path string true "Link id"
-// @Param model formData request.LinkUpdateDto true "Link data"
+// @Param model body request.LinkUpdateDto true "Link data"
 // @Success 200 {object} response.LinkBasicResponseDto
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
