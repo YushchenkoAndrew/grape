@@ -56,7 +56,7 @@ func (c *contextFieldRepository) sortBy(tx *gorm.DB, dto *r.ContextFieldDto, _ [
 
 func (c *contextFieldRepository) Create(db *gorm.DB, dto *r.ContextFieldDto, body interface{}, entity *e.ContextFieldEntity) *gorm.DB {
 	var order int64
-	c.Build(db, dto).Select(`COALESCE(MAX(tasks.order), 0) AS "order"`).Scan(&order)
+	c.Build(db, dto).Select(`COALESCE(MAX(context_fields.order), 0) AS "order"`).Scan(&order)
 	options := body.(*r.ContextFieldCreateDto)
 
 	entity.Order = int(order) + 1

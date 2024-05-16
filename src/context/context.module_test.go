@@ -120,6 +120,63 @@ func TestContextModule(t *testing.T) {
 			},
 		},
 		{
+			name:   "ContextField create",
+			method: "POST",
+			url:    func() string { return fmt.Sprintf("/admin/contexts/%s/fields", contexts[0].Id) },
+			auth:   token,
+			body: func() interface{} {
+				return request.ContextFieldCreateDto{Name: "ContextFieldCreated", Options: &map[string]interface{}{"test": "FieldCreated"}}
+			},
+			expected: http.StatusCreated,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res res.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				var context response.ContextAdvancedResponseDto
+				validate(contexts[0].Id, &context)
+				contexts[0] = context
+
+				entity, found := lo.Find(contexts[0].Fields, func(item response.ContextFieldAdvancedResponseDto) bool { return item.Id == res.Id })
+
+				require.Equal(t, found, true)
+				require.Greater(t, entity.Order, 0)
+				require.Equal(t, entity.Name, "ContextFieldCreated")
+
+				require.Nil(t, entity.Value)
+				require.NotNil(t, entity.Options)
+				fmt.Printf("%v\n", entity.Options)
+				require.Equal(t, (*entity.Options)["test"], "FieldCreated")
+			},
+		},
+		{
+			name:   "ContextField create",
+			method: "POST",
+			url:    func() string { return fmt.Sprintf("/admin/contexts/%s/fields", contexts[0].Id) },
+			auth:   token,
+			body: func() interface{} {
+				return request.ContextFieldCreateDto{Name: "ContextFieldCreated2", Options: &map[string]interface{}{"test": "FieldCreated"}}
+			},
+			expected: http.StatusCreated,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res res.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				var context response.ContextAdvancedResponseDto
+				validate(contexts[0].Id, &context)
+				contexts[0] = context
+
+				entity, found := lo.Find(contexts[0].Fields, func(item response.ContextFieldAdvancedResponseDto) bool { return item.Id == res.Id })
+
+				require.Equal(t, found, true)
+				require.Greater(t, entity.Order, 0)
+				require.Equal(t, entity.Name, "ContextFieldCreated2")
+
+				require.Nil(t, entity.Value)
+				require.NotNil(t, entity.Options)
+				require.Equal(t, (*entity.Options)["test"], "FieldCreated")
+			},
+		},
+		{
 			name:     "Context update order",
 			method:   "PUT",
 			url:      func() string { return fmt.Sprintf("/admin/contexts/%s/order", contexts[1].Id) },
@@ -162,6 +219,46 @@ func TestContextModule(t *testing.T) {
 			},
 		},
 		{
+			name:   "ContextField update order",
+			method: "PUT",
+			url: func() string {
+				return fmt.Sprintf("/admin/contexts/%s/fields/%s/order", contexts[0].Id, contexts[0].Fields[1].Id)
+			},
+			auth:     token,
+			body:     func() interface{} { return req.OrderUpdateDto{Position: contexts[0].Fields[0].Order} },
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res res.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				var entity response.ContextAdvancedResponseDto
+				validate(contexts[0].Id, &entity)
+
+				require.Equal(t, entity.Fields[0].Order, contexts[0].Fields[1].Order)
+				require.Equal(t, entity.Fields[1].Order, contexts[0].Fields[0].Order)
+			},
+		},
+		{
+			name:   "ContextField update revert order",
+			method: "PUT",
+			url: func() string {
+				return fmt.Sprintf("/admin/contexts/%s/fields/%s/order", contexts[0].Id, contexts[0].Fields[1].Id)
+			},
+			auth:     token,
+			body:     func() interface{} { return req.OrderUpdateDto{Position: contexts[0].Fields[1].Order} },
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res res.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				var entity response.ContextAdvancedResponseDto
+				validate(contexts[0].Id, &entity)
+
+				require.Equal(t, entity.Fields[0].Order, contexts[0].Fields[0].Order)
+				require.Equal(t, entity.Fields[1].Order, contexts[0].Fields[1].Order)
+			},
+		},
+		{
 			name:     "Context update name",
 			method:   "PUT",
 			url:      func() string { return fmt.Sprintf("/admin/contexts/%s", contexts[0].Id) },
@@ -173,6 +270,33 @@ func TestContextModule(t *testing.T) {
 				json.Unmarshal(w.Body.Bytes(), &res)
 
 				require.Equal(t, "testUpdated", res.Name)
+			},
+		},
+		{
+			name:   "ContextField update",
+			method: "PUT",
+			url: func() string {
+				return fmt.Sprintf("/admin/contexts/%s/fields/%s", contexts[0].Id, contexts[0].Fields[0].Id)
+			},
+			auth: token,
+			body: func() interface{} {
+				return request.ContextFieldUpdateDto{Name: "ContextFieldUpdated", Value: "true"}
+			},
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res res.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				var context response.ContextAdvancedResponseDto
+				validate(contexts[0].Id, &context)
+
+				entity, found := lo.Find(context.Fields, func(item response.ContextFieldAdvancedResponseDto) bool { return item.Id == res.Id })
+
+				require.Equal(t, found, true)
+				require.Equal(t, entity.Name, "ContextFieldUpdated")
+
+				require.NotNil(t, entity.Value)
+				require.Equal(t, *entity.Value, "true")
 			},
 		},
 		{
@@ -200,6 +324,22 @@ func TestContextModule(t *testing.T) {
 				})
 
 				require.Equal(t, found, true)
+			},
+		},
+		{
+			name:   "ContextField delete",
+			method: "DELETE",
+			url: func() string {
+				return fmt.Sprintf("/admin/contexts/%s/fields/%s", contexts[0].Id, contexts[0].Fields[0].Id)
+			},
+			auth:     token,
+			body:     func() interface{} { return nil },
+			expected: http.StatusNoContent,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var entity response.ContextAdvancedResponseDto
+				validate(contexts[0].Id, &entity)
+
+				require.Equal(t, entity.Fields[0].Order, contexts[0].Fields[0].Order)
 			},
 		},
 		{

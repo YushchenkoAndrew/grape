@@ -20,23 +20,23 @@ func (*ContextFieldEntity) TableName() string {
 	return "context_fields"
 }
 
-func (c *ContextFieldEntity) GetOptions() interface{} {
+func (c *ContextFieldEntity) GetOptions() *map[string]interface{} {
 	if c.Options == nil {
 		return nil
 	}
 
-	var options interface{}
-	json.Unmarshal([]byte(*c.Options), options)
-	return options
+	var options map[string]interface{}
+	json.Unmarshal([]byte(*c.Options), &options)
+	return &options
 }
 
-func (c *ContextFieldEntity) SetOptions(data interface{}) {
+func (c *ContextFieldEntity) SetOptions(data *map[string]interface{}) {
 	if data == nil {
 		c.Options = nil
 		return
 	}
 
-	if json, err := json.Marshal(data); err != nil {
+	if json, err := json.Marshal(data); err == nil {
 		options := string(json)
 		c.Options = &options
 	} else {

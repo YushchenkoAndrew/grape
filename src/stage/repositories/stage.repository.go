@@ -51,12 +51,23 @@ func (c *stageRepository) applyFilter(tx *gorm.DB, dto *r.StageDto, relations []
 	return relations
 }
 
-func (c *stageRepository) attachRelations(tx *gorm.DB, _ *r.StageDto, relations []StageRelation) {
+func (c *stageRepository) attachRelations(tx *gorm.DB, dto *r.StageDto, relations []StageRelation) {
 	for _, r := range relations {
 		switch r {
 		case Tasks:
-			tx.Preload(string(r)).
+			tx.Preload(string(r), func(db *gorm.DB) *gorm.DB {
+				if len(dto.Query) != 0 {
+					query := "%" + dto.Query + "%"
+					db.Where(
+						db.Session(&gorm.Session{NewDB: true}).Where(`tasks.name ILIKE ?`, query).
+							Or(`(SELECT COUNT(t.id) FROM tags t WHERE t.taggable_id = tasks.id AND t.taggable_type = ? AND t.name ILIKE ?) > 0`, string(r), query),
+					)
+				}
+
+				return db.Order("tasks.order ASC")
+			}).
 				Preload(fmt.Sprintf("%s.Owner", r)).
+				Preload(fmt.Sprintf("%s.Tags", r)).
 				Preload(fmt.Sprintf("%s.Links", r), func(db *gorm.DB) *gorm.DB { return db.Order("links.order ASC") }).
 				Preload(fmt.Sprintf("%s.Attachments", r), func(db *gorm.DB) *gorm.DB { return db.Order("attachments.order ASC") }).
 				Preload(fmt.Sprintf("%s.Contexts", r), func(db *gorm.DB) *gorm.DB { return db.Order("contexts.order ASC") }).

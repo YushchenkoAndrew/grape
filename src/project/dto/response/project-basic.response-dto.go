@@ -14,4 +14,5 @@ type ProjectBasicResponseDto struct {
 
 	Redirect  *ln.LinkBasicResponseDto        `json:"redirect" xml:"redirect"`
 	Thumbnail *att.AttachmentBasicResponseDto `json:"thumbnail" xml:"thumbnail"`
+	Tags      []r.UuidResponseDto             `json:"tags" xml:"tags"`
 }

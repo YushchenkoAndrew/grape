@@ -21,6 +21,7 @@ const (
 	Attachments  ProjectRelation = "Attachments"
 	Redirect     ProjectRelation = "Redirect"
 	Links        ProjectRelation = "Links"
+	Tags         ProjectRelation = "Tags"
 	Owner        ProjectRelation = "Owner"
 	Statistic    ProjectRelation = "Statistic"
 )
@@ -50,7 +51,11 @@ func (c *projectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, relation
 	}
 
 	if len(dto.Query) != 0 {
-		tx.Where(`projects.name ILIKE ?`, "%"+dto.Query+"%")
+		query := "%" + dto.Query + "%"
+		tx.Where(
+			tx.Session(&gorm.Session{NewDB: true}).Where(`projects.name ILIKE ?`, query).
+				Or(`(SELECT COUNT(t.id) FROM tags t WHERE t.taggable_id = projects.id AND t.taggable_type = ? AND t.name ILIKE ?) > 0`, c.Model().TableName(), query),
+		)
 	}
 
 	if len(dto.Statuses) != 0 {
@@ -79,6 +84,9 @@ func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relati
 
 		case Attachments, Links:
 			tx.Preload(string(r), func(db *gorm.DB) *gorm.DB { return db.Order(fmt.Sprintf("%s.order ASC", string(r))) })
+
+		case Tags:
+			tx.Preload(string(r))
 
 		default:
 			tx.Joins(string(r))

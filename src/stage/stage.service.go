@@ -14,6 +14,8 @@ import (
 	"grape/src/stage/dto/request"
 	"grape/src/stage/dto/response"
 	repo "grape/src/stage/repositories"
+	tag_entity "grape/src/tag/entities"
+	tag_repo "grape/src/tag/repositories"
 
 	"gorm.io/gorm"
 )
@@ -22,6 +24,7 @@ type StageService struct {
 	Repository        *repo.StageRepositoryT
 	TaskRepository    *repo.TaskRepositoryT
 	LinkRepository    *ln_repo.LinkRepositoryT
+	TagRepository     *tag_repo.TagRepositoryT
 	ContextRepository *ctx_repo.ContextRepositoryT
 
 	AttachmentService *attachment.AttachmentService
@@ -32,6 +35,7 @@ func NewStageService(s *service.CommonService) *StageService {
 		Repository:        repo.NewStageRepository(s.DB),
 		TaskRepository:    repo.NewTaskRepository(s.DB),
 		LinkRepository:    ln_repo.NewLinkRepository(s.DB),
+		TagRepository:     tag_repo.NewTagRepository(s.DB),
 		ContextRepository: ctx_repo.NewContextRepository(s.DB),
 
 		AttachmentService: attachment.NewAttachmentService(s),
@@ -74,10 +78,12 @@ func (c *StageService) Delete(dto *request.StageDto) (interface{}, error) {
 	}
 
 	err = c.Repository.Transaction(func(tx *gorm.DB) error {
+		var tags []*tag_entity.TagEntity
 		var links []*ln_entity.LinkEntity
 		var contexts []*ctx_entity.ContextEntity
 
 		for _, task := range stage.Tasks {
+			tags = append(tags, task.GetTags()...)
 			links = append(links, task.GetLinks()...)
 			contexts = append(contexts, task.GetContexts()...)
 
@@ -90,6 +96,10 @@ func (c *StageService) Delete(dto *request.StageDto) (interface{}, error) {
 		}
 
 		if err := c.LinkRepository.DeleteAll(tx, nil, links); err != nil {
+			return nil
+		}
+
+		if err := c.TagRepository.DeleteAll(tx, nil, tags); err != nil {
 			return nil
 		}
 
@@ -129,7 +139,7 @@ func (c *StageService) UpdateTask(dto *request.TaskDto, body *request.TaskUpdate
 }
 
 func (c *StageService) DeleteTask(dto *request.TaskDto) (interface{}, error) {
-	task, err := c.TaskRepository.ValidateEntityExistence(dto, repo.Attachments, repo.Links, repo.Contexts)
+	task, err := c.TaskRepository.ValidateEntityExistence(dto, repo.Attachments, repo.Links, repo.Contexts, repo.Tags)
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +153,10 @@ func (c *StageService) DeleteTask(dto *request.TaskDto) (interface{}, error) {
 		}
 
 		if err := c.LinkRepository.DeleteAll(tx, nil, task.GetLinks()); err != nil {
+			return nil
+		}
+
+		if err := c.TagRepository.DeleteAll(tx, nil, task.GetTags()); err != nil {
 			return nil
 		}
 

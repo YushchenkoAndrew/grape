@@ -95,6 +95,7 @@ func (c *LinkController) Update(ctx *gin.Context) {
 // @Accept json
 // @Produce application/json
 // @Produce application/xml
+// @Security BearerAuth
 // @Param id path string true "Link id"
 // @Success 204
 // @failure 422 {object} response.Error

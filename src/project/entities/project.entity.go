@@ -6,6 +6,7 @@ import (
 	ln "grape/src/link/entities"
 	t "grape/src/project/types"
 	st "grape/src/statistic/entities"
+	tag "grape/src/tag/entities"
 	org "grape/src/user/entities"
 )
 
@@ -35,6 +36,7 @@ type ProjectEntity struct {
 	// Subscription []Subscription `gorm:"foreignKey:ProjectID" json:"subscription" xml:"subscription"`
 
 	*ln.LinkableEntity
+	*tag.TaggableEntity
 	*att.AttachableEntity
 }
 
@@ -59,6 +61,7 @@ func NewProjectEntity() *ProjectEntity {
 		DeleteableEntity: e.NewDeleteableEntity(),
 
 		LinkableEntity:   ln.NewLinkableEntity(),
+		TaggableEntity:   tag.NewTaggableEntity(),
 		AttachableEntity: att.NewAttachableEntity(),
 	}
 }

@@ -5,6 +5,7 @@ import (
 	e "grape/src/common/entities"
 	ctx "grape/src/context/entities"
 	ln "grape/src/link/entities"
+	tag "grape/src/tag/entities"
 	org "grape/src/user/entities"
 )
 
@@ -25,6 +26,7 @@ type TaskEntity struct {
 	Organization   *org.OrganizationEntity `gorm:"foreignKey:OrganizationID;references:ID" copier:"-"`
 
 	*ln.LinkableEntity
+	*tag.TaggableEntity
 	*att.AttachableEntity
 	*ctx.ContextableEntity
 }
@@ -40,6 +42,7 @@ func NewTaskEntity() *TaskEntity {
 		DeleteableEntity: e.NewDeleteableEntity(),
 
 		LinkableEntity:    ln.NewLinkableEntity(),
+		TaggableEntity:    tag.NewTaggableEntity(),
 		AttachableEntity:  att.NewAttachableEntity(),
 		ContextableEntity: ctx.NewContextableEntity(),
 	}

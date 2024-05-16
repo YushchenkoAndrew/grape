@@ -16,6 +16,7 @@ import (
 	"grape/src/project/types"
 	st_req "grape/src/statistic/dto/request"
 	st_repo "grape/src/statistic/repositories"
+	tag_repo "grape/src/tag/repositories"
 
 	"gorm.io/gorm"
 )
@@ -24,6 +25,7 @@ type ProjectService struct {
 	Repository          *repo.ProjectRepositoryT
 	StatisticRepository *st_repo.StatisticRepositoryT
 	LinkRepository      *ln_repo.LinkRepositoryT
+	TagRepository       *tag_repo.TagRepositoryT
 
 	AttachmentService *attachment.AttachmentService
 
@@ -36,6 +38,7 @@ func NewProjectService(s *service.CommonService) *ProjectService {
 	return &ProjectService{
 		Repository:          repo.NewProjectRepository(s.DB),
 		LinkRepository:      ln_repo.NewLinkRepository(s.DB),
+		TagRepository:       tag_repo.NewTagRepository(s.DB),
 		StatisticRepository: st_repo.NewStatisticRepository(s.DB),
 
 		AttachmentService: attachment.NewAttachmentService(s),
@@ -48,7 +51,7 @@ func NewProjectService(s *service.CommonService) *ProjectService {
 func (c *ProjectService) FindOne(dto *request.ProjectDto) (*response.ProjectDetailedResponseDto, error) {
 	project, err := c.Repository.ValidateEntityExistence(req.NewRequest(dto, &request.ProjectDto{
 		Statuses: []string{t.Active.String()},
-	}), repo.Attachments, repo.Links)
+	}), repo.Attachments, repo.Links, repo.Tags)
 
 	return common.NewResponse[response.ProjectDetailedResponseDto](project), err
 }
@@ -56,7 +59,7 @@ func (c *ProjectService) FindOne(dto *request.ProjectDto) (*response.ProjectDeta
 func (c *ProjectService) FindAll(dto *request.ProjectDto) (*common.PageResponseDto[[]response.ProjectBasicResponseDto], error) {
 	total, projects, err := c.Repository.GetAllPage(req.NewRequest(dto, &request.ProjectDto{
 		Statuses: []string{t.Active.String()},
-	}), repo.Attachments)
+	}), repo.Tags)
 
 	return &common.PageResponseDto[[]response.ProjectBasicResponseDto]{
 		Page:    dto.Page,
@@ -67,13 +70,13 @@ func (c *ProjectService) FindAll(dto *request.ProjectDto) (*common.PageResponseD
 }
 
 func (c *ProjectService) AdminFindOne(dto *request.ProjectDto) (*response.AdminProjectDetailedResponseDto, error) {
-	project, err := c.Repository.ValidateEntityExistence(dto, repo.Owner, repo.Attachments, repo.Statistic, repo.Links)
+	project, err := c.Repository.ValidateEntityExistence(dto, repo.Owner, repo.Attachments, repo.Statistic, repo.Links, repo.Tags)
 
 	return common.NewResponse[response.AdminProjectDetailedResponseDto](project), err
 }
 
 func (c *ProjectService) AdminFindAll(dto *request.ProjectDto) (*common.PageResponseDto[[]response.AdminProjectBasicResponseDto], error) {
-	total, projects, err := c.Repository.GetAllPage(dto, repo.Owner, repo.Attachments, repo.Links, repo.Statistic)
+	total, projects, err := c.Repository.GetAllPage(dto, repo.Owner, repo.Attachments, repo.Links, repo.Statistic, repo.Tags)
 
 	return &common.PageResponseDto[[]response.AdminProjectBasicResponseDto]{
 		Page:    dto.Page,
@@ -124,7 +127,7 @@ func (c *ProjectService) Update(dto *request.ProjectDto, body *request.ProjectUp
 }
 
 func (c *ProjectService) Delete(dto *request.ProjectDto) (interface{}, error) {
-	project, err := c.Repository.ValidateEntityExistence(dto, repo.Attachments, repo.Links)
+	project, err := c.Repository.ValidateEntityExistence(dto, repo.Attachments, repo.Links, repo.Tags)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +141,10 @@ func (c *ProjectService) Delete(dto *request.ProjectDto) (interface{}, error) {
 		}
 
 		if err := c.LinkRepository.DeleteAll(tx, nil, project.GetLinks()); err != nil {
+			return nil
+		}
+
+		if err := c.TagRepository.DeleteAll(tx, nil, project.GetTags()); err != nil {
 			return nil
 		}
 

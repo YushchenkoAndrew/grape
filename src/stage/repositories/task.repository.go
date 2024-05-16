@@ -14,6 +14,7 @@ import (
 type TaskRelation string
 
 const (
+	Tags        TaskRelation = "Tags"
 	Links       TaskRelation = "Links"
 	Contexts    TaskRelation = "Contexts"
 	Attachments TaskRelation = "Attachments"
@@ -59,8 +60,11 @@ func (c *taskRepository) applyFilter(tx *gorm.DB, dto *r.TaskDto, relations []Ta
 func (c *taskRepository) attachRelations(tx *gorm.DB, _ *r.TaskDto, relations []TaskRelation) {
 	for _, r := range relations {
 		switch r {
-		case Attachments, Links:
+		case Attachments, Links, Contexts:
 			tx.Preload(string(r), func(db *gorm.DB) *gorm.DB { return db.Order(fmt.Sprintf("%s.order ASC", string(r))) })
+
+		case Tags:
+			tx.Preload(string(r))
 
 		default:
 			tx.Joins(string(r))

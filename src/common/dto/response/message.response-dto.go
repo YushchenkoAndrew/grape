@@ -17,10 +17,8 @@ func prettier(field validator.FieldError) string {
 		return fmt.Sprintf("'%s' is required", name)
 	case "alpha":
 		return fmt.Sprintf("'%s' must contain only alphabetic characters", name)
-	case "alphanum":
+	case "alphanum", "alphanumunicode":
 		return fmt.Sprintf("'%s' must contain only alphanumeric characters", name)
-	case "alphanumunicode":
-		return fmt.Sprintf("'%s' must contain only alphanumeric Unicode characters", name)
 	case "alphaunicode":
 		return fmt.Sprintf("'%s' must contain only alphabetic Unicode characters", name)
 	case "ascii":
@@ -45,68 +43,42 @@ func prettier(field validator.FieldError) string {
 		return fmt.Sprintf("'%s' must not contain the rune '%s'", name, param)
 	case "lowercase":
 		return fmt.Sprintf("'%s' must be lowercase", name)
+	case "uppercase":
+		return fmt.Sprintf("'%s' must be uppercase", name)
 	case "multibyte":
 		return fmt.Sprintf("'%s' must contain multi-byte characters", name)
-	case "number":
+	case "number", "numeric":
 		return fmt.Sprintf("'%s' must be a valid number", name)
-	case "numeric":
-		return fmt.Sprintf("'%s' must be numeric", name)
 	case "printascii":
 		return fmt.Sprintf("'%s' must contain only printable ASCII characters", name)
 	case "startsnotwith":
 		return fmt.Sprintf("'%s' must not start with '%s'", name, param)
 	case "startswith":
 		return fmt.Sprintf("'%s' must start with '%s'", name, param)
-	case "uppercase":
-		return fmt.Sprintf("'%s' must be uppercase", name)
 	case "min":
 		return fmt.Sprintf("'%s' must be at least '%s' characters long", name, param)
 	case "max":
 		return fmt.Sprintf("'%s' must be at most '%s' characters long", name, param)
 	case "email":
-		return fmt.Sprintf("'%s' must be a valid email address", field)
-	case "eqcsfield":
-		return fmt.Sprintf("'%s' must be equal to '%s'", name, param)
-	case "eqfield":
+		return fmt.Sprintf("'%s' must be a valid email address", name)
+	case "eqcsfield", "eqfield", "eq":
 		return fmt.Sprintf("'%s' must be equal to '%s'", name, param)
 	case "fieldcontains":
 		return fmt.Sprintf("'%s' must contain the indicated characters", name)
 	case "fieldexcludes":
 		return fmt.Sprintf("'%s' must not contain the indicated characters", name)
-	case "gtcsfield":
+	case "gtcsfield", "gtfield", "gt":
 		return fmt.Sprintf("'%s' must be greater than '%s'", name, param)
-	case "gtecsfield":
+	case "gtecsfield", "gtefield", "gte":
 		return fmt.Sprintf("'%s' must be greater than or equal to '%s'", name, param)
-	case "gtefield":
-		return fmt.Sprintf("'%s' must be greater than or equal to '%s'", name, param)
-	case "gtfield":
-		return fmt.Sprintf("'%s' must be greater than '%s'", name, param)
-	case "ltcsfield":
+	case "ltcsfield", "ltfield", "lt":
 		return fmt.Sprintf("'%s' must be less than '%s'", name, param)
-	case "ltecsfield":
+	case "ltecsfield", "ltefield", "lte":
 		return fmt.Sprintf("'%s' must be less than or equal to '%s'", name, param)
-	case "ltefield":
-		return fmt.Sprintf("'%s' must be less than or equal to '%s'", name, param)
-	case "ltfield":
-		return fmt.Sprintf("'%s' must be less than '%s'", name, param)
-	case "necsfield":
+	case "necsfield", "nefield", "ne":
 		return fmt.Sprintf("'%s' must not be equal to '%s'", name, param)
-	case "nefield":
-		return fmt.Sprintf("'%s' must not be equal to '%s'", name, param)
-	case "eq":
-		return fmt.Sprintf("'%s' must be equal to '%s'", name, param)
 	case "eq_ignore_case":
 		return fmt.Sprintf("'%s' must be equal to '%s' (case insensitive)", name, param)
-	case "gt":
-		return fmt.Sprintf("'%s' must be greater than '%s'", name, param)
-	case "gte":
-		return fmt.Sprintf("'%s' must be greater than or equal to '%s'", name, param)
-	case "lt":
-		return fmt.Sprintf("'%s' must be less than '%s'", name, param)
-	case "lte":
-		return fmt.Sprintf("'%s' must be less than or equal to '%s'", name, param)
-	case "ne":
-		return fmt.Sprintf("'%s' must not be equal to '%s'", name, param)
 	case "ne_ignore_case":
 		return fmt.Sprintf("'%s' must not be equal to '%s' (case insensitive)", name, param)
 	case "dir":

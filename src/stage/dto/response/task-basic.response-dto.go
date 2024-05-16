@@ -11,10 +11,11 @@ import (
 type TaskBasicResponseDto struct {
 	r.UuidResponseDto
 
-	Description string `json:"description" xml:"description" example:"Description"`
+	Description string                    `json:"description" xml:"description" example:"Description"`
+	Owner       user.UserBasicResponseDto `json:"owner" xml:"owner"`
 
-	Owner       user.UserBasicResponseDto        `json:"owner" xml:"owner"`
-	Attachments []att.AttachmentBasicResponseDto `json:"attachments" xml:"attachments"`
+	Tags        []r.UuidResponseDto              `json:"tags" xml:"tags"`
 	Links       []ln.LinkBasicResponseDto        `json:"links" xml:"links"`
 	Contexts    []ctx.ContextBasicResponseDto    `json:"contexts" xml:"contexts"`
+	Attachments []att.AttachmentBasicResponseDto `json:"attachments" xml:"attachments"`
 }

@@ -6,6 +6,7 @@ import (
 	"grape/src/auth"
 	"grape/src/common/client"
 	"grape/src/common/config"
+	"grape/src/common/dto/response"
 	"grape/src/common/middleware"
 	m "grape/src/common/module"
 	"grape/src/common/service"
@@ -17,6 +18,8 @@ import (
 	"grape/src/stage"
 	"grape/src/statistic"
 	"grape/src/swagger"
+	"grape/src/tag"
+	"net/http"
 
 	_ "grape/src/common/validator"
 
@@ -57,6 +60,7 @@ func main() {
 		setting.NewSettingModule(rg, []m.ModuleT{}, service),
 		stage.NewStageModule(rg, []m.ModuleT{}, service),
 		context.NewContextModule(rg, []m.ModuleT{}, service),
+		tag.NewTagModule(rg, []m.ModuleT{}, service),
 		// routes.NewBotRouter(rg, db, redis),
 
 		// // routes.NewWorldRouter(rg),
@@ -79,5 +83,7 @@ func main() {
 	}, service)
 
 	module.Init()
+
+	r.NoRoute(func(ctx *gin.Context) { response.ThrowErr(ctx, http.StatusNotFound, "Resource not found") })
 	r.Run(cfg.Server.Address)
 }
