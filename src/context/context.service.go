@@ -97,7 +97,6 @@ func (c *ContextService) CreateField(dto *request.ContextFieldDto, body *request
 		return nil, err
 	}
 
-	fmt.Printf("%v\n", body)
 	body.Context = context
 	field, err := c.ContextFieldRepository.Create(nil, dto, body)
 	return res.NewResponse[res.UuidResponseDto](field), err

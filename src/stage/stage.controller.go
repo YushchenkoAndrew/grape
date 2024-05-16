@@ -241,14 +241,14 @@ func (c *StageController) UpdateOrder(ctx *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Stage id"
 // @Param task_id path string true "Task id"
-// @Param model body req.OrderUpdateDto true "Position body"
+// @Param model body request.TaskUpdateOrderDto true "Position body"
 // @Success 200 {object} response.UuidResponseDto
 // @failure 400 {object} response.Error
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /admin/stages/{id}/tasks/{task_id}/order [put]
 func (c *StageController) UpdateTaskOrder(ctx *gin.Context) {
-	var body req.OrderUpdateDto
+	var body request.TaskUpdateOrderDto
 	if err := ctx.ShouldBind(&body); err != nil {
 		response.BadRequest(ctx, err)
 		return

@@ -151,6 +151,37 @@ func (c *CommonRepository[Entity, Dto, Relations]) DeleteAll(db *gorm.DB, dto Dt
 	}
 
 	return c.connection(db).Transaction(func(tx *gorm.DB) error {
+		if err := c.ShiftOrder(tx, dto, entities); err != nil {
+			return err
+		}
+
+		return c.handler.Delete(tx, dto, entities).Error
+	})
+}
+
+func (c *CommonRepository[Entity, Dto, Relations]) Reorder(db *gorm.DB, entity Entity, position int) error {
+	return c.connection(db).Transaction(func(tx *gorm.DB) error {
+		entities, err := c.handler.Reorder(tx, entity, position)
+		if err != nil || len(entities) == 0 {
+			return err
+		}
+
+		for _, e := range entities {
+			if entity.GetOrder() < position {
+				e.SetOrder(e.GetOrder() - 1)
+			} else {
+				e.SetOrder(e.GetOrder() + 1)
+			}
+		}
+
+		entity.SetOrder(position)
+		res := tx.Model(c.handler.Model()).Save(append(entities, entity))
+		return res.Error
+	})
+}
+
+func (c *CommonRepository[Entity, Dto, Relations]) ShiftOrder(db *gorm.DB, dto Dto, entities []Entity) error {
+	return c.connection(db).Transaction(func(tx *gorm.DB) error {
 		for _, entity := range entities {
 			if entity.GetOrder() == 0 {
 				continue
@@ -171,34 +202,7 @@ func (c *CommonRepository[Entity, Dto, Relations]) DeleteAll(db *gorm.DB, dto Dt
 			}
 		}
 
-		if c.handler.Delete(tx, dto, entities); tx.Error != nil {
-			return tx.Error
-		}
-
 		return nil
-	})
-}
-
-func (c *CommonRepository[Entity, Dto, Relations]) Reorder(db *gorm.DB, entity Entity, position int) error {
-	return c.connection(db).Transaction(func(tx *gorm.DB) error {
-		entities, err := c.handler.Reorder(tx, entity, position)
-		if err != nil || len(entities) == 0 {
-			return err
-		}
-
-		for _, e := range entities {
-			if entity.GetOrder() < position {
-				e.SetOrder(e.GetOrder() - 1)
-			} else {
-				e.SetOrder(e.GetOrder() + 1)
-			}
-		}
-
-		entity.SetOrder(position)
-		entities = append(entities, entity)
-
-		res := tx.Model(c.handler.Model()).Save(entities)
-		return res.Error
 	})
 }
 

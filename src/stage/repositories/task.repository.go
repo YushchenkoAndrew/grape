@@ -102,8 +102,12 @@ func (c *taskRepository) Create(db *gorm.DB, dto *r.TaskDto, body interface{}, e
 
 func (c *taskRepository) Update(db *gorm.DB, dto *r.TaskDto, body interface{}, entity *e.TaskEntity) *gorm.DB {
 	options := body.(*r.TaskUpdateDto)
-	entity.SetStatus(options.Status)
 
+	if options.Stage != nil {
+		entity.StageID = options.Stage.ID
+	}
+
+	entity.SetStatus(options.Status)
 	return db.Model(entity).Updates(entity)
 }
 
@@ -113,17 +117,16 @@ func (c *taskRepository) Delete(db *gorm.DB, dto *r.TaskDto, entity []*e.TaskEnt
 
 func (c *taskRepository) Reorder(db *gorm.DB, entity *e.TaskEntity, position int) ([]*e.TaskEntity, error) {
 	var tasks []*e.TaskEntity
-	// TODO: Think about how to move it to the next stage !!!
-	// db = db.Model(c.Model()).Where(`tasks.organization_id = ?`, entity.OrganizationID)
+	db = db.Model(c.Model()).Where(`tasks.organization_id = ? AND tasks.stage_id = ?`, entity.OrganizationID, entity.StageID)
 
-	// if entity.Order < position {
-	// 	db = db.Where(`projects.order > ?`, entity.Order).Where(`projects.order <= ?`, position)
-	// } else {
-	// 	db = db.Where(`projects.order < ?`, entity.Order).Where(`projects.order >= ?`, position)
-	// }
+	if entity.Order < position {
+		db = db.Where(`tasks.order > ?`, entity.Order).Where(`tasks.order <= ?`, position)
+	} else {
+		db = db.Where(`tasks.order < ?`, entity.Order).Where(`tasks.order >= ?`, position)
+	}
 
-	// res := db.Find(&projects)
-	return tasks, nil
+	res := db.Find(&tasks)
+	return tasks, res.Error
 }
 
 var task_repository *taskRepository

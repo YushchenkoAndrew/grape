@@ -13,6 +13,7 @@ import (
 	ln_repo "grape/src/link/repositories"
 	"grape/src/stage/dto/request"
 	"grape/src/stage/dto/response"
+	"grape/src/stage/entities"
 	repo "grape/src/stage/repositories"
 	tag_entity "grape/src/tag/entities"
 	tag_repo "grape/src/tag/repositories"
@@ -180,12 +181,33 @@ func (c *StageService) UpdateOrder(dto *request.StageDto, body *req.OrderUpdateD
 	return common.NewResponse[common.UuidResponseDto](stage), err
 }
 
-func (c *StageService) UpdateTaskOrder(dto *request.TaskDto, body *req.OrderUpdateDto) (*common.UuidResponseDto, error) {
+func (c *StageService) UpdateTaskOrder(dto *request.TaskDto, body *request.TaskUpdateOrderDto) (*common.UuidResponseDto, error) {
 	task, err := c.TaskRepository.ValidateEntityExistence(dto)
-	if err != nil || task.Order == body.Position {
+	if err != nil || (task.Order == body.Position && len(body.StageID) == 0) {
 		return common.NewResponse[common.UuidResponseDto](task), err
 	}
 
-	err = c.TaskRepository.Reorder(nil, task, body.Position)
+	var stage *entities.StageEntity
+	if len(body.StageID) != 0 {
+
+		if stage, err = c.Repository.ValidateEntityExistence(request.NewStageDto(dto.CurrentUser, &request.StageDto{StageIds: []string{body.StageID}})); err != nil {
+			return nil, err
+		}
+	}
+
+	err = c.TaskRepository.Transaction(func(tx *gorm.DB) error {
+		if stage != nil {
+			if err = c.TaskRepository.ShiftOrder(tx, dto, []*entities.TaskEntity{task}); err != nil {
+				return err
+			}
+
+			if _, err = c.TaskRepository.Update(tx, dto, &request.TaskUpdateDto{Stage: stage}, task); err != nil {
+				return err
+			}
+		}
+
+		return c.TaskRepository.Reorder(tx, task, body.Position)
+	})
+
 	return common.NewResponse[common.UuidResponseDto](task), err
 }

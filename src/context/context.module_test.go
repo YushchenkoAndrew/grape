@@ -144,7 +144,6 @@ func TestContextModule(t *testing.T) {
 
 				require.Nil(t, entity.Value)
 				require.NotNil(t, entity.Options)
-				fmt.Printf("%v\n", entity.Options)
 				require.Equal(t, (*entity.Options)["test"], "FieldCreated")
 			},
 		},

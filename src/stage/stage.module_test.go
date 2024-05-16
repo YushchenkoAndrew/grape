@@ -209,6 +209,112 @@ func TestStageModule(t *testing.T) {
 			},
 		},
 		{
+			name:   "Task update order",
+			method: "PUT",
+			url: func() string {
+				return fmt.Sprintf("/admin/stages/%s/tasks/%s/order", stages[0].Id, stages[0].Tasks[1].Id)
+			},
+			auth:     token,
+			body:     func() interface{} { return req.OrderUpdateDto{Position: stages[0].Tasks[0].Order} },
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res common.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				stage := validate(stages[0].Id)
+				entity, found := lo.Find(stage.Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == stages[0].Tasks[0].Id })
+				entity2, found2 := lo.Find(stage.Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == stages[0].Tasks[1].Id })
+
+				require.Equal(t, found, true)
+				require.Equal(t, found2, true)
+
+				require.Equal(t, entity.Order, stages[0].Tasks[1].Order)
+				require.Equal(t, entity2.Order, stages[0].Tasks[0].Order)
+			},
+		},
+		{
+			name:   "Task update revert order",
+			method: "PUT",
+			url: func() string {
+				return fmt.Sprintf("/admin/stages/%s/tasks/%s/order", stages[0].Id, stages[0].Tasks[1].Id)
+			},
+			auth:     token,
+			body:     func() interface{} { return req.OrderUpdateDto{Position: stages[0].Tasks[1].Order} },
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res common.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				stage := validate(stages[0].Id)
+				entity, found := lo.Find(stage.Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == stages[0].Tasks[0].Id })
+				entity2, found2 := lo.Find(stage.Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == stages[0].Tasks[1].Id })
+
+				require.Equal(t, found, true)
+				require.Equal(t, found2, true)
+
+				require.Equal(t, entity.Order, stages[0].Tasks[0].Order)
+				require.Equal(t, entity2.Order, stages[0].Tasks[1].Order)
+			},
+		},
+		{
+			name:   "Move task to different stage",
+			method: "PUT",
+			url: func() string {
+				return fmt.Sprintf("/admin/stages/%s/tasks/%s/order", stages[0].Id, stages[0].Tasks[0].Id)
+			},
+			auth: token,
+			body: func() interface{} {
+				return request.TaskUpdateOrderDto{OrderUpdateDto: req.OrderUpdateDto{Position: 1}, StageID: stages[1].Id}
+			},
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res common.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				stage := validate(stages[0].Id)
+				stage2 := validate(stages[1].Id)
+
+				entity, found := lo.Find(stage2.Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == stages[0].Tasks[0].Id })
+				entity2, found2 := lo.Find(stage.Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == stages[0].Tasks[1].Id })
+
+				require.Equal(t, found, true)
+				require.Equal(t, found2, true)
+
+				require.Equal(t, entity.Order, 1)
+				require.Equal(t, entity2.Order, stages[0].Tasks[0].Order)
+			},
+		},
+		{
+			name:   "Revert move task to different stage",
+			method: "PUT",
+			url: func() string {
+				return fmt.Sprintf("/admin/stages/%s/tasks/%s/order", stages[1].Id, stages[0].Tasks[0].Id)
+			},
+			auth: token,
+			body: func() interface{} {
+				return request.TaskUpdateOrderDto{OrderUpdateDto: req.OrderUpdateDto{Position: stages[0].Tasks[0].Order}, StageID: stages[0].Id}
+			},
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res common.UuidResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				stage := validate(stages[0].Id)
+				stage2 := validate(stages[1].Id)
+
+				entity, found := lo.Find(stage.Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == stages[0].Tasks[0].Id })
+				entity2, found2 := lo.Find(stage.Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == stages[0].Tasks[1].Id })
+				_, found3 := lo.Find(stage2.Tasks, func(item response.AdminTaskBasicResponseDto) bool { return item.Id == stages[0].Tasks[0].Id })
+
+				require.Equal(t, found, true)
+				require.Equal(t, found2, true)
+				require.Equal(t, found3, false)
+
+				require.Equal(t, entity.Order, stages[0].Tasks[0].Order)
+				require.Equal(t, entity2.Order, stages[0].Tasks[1].Order)
+			},
+		},
+		{
 			name:   "Task update",
 			method: "PUT",
 			url:    func() string { return fmt.Sprintf("/admin/stages/%s/tasks/%s", stages[0].Id, stages[0].Tasks[0].Id) },
