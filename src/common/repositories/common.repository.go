@@ -23,6 +23,8 @@ type CommonEntity interface {
 	Create()
 	Update()
 	TableName() string
+
+	GetID() int64
 	SetOrder(int)
 	GetOrder() int
 }
@@ -151,8 +153,10 @@ func (c *CommonRepository[Entity, Dto, Relations]) DeleteAll(db *gorm.DB, dto Dt
 	}
 
 	return c.connection(db).Transaction(func(tx *gorm.DB) error {
-		if err := c.ShiftOrder(tx, dto, entities); err != nil {
-			return err
+		for _, entity := range entities {
+			if err := c.Reorder(tx, entity, math.MaxInt16); err != nil {
+				return err
+			}
 		}
 
 		return c.handler.Delete(tx, dto, entities).Error
@@ -160,9 +164,14 @@ func (c *CommonRepository[Entity, Dto, Relations]) DeleteAll(db *gorm.DB, dto Dt
 }
 
 func (c *CommonRepository[Entity, Dto, Relations]) Reorder(db *gorm.DB, entity Entity, position int) error {
+	if entity.GetOrder() == 0 {
+		return nil
+	}
+
+	// TODO: Improve this, create custom SQL that updates order by one request
 	return c.connection(db).Transaction(func(tx *gorm.DB) error {
 		entities, err := c.handler.Reorder(tx, entity, position)
-		if err != nil || len(entities) == 0 {
+		if err != nil {
 			return err
 		}
 
@@ -175,29 +184,8 @@ func (c *CommonRepository[Entity, Dto, Relations]) Reorder(db *gorm.DB, entity E
 		}
 
 		entity.SetOrder(position)
-		res := tx.Model(c.handler.Model()).Save(append(entities, entity))
-		return res.Error
-	})
-}
-
-func (c *CommonRepository[Entity, Dto, Relations]) ShiftOrder(db *gorm.DB, dto Dto, entities []Entity) error {
-	return c.connection(db).Transaction(func(tx *gorm.DB) error {
-		for _, entity := range entities {
-			if entity.GetOrder() == 0 {
-				continue
-			}
-
-			reorder, err := c.handler.Reorder(tx, entity, math.MaxInt8)
-			if err != nil {
-				return err
-			}
-
-			if len(reorder) == 0 {
-				continue
-			}
-
-			lo.ForEach(reorder, func(e Entity, _ int) { e.SetOrder(e.GetOrder() - 1) })
-			if res := tx.Table(c.TableName()).Save(reorder); res.Error != nil {
+		for _, entity := range append(entities, entity) {
+			if res := tx.Model(c.handler.Model()).Where("id = ?", entity.GetID()).UpdateColumn("order", entity.GetOrder()); res.Error != nil {
 				return res.Error
 			}
 		}

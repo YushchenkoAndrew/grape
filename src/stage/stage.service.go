@@ -17,6 +17,7 @@ import (
 	repo "grape/src/stage/repositories"
 	tag_entity "grape/src/tag/entities"
 	tag_repo "grape/src/tag/repositories"
+	"math"
 
 	"gorm.io/gorm"
 )
@@ -196,8 +197,8 @@ func (c *StageService) UpdateTaskOrder(dto *request.TaskDto, body *request.TaskU
 	}
 
 	err = c.TaskRepository.Transaction(func(tx *gorm.DB) error {
-		if stage != nil {
-			if err = c.TaskRepository.ShiftOrder(tx, dto, []*entities.TaskEntity{task}); err != nil {
+		if stage != nil && stage.ID != task.StageID {
+			if err = c.TaskRepository.Reorder(tx, task, math.MaxInt16); err != nil {
 				return err
 			}
 
