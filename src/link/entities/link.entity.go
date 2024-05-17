@@ -6,6 +6,7 @@ import (
 
 type LinkEntity struct {
 	*e.UuidEntity
+	*e.DroppableEntity
 
 	Name string `gorm:"not null"`
 	Link string `gorm:"not null"`
@@ -19,5 +20,8 @@ func (*LinkEntity) TableName() string {
 }
 
 func NewLinkEntity() *LinkEntity {
-	return &LinkEntity{UuidEntity: e.NewUuidEntity()}
+	return &LinkEntity{
+		UuidEntity:      e.NewUuidEntity(),
+		DroppableEntity: e.NewDroppableEntity(),
+	}
 }

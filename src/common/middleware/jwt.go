@@ -4,8 +4,8 @@ import (
 	"context"
 	t "grape/src/auth/types"
 	"grape/src/common/dto/response"
+	"grape/src/common/types"
 	e "grape/src/user/entities"
-	"grape/src/user/types"
 	"net/http"
 	"strings"
 

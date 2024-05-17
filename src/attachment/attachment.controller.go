@@ -82,7 +82,7 @@ func (c *AttachmentController) AdminFindOne(ctx *gin.Context) {
 func (c *AttachmentController) Create(ctx *gin.Context) {
 	var body request.AttachmentCreateDto
 	if err := ctx.Bind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -118,7 +118,7 @@ func (c *AttachmentController) Create(ctx *gin.Context) {
 func (c *AttachmentController) Update(ctx *gin.Context) {
 	var body request.AttachmentUpdateDto
 	if err := ctx.Bind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -165,13 +165,13 @@ func (c *AttachmentController) Delete(ctx *gin.Context) {
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /admin/attachments/{id}/order [put]
-func (c *AttachmentController) PutOrder(ctx *gin.Context) {
+func (c *AttachmentController) UpdateOrder(ctx *gin.Context) {
 	var body req.OrderUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
-	res, err := c.service.PutOrder(c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}}), &body)
+	res, err := c.service.UpdateOrder(c.dto(ctx, &request.AttachmentDto{AttachmentIds: []string{ctx.Param("id")}}), &body)
 	response.Handler(ctx, http.StatusOK, res, err)
 }

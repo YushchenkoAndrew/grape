@@ -51,7 +51,19 @@ func (c *linkRepository) sortBy(tx *gorm.DB, dto *r.LinkDto, _ []LinkRelation) {
 }
 
 func (c *linkRepository) Create(db *gorm.DB, dto *r.LinkDto, body interface{}, entity *e.LinkEntity) *gorm.DB {
-	return nil
+	entity = body.(*e.LinkEntity)
+
+	var order int64
+	db.Model(c.Model()).
+		Select(`COALESCE(MAX(links.order), 0) AS "order"`).
+		Where(`links.linkable_id = ? AND links.linkable_type = ?`, entity.LinkableID, entity.LinkableType).
+		Scan(&order)
+
+	if res := db.Create(entity); res.Error != nil {
+		return res
+	}
+
+	return db.Model(c.Model()).Where("links.id = ?", entity.ID).Update("order", int(order)+1)
 }
 
 func (c *linkRepository) Update(db *gorm.DB, dto *r.LinkDto, body interface{}, entity *e.LinkEntity) *gorm.DB {
@@ -62,8 +74,19 @@ func (c *linkRepository) Delete(db *gorm.DB, dto *r.LinkDto, entity []*e.LinkEnt
 	return db.Model(c.Model()).Delete(entity)
 }
 
-func (c *linkRepository) Reorder(db *gorm.DB, entity *e.LinkEntity, position int) error {
-	return nil
+func (c *linkRepository) Reorder(db *gorm.DB, entity *e.LinkEntity, position int) ([]*e.LinkEntity, error) {
+	var links []*e.LinkEntity
+	db = db.Model(c.Model()).
+		Where(`links.linkable_id = ? AND links.linkable_type = ?`, entity.LinkableID, entity.LinkableType)
+
+	if entity.Order < position {
+		db = db.Where(`links.order > ?`, entity.Order).Where(`links.order <= ?`, position)
+	} else {
+		db = db.Where(`links.order < ?`, entity.Order).Where(`links.order >= ?`, position)
+	}
+
+	res := db.Find(&links)
+	return links, res.Error
 }
 
 var repository *linkRepository

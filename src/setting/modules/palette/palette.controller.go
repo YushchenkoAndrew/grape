@@ -38,7 +38,7 @@ func (c *PaletteController) FindAll(ctx *gin.Context) {
 	dto := c.dto(ctx)
 
 	if err := ctx.ShouldBindQuery(&dto); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -80,7 +80,7 @@ func (c *PaletteController) FindOne(ctx *gin.Context) {
 func (c *PaletteController) Create(ctx *gin.Context) {
 	var body request.PaletteCreateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -104,7 +104,7 @@ func (c *PaletteController) Create(ctx *gin.Context) {
 func (c *PaletteController) Update(ctx *gin.Context) {
 	var body request.PaletteCreateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 

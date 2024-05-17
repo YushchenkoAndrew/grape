@@ -3,8 +3,8 @@ package repositories
 import (
 	"fmt"
 	"grape/src/common/repositories"
+	t "grape/src/common/types"
 	r "grape/src/project/dto/request"
-	"grape/src/project/entities"
 	e "grape/src/project/entities"
 	"grape/src/project/types"
 	st "grape/src/statistic/entities"
@@ -21,6 +21,7 @@ const (
 	Attachments  ProjectRelation = "Attachments"
 	Redirect     ProjectRelation = "Redirect"
 	Links        ProjectRelation = "Links"
+	Tags         ProjectRelation = "Tags"
 	Owner        ProjectRelation = "Owner"
 	Statistic    ProjectRelation = "Statistic"
 )
@@ -50,12 +51,16 @@ func (c *projectRepository) applyFilter(tx *gorm.DB, dto *r.ProjectDto, relation
 	}
 
 	if len(dto.Query) != 0 {
-		tx.Where(`projects.name ILIKE ?`, "%"+dto.Query+"%")
+		query := "%" + dto.Query + "%"
+		tx.Where(
+			tx.Session(&gorm.Session{NewDB: true}).Where(`projects.name ILIKE ?`, query).
+				Or(`(SELECT COUNT(t.id) FROM tags t WHERE t.taggable_id = projects.id AND t.taggable_type = ? AND t.name ILIKE ?) > 0`, c.Model().TableName(), query),
+		)
 	}
 
 	if len(dto.Statuses) != 0 {
-		tx.Where(`projects.status IN ?`, lo.Map(dto.Statuses, func(str string, _ int) types.ProjectStatusEnum {
-			return types.Active.Value(str)
+		tx.Where(`projects.status IN ?`, lo.Map(dto.Statuses, func(str string, _ int) t.StatusEnum {
+			return t.Active.Value(str)
 		}))
 	}
 
@@ -77,10 +82,10 @@ func (c *projectRepository) attachRelations(tx *gorm.DB, _ *r.ProjectDto, relati
 		case Redirect:
 			tx.Preload(string(r), "name ILIKE ?", "redirect")
 
-		case Attachments:
+		case Attachments, Links:
 			tx.Preload(string(r), func(db *gorm.DB) *gorm.DB { return db.Order(fmt.Sprintf("%s.order ASC", string(r))) })
 
-		case Links:
+		case Tags:
 			tx.Preload(string(r))
 
 		default:
@@ -106,7 +111,7 @@ func (c *projectRepository) sortBy(tx *gorm.DB, dto *r.ProjectDto, _ []ProjectRe
 func (c *projectRepository) Create(db *gorm.DB, dto *r.ProjectDto, body interface{}, entity *e.ProjectEntity) *gorm.DB {
 	var order int64
 	dto.SortBy = ""
-	c.Build(db, dto).Select(`MAX(projects.order) AS "order"`).Scan(&order)
+	c.Build(db, dto).Select(`COALESCE(MAX(projects.order), 0) AS "order"`).Scan(&order)
 
 	entity.Order = int(order) + 1
 	entity.Owner = dto.CurrentUser
@@ -127,33 +132,10 @@ func (c *projectRepository) Update(db *gorm.DB, dto *r.ProjectDto, body interfac
 }
 
 func (c *projectRepository) Delete(db *gorm.DB, dto *r.ProjectDto, entity []*e.ProjectEntity) *gorm.DB {
-	// TODO: Add transaction with recursive delete related entities
-
-	for _, project := range entity {
-		var projects []*e.ProjectEntity
-		res := db.Model(c.Model()).
-			Where(`projects.organization_id = ?`, project.OrganizationID).
-			Where(`projects.order > ?`, project.Order).
-			Find(&projects)
-
-		if res.Error != nil {
-			return res
-		}
-
-		if len(projects) == 0 {
-			continue
-		}
-
-		lo.ForEach(projects, func(e *entities.ProjectEntity, _ int) { e.Order -= 1 })
-		if res := db.Model(c.Model()).Save(projects); res.Error != nil {
-			return res
-		}
-	}
-
 	return db.Model(c.Model()).Delete(entity)
 }
 
-func (c *projectRepository) Reorder(db *gorm.DB, entity *e.ProjectEntity, position int) error {
+func (c *projectRepository) Reorder(db *gorm.DB, entity *e.ProjectEntity, position int) ([]*e.ProjectEntity, error) {
 	var projects []*e.ProjectEntity
 	db = db.Model(c.Model()).Where(`projects.organization_id = ?`, entity.OrganizationID)
 
@@ -163,23 +145,8 @@ func (c *projectRepository) Reorder(db *gorm.DB, entity *e.ProjectEntity, positi
 		db = db.Where(`projects.order < ?`, entity.Order).Where(`projects.order >= ?`, position)
 	}
 
-	if res := db.Find(&projects); res.Error != nil || len(projects) == 0 {
-		return res.Error
-	}
-
-	for _, e := range projects {
-		if entity.Order < position {
-			e.Order -= 1
-		} else {
-			e.Order += 1
-		}
-	}
-
-	entity.Order = position
-	projects = append(projects, entity)
-
-	res := db.Model(c.Model()).Save(projects)
-	return res.Error
+	res := db.Find(&projects)
+	return projects, res.Error
 }
 
 var repository *projectRepository

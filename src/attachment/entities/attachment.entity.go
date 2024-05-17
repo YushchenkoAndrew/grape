@@ -8,13 +8,13 @@ import (
 
 type AttachmentEntity struct {
 	*e.UuidEntity
+	*e.DroppableEntity
 
 	Name    string `gorm:"not null"`
 	Home    string `gorm:"not null;default:'/'"`
 	Path    string `gorm:"not null;default:'/'"`
 	Type    string `gorm:"not null"`
 	Size    int64  `gorm:"not null"`
-	Order   int    `gorm:"not null;default:0" copier:"-"`
 	Preview bool   `gorm:"not null"`
 
 	AttachableID   int64  `gorm:"not null"`
@@ -38,5 +38,8 @@ func (c *AttachmentEntity) GetFile() string {
 }
 
 func NewAttachmentEntity() *AttachmentEntity {
-	return &AttachmentEntity{UuidEntity: e.NewUuidEntity()}
+	return &AttachmentEntity{
+		UuidEntity:      e.NewUuidEntity(),
+		DroppableEntity: e.NewDroppableEntity(),
+	}
 }

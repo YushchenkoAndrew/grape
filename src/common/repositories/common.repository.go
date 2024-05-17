@@ -3,10 +3,12 @@ package repositories
 import (
 	"fmt"
 	"grape/src/common/types"
+	"math"
 	"reflect"
 
 	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
+	"github.com/samber/lo"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -14,13 +16,17 @@ import (
 type CommonDtoT interface {
 	Offset() int
 	Limit() int
-	UUID() string
+	GetIds() []string
 }
 
 type CommonEntity interface {
 	Create()
 	Update()
 	TableName() string
+
+	GetID() int64
+	SetOrder(int)
+	GetOrder() int
 }
 
 type CommonRepositoryT[Dto CommonDtoT, Entity CommonEntity, Relations any] interface {
@@ -30,7 +36,7 @@ type CommonRepositoryT[Dto CommonDtoT, Entity CommonEntity, Relations any] inter
 	Create(*gorm.DB, Dto, interface{}, Entity) *gorm.DB
 	Update(*gorm.DB, Dto, interface{}, Entity) *gorm.DB
 	Delete(*gorm.DB, Dto, []Entity) *gorm.DB
-	Reorder(*gorm.DB, Entity, int) error
+	Reorder(*gorm.DB, Entity, int) ([]Entity, error)
 }
 
 type CommonRepository[Entity CommonEntity, Dto CommonDtoT, Relations any] struct {
@@ -100,7 +106,8 @@ func (c *CommonRepository[Entity, Dto, Relations]) GetAllPage(dto Dto, relations
 }
 
 func (c *CommonRepository[Entity, Dto, Relations]) ValidateEntityExistence(dto Dto, relations ...Relations) (Entity, error) {
-	if uuid.Validate(dto.UUID()) != nil {
+	valid := lo.Filter(dto.GetIds(), func(e string, _ int) bool { return uuid.Validate(e) == nil })
+	if len(dto.GetIds()) == 0 || len(valid) != len(dto.GetIds()) {
 		var e Entity
 		return e, fmt.Errorf("%s id is invalid", c.TableName())
 	}
@@ -118,32 +125,26 @@ func (c *CommonRepository[Entity, Dto, Relations]) Create(db *gorm.DB, dto Dto, 
 	copier.Copy(&entity, body)
 	entity.Create()
 
-	if tx := c.handler.Create(c.connection(db), dto, body, entity); tx.Error != nil {
-		var e Entity
-		return e, tx.Error
-	}
+	err := c.connection(db).Transaction(func(tx *gorm.DB) error {
+		return c.handler.Create(tx, dto, body, entity).Error
+	})
 
-	return entity, nil
+	return entity, err
 }
 
 func (c *CommonRepository[Entity, Dto, Relations]) Update(db *gorm.DB, dto Dto, body interface{}, entity Entity) (Entity, error) {
 	copier.CopyWithOption(&entity, body, copier.Option{IgnoreEmpty: true})
 	entity.Update()
 
-	if tx := c.handler.Update(c.connection(db), dto, body, entity); tx.Error != nil {
-		var e Entity
-		return e, tx.Error
-	}
+	err := c.connection(db).Transaction(func(tx *gorm.DB) error {
+		return c.handler.Update(tx, dto, body, entity).Error
+	})
 
-	return entity, nil
+	return entity, err
 }
 
 func (c *CommonRepository[Entity, Dto, Relations]) Delete(db *gorm.DB, dto Dto, entity Entity) error {
-	if tx := c.handler.Delete(c.connection(db), dto, []Entity{entity}); tx.Error != nil {
-		return tx.Error
-	}
-
-	return nil
+	return c.DeleteAll(c.connection(db), dto, []Entity{entity})
 }
 
 func (c *CommonRepository[Entity, Dto, Relations]) DeleteAll(db *gorm.DB, dto Dto, entities []Entity) error {
@@ -151,19 +152,46 @@ func (c *CommonRepository[Entity, Dto, Relations]) DeleteAll(db *gorm.DB, dto Dt
 		return nil
 	}
 
-	if tx := c.handler.Delete(c.connection(db), dto, entities); tx.Error != nil {
-		return tx.Error
-	}
+	return c.connection(db).Transaction(func(tx *gorm.DB) error {
+		for _, entity := range entities {
+			if err := c.Reorder(tx, entity, math.MaxInt16); err != nil {
+				return err
+			}
+		}
 
-	return nil
+		return c.handler.Delete(tx, dto, entities).Error
+	})
 }
 
 func (c *CommonRepository[Entity, Dto, Relations]) Reorder(db *gorm.DB, entity Entity, position int) error {
-	if err := c.handler.Reorder(c.connection(db), entity, position); err != nil {
-		return err
+	if entity.GetOrder() == 0 {
+		return nil
 	}
 
-	return nil
+	// TODO: Improve this, create custom SQL that updates order by one request
+	return c.connection(db).Transaction(func(tx *gorm.DB) error {
+		entities, err := c.handler.Reorder(tx, entity, position)
+		if err != nil {
+			return err
+		}
+
+		for _, e := range entities {
+			if entity.GetOrder() < position {
+				e.SetOrder(e.GetOrder() - 1)
+			} else {
+				e.SetOrder(e.GetOrder() + 1)
+			}
+		}
+
+		entity.SetOrder(position)
+		for _, entity := range append(entities, entity) {
+			if res := tx.Model(c.handler.Model()).Where("id = ?", entity.GetID()).UpdateColumn("order", entity.GetOrder()); res.Error != nil {
+				return res.Error
+			}
+		}
+
+		return nil
+	})
 }
 
 func NewSortBy(alias, column string, direction string) clause.OrderByColumn {

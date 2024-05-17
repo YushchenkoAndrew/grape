@@ -22,11 +22,15 @@ type PageResponseDto[T any] struct {
 func Build(ctx *gin.Context, status int, c interface{}) {
 	defer ctx.Abort()
 
+	ctx.Writer.Header().Set("X-Powered-By", "gin-gonic")
+
 	switch ctx.GetHeader("Accept") {
 	case "application/xml":
+		ctx.Writer.Header().Set("Content-Type", "application/xml; charset=utf-8")
 		ctx.XML(status, c)
 
 	default:
+		ctx.Writer.Header().Set("Content-Type", "application/json; charset=utf-8")
 		ctx.JSON(status, c)
 	}
 }
@@ -42,7 +46,8 @@ func Handler[T any](ctx *gin.Context, status int, res T, err error) {
 
 func NewResponse[Response any, Entity any](entity *Entity) *Response {
 	var res Response
-	copier.CopyWithOption(&res, &entity, copier.Option{DeepCopy: true})
+	// copier.CopyWithOption(&res, &entity, copier.Option{DeepCopy: true})
+	copier.Copy(&res, entity)
 	return &res
 }
 

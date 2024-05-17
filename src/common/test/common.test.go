@@ -12,6 +12,7 @@ import (
 	"grape/src/common/middleware"
 	"grape/src/common/service"
 	pr "grape/src/project/dto/response"
+	st "grape/src/stage/dto/response"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -84,4 +85,23 @@ func GetProject(t *testing.T, router *gin.Engine, cfg *config.Config, token stri
 	var project *pr.AdminProjectDetailedResponseDto
 	json.Unmarshal(w.Body.Bytes(), &project)
 	return project
+}
+
+func GetTask(t *testing.T, router *gin.Engine, cfg *config.Config, token string) *st.AdminTaskBasicResponseDto {
+	req, _ := http.NewRequest("GET", cfg.Server.Prefix+"/admin/stages", nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var stages []st.AdminStageBasicResponseDto
+	json.Unmarshal(w.Body.Bytes(), &stages)
+
+	require.Greater(t, len(stages), 0)
+	require.Greater(t, len(stages[0].Tasks), 0)
+	require.NotEmpty(t, stages[0].Tasks[0].Id)
+
+	return &stages[0].Tasks[0]
 }

@@ -11,8 +11,8 @@ type LinkDto struct {
 	LinkIds []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 }
 
-func (c *LinkDto) UUID() string {
-	return c.LinkIds[0]
+func (c *LinkDto) GetIds() []string {
+	return c.LinkIds
 }
 
 func NewLinkDto(user *entities.UserEntity, init ...*LinkDto) *LinkDto {

@@ -9,9 +9,9 @@ import (
 	"grape/src/common/config"
 	common "grape/src/common/dto/response"
 	"grape/src/common/service"
+	"grape/src/common/types"
 	u "grape/src/user/dto/response"
 	e "grape/src/user/entities"
-	"grape/src/user/types"
 	"time"
 
 	"github.com/go-redis/redis/v8"

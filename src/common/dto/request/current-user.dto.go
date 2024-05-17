@@ -18,8 +18,8 @@ func (*CurrentUserDto) Limit() int {
 	return 0
 }
 
-func (*CurrentUserDto) UUID() string {
-	return ""
+func (*CurrentUserDto) GetIds() []string {
+	return []string{}
 }
 
 func NewCurrentUserDto(user *entities.UserEntity) *CurrentUserDto {

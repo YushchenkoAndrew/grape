@@ -14,6 +14,9 @@ import (
 	"grape/src/common/service"
 	"grape/src/common/test"
 	"grape/src/project"
+	pr "grape/src/project/dto/response"
+	"grape/src/stage"
+	st "grape/src/stage/dto/response"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -23,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,6 +40,7 @@ func init() {
 		func(route *gin.RouterGroup, modules []m.ModuleT, s *service.CommonService) m.ModuleT {
 			return src.NewIndexModule(route, []m.ModuleT{
 				auth.NewAuthModule(route, []m.ModuleT{}, s),
+				stage.NewStageModule(route, []m.ModuleT{}, s),
 				project.NewProjectModule(route, []m.ModuleT{}, s),
 				attachment.NewAttachmentModule(route, []m.ModuleT{}, s),
 			}, s)
@@ -45,6 +50,8 @@ func init() {
 
 func TestAttachmentModule(t *testing.T) {
 	token, _ := test.GetToken(t, router, cfg, db)
+	project := test.GetProject(t, router, cfg, token)
+	task := test.GetTask(t, router, cfg, token)
 
 	validate := func(id string, body interface{}) {
 		require.NotEmpty(t, id)
@@ -93,7 +100,7 @@ func TestAttachmentModule(t *testing.T) {
 				writer := multipart.NewWriter(body)
 
 				writer.WriteField("path", "/test/")
-				writer.WriteField("attachable_id", test.GetProject(t, router, cfg, token).Id)
+				writer.WriteField("attachable_id", project.Id)
 				writer.WriteField("attachable_type", "projects")
 
 				part, _ := writer.CreateFormFile("file", filepath.Base(file.Name()))
@@ -129,7 +136,7 @@ func TestAttachmentModule(t *testing.T) {
 				writer := multipart.NewWriter(body)
 
 				writer.WriteField("path", "/test2/")
-				writer.WriteField("attachable_id", test.GetProject(t, router, cfg, token).Id)
+				writer.WriteField("attachable_id", project.Id)
 				writer.WriteField("attachable_type", "projects")
 
 				part, _ := writer.CreateFormFile("file", filepath.Base(file.Name()))
@@ -151,6 +158,42 @@ func TestAttachmentModule(t *testing.T) {
 				attachments = append(attachments, entity)
 				require.Equal(t, "/test2/", res.Path)
 				require.Greater(t, entity.Order, attachments[0].Order)
+			},
+		},
+		{
+			name:   "Attachment create",
+			method: "POST",
+			url:    func() string { return "/admin/attachments" },
+			auth:   token,
+			body: func() *bytes.Buffer {
+				file, _ := os.Open(config.GetConfigFile())
+				defer file.Close()
+
+				body := &bytes.Buffer{}
+				writer := multipart.NewWriter(body)
+
+				writer.WriteField("path", "/test2/")
+				writer.WriteField("attachable_id", task.Id)
+				writer.WriteField("attachable_type", "tasks")
+
+				part, _ := writer.CreateFormFile("file", filepath.Base(file.Name()))
+				io.Copy(part, file)
+				writer.Close()
+
+				content = writer.FormDataContentType()
+				return body
+			},
+			expected: http.StatusCreated,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res response.AttachmentAdvancedResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				var entity response.AttachmentAdvancedResponseDto
+				validate(res.Id, &entity)
+				validate(res.Id, nil)
+
+				attachments = append(attachments, entity)
+				require.Equal(t, "/test2/", res.Path)
 			},
 		},
 		{
@@ -255,6 +298,48 @@ func TestAttachmentModule(t *testing.T) {
 			},
 		},
 		{
+			name:     "Validate that attachment is attached to project",
+			method:   "GET",
+			url:      func() string { return fmt.Sprintf("/admin/projects/%s", project.Id) },
+			auth:     token,
+			body:     func() *bytes.Buffer { return &bytes.Buffer{} },
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var res pr.AdminProjectDetailedResponseDto
+				json.Unmarshal(w.Body.Bytes(), &res)
+
+				require.Len(t, res.Attachments, len(project.Attachments)+2)
+				require.Contains(t, lo.Map(res.Attachments, func(item response.AttachmentAdvancedResponseDto, _ int) string { return item.Id }), attachments[0].Id)
+				require.Contains(t, lo.Map(res.Attachments, func(item response.AttachmentAdvancedResponseDto, _ int) string { return item.Id }), attachments[1].Id)
+			},
+		},
+		{
+			name:     "Validate that attachment is attached to task",
+			method:   "GET",
+			url:      func() string { return "/admin/stages" },
+			auth:     token,
+			body:     func() *bytes.Buffer { return &bytes.Buffer{} },
+			expected: http.StatusOK,
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var stages []st.AdminStageBasicResponseDto
+				json.Unmarshal(w.Body.Bytes(), &stages)
+				require.Greater(t, len(stages), 0)
+
+				_, found := lo.Find(stages, func(stage st.AdminStageBasicResponseDto) bool {
+					e, found := lo.Find(stage.Tasks, func(e st.AdminTaskBasicResponseDto) bool { return e.Id == task.Id })
+					if !found {
+						return false
+					}
+
+					require.Len(t, e.Attachments, len(task.Attachments)+1)
+					require.Contains(t, lo.Map(e.Attachments, func(item response.AttachmentAdvancedResponseDto, _ int) string { return item.Id }), attachments[2].Id)
+					return true
+				})
+
+				require.Equal(t, found, true)
+			},
+		},
+		{
 			name:     "Attachment get",
 			method:   "GET",
 			url:      func() string { return fmt.Sprintf("/attachments/%s", attachments[0].Id) },
@@ -281,6 +366,15 @@ func TestAttachmentModule(t *testing.T) {
 			name:     "Attachment delete",
 			method:   "DELETE",
 			url:      func() string { return fmt.Sprintf("/admin/attachments/%s", attachments[1].Id) },
+			auth:     token,
+			expected: http.StatusNoContent,
+			body:     func() *bytes.Buffer { return &bytes.Buffer{} },
+			validate: func(t *testing.T, w *httptest.ResponseRecorder) {},
+		},
+		{
+			name:     "Attachment delete",
+			method:   "DELETE",
+			url:      func() string { return fmt.Sprintf("/admin/attachments/%s", attachments[2].Id) },
 			auth:     token,
 			expected: http.StatusNoContent,
 			body:     func() *bytes.Buffer { return &bytes.Buffer{} },

@@ -1,10 +1,12 @@
 package project
 
 import (
-	att "grape/src/attachment"
+	"grape/src/attachment"
+	att_req "grape/src/attachment/dto/request"
 	req "grape/src/common/dto/request"
 	common "grape/src/common/dto/response"
 	"grape/src/common/service"
+	t "grape/src/common/types"
 	ln_entity "grape/src/link/entities"
 	ln_repo "grape/src/link/repositories"
 	"grape/src/project/dto/request"
@@ -12,8 +14,9 @@ import (
 	"grape/src/project/entities"
 	repo "grape/src/project/repositories"
 	"grape/src/project/types"
-	statistic "grape/src/statistic/dto/request"
+	st_req "grape/src/statistic/dto/request"
 	st_repo "grape/src/statistic/repositories"
+	tag_repo "grape/src/tag/repositories"
 
 	"gorm.io/gorm"
 )
@@ -21,13 +24,11 @@ import (
 type ProjectService struct {
 	Repository          *repo.ProjectRepositoryT
 	StatisticRepository *st_repo.StatisticRepositoryT
+	LinkRepository      *ln_repo.LinkRepositoryT
+	TagRepository       *tag_repo.TagRepositoryT
 
-	LinkRepository    *ln_repo.LinkRepositoryT
-	AttachmentService *att.AttachmentService
+	AttachmentService *attachment.AttachmentService
 
-	// Link         i.Default[m.Link, m.LinkQueryDto]
-	// File         i.Default[m.File, m.FileQueryDto]
-	// Project      i.Default[m.Project, m.ProjectQueryDto]
 	// Cron         *CronService
 	// Subscription i.Default[m.Subscription, m.SubscribeQueryDto]
 	// Metrics      i.Default[m.Metrics, m.MetricsQueryDto]
@@ -37,12 +38,10 @@ func NewProjectService(s *service.CommonService) *ProjectService {
 	return &ProjectService{
 		Repository:          repo.NewProjectRepository(s.DB),
 		LinkRepository:      ln_repo.NewLinkRepository(s.DB),
+		TagRepository:       tag_repo.NewTagRepository(s.DB),
 		StatisticRepository: st_repo.NewStatisticRepository(s.DB),
 
-		AttachmentService: att.NewAttachmentService(s),
-		// Link:         NewLinkService(db, client),
-		// File:         NewFileService(db, client),
-		// Project:      NewProjectService(db, client),
+		AttachmentService: attachment.NewAttachmentService(s),
 		// Cron:         NewCronService(),
 		// Subscription: NewSubscriptionService(db, client),
 		// Metrics:      pods.NewMetricsService(db, client),
@@ -51,16 +50,16 @@ func NewProjectService(s *service.CommonService) *ProjectService {
 
 func (c *ProjectService) FindOne(dto *request.ProjectDto) (*response.ProjectDetailedResponseDto, error) {
 	project, err := c.Repository.ValidateEntityExistence(req.NewRequest(dto, &request.ProjectDto{
-		Statuses: []string{types.Active.String()},
-	}), repo.Attachments, repo.Links)
+		Statuses: []string{t.Active.String()},
+	}), repo.Attachments, repo.Links, repo.Tags)
 
 	return common.NewResponse[response.ProjectDetailedResponseDto](project), err
 }
 
 func (c *ProjectService) FindAll(dto *request.ProjectDto) (*common.PageResponseDto[[]response.ProjectBasicResponseDto], error) {
 	total, projects, err := c.Repository.GetAllPage(req.NewRequest(dto, &request.ProjectDto{
-		Statuses: []string{types.Active.String()},
-	}), repo.Attachments)
+		Statuses: []string{t.Active.String()},
+	}), repo.Tags)
 
 	return &common.PageResponseDto[[]response.ProjectBasicResponseDto]{
 		Page:    dto.Page,
@@ -71,13 +70,13 @@ func (c *ProjectService) FindAll(dto *request.ProjectDto) (*common.PageResponseD
 }
 
 func (c *ProjectService) AdminFindOne(dto *request.ProjectDto) (*response.AdminProjectDetailedResponseDto, error) {
-	project, err := c.Repository.ValidateEntityExistence(dto, repo.Owner, repo.Attachments, repo.Statistic, repo.Links)
+	project, err := c.Repository.ValidateEntityExistence(dto, repo.Owner, repo.Attachments, repo.Statistic, repo.Links, repo.Tags)
 
 	return common.NewResponse[response.AdminProjectDetailedResponseDto](project), err
 }
 
 func (c *ProjectService) AdminFindAll(dto *request.ProjectDto) (*common.PageResponseDto[[]response.AdminProjectBasicResponseDto], error) {
-	total, projects, err := c.Repository.GetAllPage(dto, repo.Owner, repo.Attachments, repo.Links, repo.Statistic)
+	total, projects, err := c.Repository.GetAllPage(dto, repo.Owner, repo.Attachments, repo.Links, repo.Statistic, repo.Tags)
 
 	return &common.PageResponseDto[[]response.AdminProjectBasicResponseDto]{
 		Page:    dto.Page,
@@ -128,23 +127,24 @@ func (c *ProjectService) Update(dto *request.ProjectDto, body *request.ProjectUp
 }
 
 func (c *ProjectService) Delete(dto *request.ProjectDto) (interface{}, error) {
-	project, err := c.Repository.ValidateEntityExistence(dto, repo.Attachments, repo.Links)
+	project, err := c.Repository.ValidateEntityExistence(dto, repo.Attachments, repo.Links, repo.Tags)
 	if err != nil {
 		return nil, err
 	}
 
 	err = c.Repository.Transaction(func(tx *gorm.DB) error {
-		if len(project.Attachments) != 0 {
-			if _, err := c.AttachmentService.VoidService.Delete(project.GetPath()); err != nil {
-				return err
+		for _, e := range project.Attachments {
+			dto := att_req.NewAttachmentDto(dto.CurrentUser, &att_req.AttachmentDto{AttachmentIds: []string{e.UUID}})
+			if _, err := c.AttachmentService.Delete(dto); err != nil {
+				return nil
 			}
 		}
 
-		if err := c.AttachmentService.Repository.DeleteAll(tx, nil, project.GetAttachments()); err != nil {
+		if err := c.LinkRepository.DeleteAll(tx, nil, project.GetLinks()); err != nil {
 			return nil
 		}
 
-		if err := c.LinkRepository.DeleteAll(tx, nil, project.GetLinks()); err != nil {
+		if err := c.TagRepository.DeleteAll(tx, nil, project.GetTags()); err != nil {
 			return nil
 		}
 
@@ -154,7 +154,7 @@ func (c *ProjectService) Delete(dto *request.ProjectDto) (interface{}, error) {
 	return nil, err
 }
 
-func (c *ProjectService) UpdateProjectStatistics(dto *request.ProjectDto, body *statistic.StatisticUpdateDto) (interface{}, error) {
+func (c *ProjectService) UpdateProjectStatistics(dto *request.ProjectDto, body *st_req.StatisticUpdateDto) (interface{}, error) {
 	project, err := c.Repository.ValidateEntityExistence(dto, repo.Statistic)
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func (c *ProjectService) UpdateProjectStatistics(dto *request.ProjectDto, body *
 	return nil, err
 }
 
-func (c *ProjectService) PutOrder(dto *request.ProjectDto, body *req.OrderUpdateDto) (*common.UuidResponseDto, error) {
+func (c *ProjectService) UpdateOrder(dto *request.ProjectDto, body *req.OrderUpdateDto) (*common.UuidResponseDto, error) {
 	project, err := c.Repository.ValidateEntityExistence(dto)
 	if err != nil || project.Order == body.Position {
 		return common.NewResponse[common.UuidResponseDto](project), err

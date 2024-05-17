@@ -11,8 +11,8 @@ type PaletteDto struct {
 	PaletteIds []string `form:"-" json:"-" xml:"-" swaggerignore:"true"`
 }
 
-func (c *PaletteDto) UUID() string {
-	return c.PaletteIds[0]
+func (c *PaletteDto) GetIds() []string {
+	return c.PaletteIds
 }
 
 func NewPaletteDto(user *entities.UserEntity, init ...*PaletteDto) *PaletteDto {

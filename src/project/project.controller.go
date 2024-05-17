@@ -38,7 +38,7 @@ func (c *ProjectController) FindAll(ctx *gin.Context) {
 	dto := c.dto(ctx)
 
 	if err := ctx.ShouldBindQuery(&dto); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -79,7 +79,7 @@ func (c *ProjectController) AdminFindAll(ctx *gin.Context) {
 	dto := c.dto(ctx)
 
 	if err := ctx.ShouldBindQuery(&dto); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -121,7 +121,7 @@ func (c *ProjectController) AdminFindOne(ctx *gin.Context) {
 func (c *ProjectController) Create(ctx *gin.Context) {
 	var body request.ProjectCreateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -145,7 +145,7 @@ func (c *ProjectController) Create(ctx *gin.Context) {
 func (c *ProjectController) Update(ctx *gin.Context) {
 	var body request.ProjectUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -187,7 +187,7 @@ func (c *ProjectController) Delete(ctx *gin.Context) {
 func (c *ProjectController) UpdateProjectStatistics(ctx *gin.Context) {
 	var body statistic.StatisticUpdateDto
 	if err := ctx.Bind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
@@ -209,13 +209,13 @@ func (c *ProjectController) UpdateProjectStatistics(ctx *gin.Context) {
 // @failure 401 {object} response.Error
 // @failure 422 {object} response.Error
 // @Router /admin/projects/{id}/order [put]
-func (c *ProjectController) PutOrder(ctx *gin.Context) {
+func (c *ProjectController) UpdateOrder(ctx *gin.Context) {
 	var body req.OrderUpdateDto
 	if err := ctx.ShouldBind(&body); err != nil {
-		response.ThrowErr(ctx, http.StatusBadRequest, err.Error())
+		response.BadRequest(ctx, err)
 		return
 	}
 
-	res, err := c.service.PutOrder(c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}), &body)
+	res, err := c.service.UpdateOrder(c.dto(ctx, &request.ProjectDto{ProjectIds: []string{ctx.Param("id")}}), &body)
 	response.Handler(ctx, http.StatusOK, res, err)
 }

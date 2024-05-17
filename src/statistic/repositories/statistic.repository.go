@@ -77,8 +77,8 @@ func (c *statisticRepository) Delete(db *gorm.DB, dto *r.StatisticDto, entity []
 	return nil
 }
 
-func (c *statisticRepository) Reorder(db *gorm.DB, entity *e.StatisticEntity, position int) error {
-	return nil
+func (c *statisticRepository) Reorder(db *gorm.DB, entity *e.StatisticEntity, position int) ([]*e.StatisticEntity, error) {
+	return []*e.StatisticEntity{}, nil
 }
 
 var repository *statisticRepository
