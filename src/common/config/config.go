@@ -23,6 +23,11 @@ type Config struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
 		Logger   bool   `mapstructure:"logger"`
+
+		Options struct {
+			HealthTimeout string `mapstructure:"health_timeout"`
+			HealthRetries int    `mapstructure:"health_retries"`
+		} `mapstructure:"options" copier:"-"`
 	} `mapstructure:"psql" copier:"-"`
 
 	Redis struct {

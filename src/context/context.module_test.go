@@ -153,7 +153,7 @@ func TestContextModule(t *testing.T) {
 			url:    func() string { return fmt.Sprintf("/admin/contexts/%s/fields", contexts[0].Id) },
 			auth:   token,
 			body: func() interface{} {
-				return request.ContextFieldCreateDto{Name: "ContextFieldCreated2", Options: &map[string]interface{}{"test": "FieldCreated"}}
+				return request.ContextFieldCreateDto{Name: "ContextFieldCreated2", Value: &token, Options: &map[string]interface{}{"test": "FieldCreated"}}
 			},
 			expected: http.StatusCreated,
 			validate: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -169,8 +169,8 @@ func TestContextModule(t *testing.T) {
 				require.Equal(t, found, true)
 				require.Greater(t, entity.Order, 0)
 				require.Equal(t, entity.Name, "ContextFieldCreated2")
+				require.Equal(t, entity.Value, &token)
 
-				require.Nil(t, entity.Value)
 				require.NotNil(t, entity.Options)
 				require.Equal(t, (*entity.Options)["test"], "FieldCreated")
 			},
