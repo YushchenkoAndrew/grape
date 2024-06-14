@@ -1,24 +1,27 @@
 server:
-  address: localhost:31337
+  address: 0.0.0.0:31337
   prefix: /grape
   migrations: migrations/
 
 psql:
   name: api_db
-  host: localhost
+  host: 172.17.0.1
   port: 7432
   username: root
   password: root
   logger: false
+  options:
+    health_timeout: 5s
+    health_retries: 24
 
 redis:
   db: 0
-  address: localhost:6379
+  address: 172.17.0.1:6379
   username: ""
   password: ""
 
 void:
-  url: http://localhost:8003/void
+  url: http://172.17.0.1:8003/void
   username: root
   password: root
 

@@ -7,6 +7,7 @@ import (
 	c "grape/src/common/config"
 	"os"
 	"path/filepath"
+	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -24,7 +25,20 @@ func ConnPsql(cfg *config.Config) *gorm.DB {
 		config.Logger = logger.Default.LogMode(logger.Info)
 	}
 
-	db, err := gorm.Open(postgres.Open(dsn), &config)
+	timeout, _ := time.ParseDuration(cfg.Psql.Options.HealthTimeout)
+
+	var retry func(count int) (*gorm.DB, error)
+	retry = func(count int) (*gorm.DB, error) {
+		db, err := gorm.Open(postgres.Open(dsn), &config)
+		if err != nil && count < cfg.Psql.Options.HealthRetries {
+			time.Sleep(timeout)
+			return retry(count + 1)
+		}
+
+		return db, err
+	}
+
+	db, err := retry(0)
 
 	if err != nil {
 		// TODO: Think about better solution for that !
