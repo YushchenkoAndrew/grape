@@ -1,17 +1,44 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: grape-psql-pv
-  namespace: demo
+  name: grape-config-pv
+  namespace: prod
 spec:
   capacity:
-    storage: 10Gi
+    storage: 200Mi
   accessModes:
     - ReadOnlyMany
   nfs:
-    path: /media/sdb1/nfs/psql
-    server: 192.168.10.1
+    path: /configs/grape
+    server: 10.0.2.2
   persistentVolumeReclaimPolicy: Retain
   claimRef:
-    name: grape-psql-pvc
-    namespace: demo
+    name: grape-config-pvc
+    namespace: prod
+  mountOptions:
+    - rw
+    - bg
+    - hard
+    - nfsvers=4.2
+    - rsize=524288
+    - wsize=524288
+    - tcp
+    - timeo=600
+# ---
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: grape-psql-pv
+#   namespace: demo
+# spec:
+#   capacity:
+#     storage: 10Gi
+#   accessModes:
+#     - ReadOnlyMany
+#   nfs:
+#     path: /media/sdb1/nfs/psql
+#     server: 192.168.10.1
+#   persistentVolumeReclaimPolicy: Retain
+#   claimRef:
+#     name: grape-psql-pvc
+#     namespace: demo

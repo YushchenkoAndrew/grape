@@ -1,11 +1,23 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: grape-psql-pvc
-  namespace: demo
+  name: grape-config-pvc
+  namespace: prod
 spec:
   accessModes:
     - ReadOnlyMany
   resources:
     requests:
-      storage: 10Gi
+      storage: 200Mi
+# ---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: grape-psql-pvc
+#   namespace: demo
+# spec:
+#   accessModes:
+#     - ReadOnlyMany
+#   resources:
+#     requests:
+#       storage: 10Gi

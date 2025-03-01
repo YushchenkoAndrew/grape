@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grape-deployment
-  namespace: demo
+  namespace: prod
 spec:
   replicas: 1
   selector:
@@ -16,7 +16,7 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: demo-config-pvc
+            claimName: grape-config-pvc
       # serviceAccountName: api-sa
       containers:
         - name: grape
@@ -29,113 +29,113 @@ spec:
               mountPath: /app/configs
               readOnly: true
 
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: grape-redis-deployment
-  namespace: demo
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: grape-redis
-  template:
-    metadata:
-      labels:
-        app: grape-redis
-    spec:
-      containers:
-        - name: redis
-          image: redis:7-alpine
-          # resources:
-          #   requests:
-          #     cpu: 100m
-          #     memory: 100Mi
-          ports:
-            - containerPort: 6379
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: grape-psql-deployment
-  namespace: demo
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: grape-psql
-  template:
-    metadata:
-      labels:
-        app: grape-psql
-    spec:
-      volumes:
-        - name: storage
-          persistentVolumeClaim:
-            claimName: grape-psql-pvc
-      containers:
-        - name: grape-psql
-          image: postgres:14-alpine
-          ports:
-            - containerPort: 5432
-          volumeMounts:
-            - name: storage
-              mountPath: /var/lib/postgresql/data
-              readOnly: false
-          env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: grape-secrete
-                  key: GRAPE_PSQL_USERNAME
-
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: grape-secrete
-                  key: GRAPE_PSQL_PASSWORD
-
-            - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: grape-secrete
-                  key: GRAPE_PSQL_DATABSE
-
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: grape-pgadmin-deployment
-  namespace: demo
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: grape-pgadmin
-  template:
-    metadata:
-      labels:
-        app: grape-pgadmin
-    spec:
-      containers:
-        - name: grape-pgadmin
-          image: dpage/pgadmin4:6.10
-          ports:
-            - containerPort: 80
-          env:
-            - name: PGADMIN_DEFAULT_EMAIL
-              valueFrom:
-                secretKeyRef:
-                  name: grape-secrete
-                  key: PGADMIN_EMAIL
-
-            - name: PGADMIN_DEFAULT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: grape-secrete
-                  key: PGADMIN_PASSWORD
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: grape-redis-deployment
+#   namespace: demo
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: grape-redis
+#   template:
+#     metadata:
+#       labels:
+#         app: grape-redis
+#     spec:
+#       containers:
+#         - name: redis
+#           image: redis:7-alpine
+#           # resources:
+#           #   requests:
+#           #     cpu: 100m
+#           #     memory: 100Mi
+#           ports:
+#             - containerPort: 6379
+# 
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: grape-psql-deployment
+#   namespace: demo
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: grape-psql
+#   template:
+#     metadata:
+#       labels:
+#         app: grape-psql
+#     spec:
+#       volumes:
+#         - name: storage
+#           persistentVolumeClaim:
+#             claimName: grape-psql-pvc
+#       containers:
+#         - name: grape-psql
+#           image: postgres:14-alpine
+#           ports:
+#             - containerPort: 5432
+#           volumeMounts:
+#             - name: storage
+#               mountPath: /var/lib/postgresql/data
+#               readOnly: false
+#           env:
+#             - name: POSTGRES_USER
+#               valueFrom:
+#                 secretKeyRef:
+#                   name: grape-secrete
+#                   key: GRAPE_PSQL_USERNAME
+# 
+#             - name: POSTGRES_PASSWORD
+#               valueFrom:
+#                 secretKeyRef:
+#                   name: grape-secrete
+#                   key: GRAPE_PSQL_PASSWORD
+# 
+#             - name: POSTGRES_DB
+#               valueFrom:
+#                 secretKeyRef:
+#                   name: grape-secrete
+#                   key: GRAPE_PSQL_DATABSE
+# 
+#             - name: PGDATA
+#               value: /var/lib/postgresql/data/pgdata
+# 
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: grape-pgadmin-deployment
+#   namespace: demo
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: grape-pgadmin
+#   template:
+#     metadata:
+#       labels:
+#         app: grape-pgadmin
+#     spec:
+#       containers:
+#         - name: grape-pgadmin
+#           image: dpage/pgadmin4:6.10
+#           ports:
+#             - containerPort: 80
+#           env:
+#             - name: PGADMIN_DEFAULT_EMAIL
+#               valueFrom:
+#                 secretKeyRef:
+#                   name: grape-secrete
+#                   key: PGADMIN_EMAIL
+# 
+#             - name: PGADMIN_DEFAULT_PASSWORD
+#               valueFrom:
+#                 secretKeyRef:
+#                   name: grape-secrete
+#                   key: PGADMIN_PASSWORD

@@ -2,56 +2,56 @@ apiVersion: v1
 kind: Service
 metadata:
   name: grape-service
-  namespace: demo
+  namespace: prod
 spec:
   selector:
     app: grape
   ports:
     - port: 31337
-  type: LoadBalancer
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: grape-redis-service
-  namespace: demo
-  labels:
-    app: grape-redis
-spec:
-  selector:
-    app: grape-redis
-  ports:
-    - port: 6379
-  type: LoadBalancer
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: grape-psql-service
-  namespace: demo
-  labels:
-    app: grape-psql
-spec:
-  selector:
-    app: grape-psql
-  ports:
-    - port: 5432
-  type: LoadBalancer
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: grape-pgadmin-service
-  namespace: demo
-  labels:
-    app: grape-pgadmin
-spec:
-  selector:
-    app: grape-pgadmin
-  ports:
-    - port: 5050
-      targetPort: 80
-  type: LoadBalancer
+  type: ClusterIP
+# 
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: grape-redis-service
+#   namespace: demo
+#   labels:
+#     app: grape-redis
+# spec:
+#   selector:
+#     app: grape-redis
+#   ports:
+#     - port: 6379
+#   type: LoadBalancer
+# 
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: grape-psql-service
+#   namespace: demo
+#   labels:
+#     app: grape-psql
+# spec:
+#   selector:
+#     app: grape-psql
+#   ports:
+#     - port: 5432
+#   type: LoadBalancer
+# 
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: grape-pgadmin-service
+#   namespace: demo
+#   labels:
+#     app: grape-pgadmin
+# spec:
+#   selector:
+#     app: grape-pgadmin
+#   ports:
+#     - port: 5050
+#       targetPort: 80
+#   type: LoadBalancer
